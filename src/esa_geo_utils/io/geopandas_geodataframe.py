@@ -1,14 +1,15 @@
 from typing import Union
 
-from geopandas import GeoDataFrame, read_file
+from geopandas import GeoDataFrame
 from osgeo.ogr import Open
 
-from .common import _get_layer, _layer_to_geojson
+from .common import _get_layer, _properties_from_layer, _geometry_from_layer
 
 
-def ogr_to_geodataframe(path: str, layer: Union[str, int] = None, sql: str = None, **kwargs) -> GeoDataFrame:
+def geodataframe_from_ogr(path: str, layer: Union[str, int] = None, sql: str = None, **kwargs) -> GeoDataFrame:
   data_source = Open(path)
-  _layer = _get_layer(data_source=data_source, layer=layer, sql=sql, **kwargs)
-  geojson = _layer_to_geojson(layer=_layer)
-  crs_wkt = _layer.GetSpatialRef().ExportToWkt()
-  return read_file(geojson, crs_wkt=crs_wkt)
+  layer = _get_layer(data_source=data_source, layer=layer, sql=sql, **kwargs)
+  properties = _properties_from_layer(layer=layer)
+  geometry = _geometry_from_layer(layer=layer)
+  crs = layer.GetSpatialRef().ExportToWkt()
+  return GeoDataFrame(properties, geometry=geometry, crs=crs)
