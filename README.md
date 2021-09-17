@@ -3,7 +3,7 @@
 ## Install
 
 ```{sh}
-python -m pip install git+https//:
+python -m pip install git+https://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils
 ```
 
 ## Local development
@@ -38,47 +38,35 @@ Install Python 3.7.5:
 pyenv install 3.7.5
 ```
 
-### Install GDAL 2.4.2
+### Install GDAL 3.0.4
 
-Download the source file to your `Downloads` folder:
-
-```{sh}
-wget https://download.osgeo.org/gdal/2.4.2/gdal-2.4.2.tar.gz -O ~/Downloads/gdal-2.4.2.tar.gz
-```
-
-Extract to a folder in your home directory and `cd` into it:
+Add the [UbuntuGIS unstable Private Package Archive (PPA)](https://launchpad.net/~ubuntugis/+archive/ubuntu/ubuntugis-unstable)
+and update your package list:
 
 ```{sh}
-tar -vxf ~/Downloads/gdal-2.4.2.tar.gz -C $HOME && cd ~/gdal-2.4.2
+sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
+    && sudo apt-get update
 ```
 
-Build with Python bindings, where `/path/to/python` is the path to the python binary in your virtual environment of choice:
+Install `gdal 3.0.4`, I found I also had to install python3-gdal (even though
+I'm going to use poetry to install it in a virtual environment later) to
+avoid version conflicts:
 
 ```{sh}
-./configure --with-python=$(which python)
+sudo apt-get install -y gdal-bin=3.0.4+dfsg-1build3 \
+    libgdal-dev=3.0.4+dfsg-1build3 \
+    python3-gdal=3.0.4+dfsg-1build3 
 ```
-
-Complete installation:
-
-```{sh}
-make && sudo make install
-```
-
-Update the shared library cache:
-
-```{sh}
-sudo ldconfig
-```
-
+  
 Verify the installation:
 
 ```{sh}
-gdalinfo --version
-# GDAL 2.4.2, released 2019/06/28
+ogrinfo --version
+# GDAL 3.0.4, released 2020/01/28
 ```
 
-Add the Python bindings to your dependencies:
+Add the Python bindings to your project:
 
 ```{sh}
-poetry add GDAL==2.4.2
+poetry add GDAL==3.0.4
 ```
