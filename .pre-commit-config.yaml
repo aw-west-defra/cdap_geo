@@ -23,6 +23,7 @@ repos:
         entry: poetry run isort
         language: system
         types: [python]
+        args: ["--profile", "black"]
     -   id: black
         name: black
         entry: poetry run black
