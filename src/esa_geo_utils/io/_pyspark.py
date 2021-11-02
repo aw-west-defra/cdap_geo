@@ -176,6 +176,7 @@ def _spark_df_from_vector_files(
     geom_field_name: str = "geometry",
     geom_field_type: str = "WKB",
     vsi_prefix: Optional[str] = None,
+    schema: StructType = None,
     layer: Optional[str] = None,
     sql: Optional[str] = None,
     **kwargs: Optional[str]
@@ -218,6 +219,7 @@ def _spark_df_from_vector_files(
         geom_field_name (str): [description]. Defaults to "geometry".
         geom_field_type (str): [description]. Defaults to "WKB".
         vsi_prefix (str, optional): [description]. Defaults to None.
+        schema (StructType): [description]. Defaults to None.
         layer (str, optional): [description]. Defaults to None.
         sql (str, optional): [description]. Defaults to None.
         **kwargs (str, optional): [description].
@@ -236,14 +238,18 @@ def _spark_df_from_vector_files(
 
     paths_df = _create_paths_df(spark=spark, paths=paths)
 
-    schema = _create_schema(
-        paths=paths,
-        layer=layer,
-        sql=sql,
-        data_type_map=data_type_map,
-        geom_field_name=geom_field_name,
-        geom_field_type=geom_field_type,
-        **kwargs,
+    _schema = (
+        schema
+        if schema
+        else _create_schema(
+            paths=paths,
+            layer=layer,
+            sql=sql,
+            data_type_map=data_type_map,
+            geom_field_name=geom_field_name,
+            geom_field_type=geom_field_type,
+            **kwargs,
+        )
     )
 
     parallel_read = _parallel_read_generator(
@@ -256,5 +262,5 @@ def _spark_df_from_vector_files(
     return (
         paths_df.repartition(num_of_files, col("path"))
         .groupby("path")
-        .applyInPandas(parallel_read, schema)
+        .applyInPandas(parallel_read, _schema)
     )
