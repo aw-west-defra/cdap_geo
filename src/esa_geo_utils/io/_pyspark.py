@@ -7,7 +7,25 @@ from pandas import DataFrame as PandasDataFrame
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark.sql import Row, SparkSession
 from pyspark.sql.functions import col
-from pyspark.sql.types import DataType, StructField, StructType
+from pyspark.sql.types import (
+    ArrayType,
+    BinaryType,
+    DataType,
+    FloatType,
+    IntegerType,
+    StringType,
+    StructField,
+    StructType,
+)
+
+DATA_TYPE_MAP = {
+    "String": StringType(),
+    "StringList": ArrayType(StringType()),
+    "Integer": IntegerType(),
+    "DateTime": StringType(),
+    "Real": FloatType(),
+    "WKB": BinaryType(),
+}
 
 
 def _get_layer(
@@ -65,9 +83,9 @@ def _get_feature_schema(
 
 def _create_schema(
     paths: Tuple[Any, ...],
-    data_type_map: Dict[str, DataType],
     geom_field_name: str,
     geom_field_type: str,
+    data_type_map: Dict[str, DataType],
     layer: Optional[Union[str, int]],
     sql: Optional[str],
     **kwargs: Optional[str]
@@ -170,7 +188,7 @@ def _parallel_read_generator(
 
 def _spark_df_from_vector_files(
     directory: str,
-    data_type_map: Dict[str, DataType],
+    data_type_map: Dict[str, DataType] = DATA_TYPE_MAP,
     spark: SparkSession = SparkSession._activeSession,
     suffix: str = "*",
     geom_field_name: str = "geometry",
@@ -213,8 +231,10 @@ def _spark_df_from_vector_files(
 
     Args:
         directory (str): [description]
-        data_type_map (Dict[str, DataType]): [description]
-        spark (SparkSession): [description]. Defaults to SparkSession._activeSession.
+        data_type_map (Dict[str, DataType]): [description]. Defaults to
+            DATA_TYPE_MAP.
+        spark (SparkSession): [description]. Defaults to
+            SparkSession._activeSession.
         suffix (str): [description]. Defaults to "*".
         geom_field_name (str): [description]. Defaults to "geometry".
         geom_field_type (str): [description]. Defaults to "WKB".
