@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "esa_geo_utils"
 version = "0.1.0"
-description = "A python library for the Environmental Science and Analysis division's geospatial utilities."
+description = "A python library for the Environment Science and Analysis division's geospatial utilities."
 authors = ["Ed Fawcett-Taylor <ed.fawcett-taylor@defra.gov.uk>"]
 
 [tool.poetry.dependencies]
