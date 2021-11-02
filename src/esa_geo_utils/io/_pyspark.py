@@ -103,7 +103,7 @@ def _get_features(layer: Layer) -> Generator:
     )
 
 
-def _gdal_to_pdf(
+def _vector_file_to_pdf(
     path: str,
     sql: Optional[str],
     layer: Optional[Union[str, int]],
@@ -124,6 +124,11 @@ def _get_paths(directory: str, suffix: str) -> Tuple[Any, ...]:
     return tuple(join(directory, path) for path in paths if path.endswith(suffix))
 
 
+def _add_vsi_prefix(paths: Tuple[Any, ...], vsi_prefix: str) -> Tuple[Any, ...]:
+    """Adds GDAL virtual file system prefix to the paths."""
+    return tuple(vsi_prefix + "/" + path for path in paths)
+
+
 def _create_paths_df(spark: SparkSession, paths: Tuple[Any, ...]) -> SparkDataFrame:
     """Given a list of full paths, returns a DataFrame of those paths."""
     rows = [Row(path=path) for path in paths]
@@ -139,8 +144,8 @@ def _parallel_read_generator(
     """Adds arbitrary key word arguments to the wrapped function."""
 
     def _(pdf: PandasDataFrame) -> PandasDataFrame:
-        """Returns a the pandas_udf compatible version of _gdal_to_pdf."""
-        return _gdal_to_pdf(
+        """Returns a the pandas_udf compatible version of _vector_file_to_pdf."""
+        return _vector_file_to_pdf(
             path=pdf["path"][0],
             sql=sql,
             layer=layer,
@@ -151,19 +156,79 @@ def _parallel_read_generator(
     return _
 
 
-def gdal_to_dataframe(
+# def _set_geometry_column_metadata(
+#     df: DataFrame,
+#     geometry_column_name: str,
+#     layer: Layer,
+# ) -> None:
+#     df.schema[geometry_column_name].metadata = {
+#         "crs": layer.GetSpatialRef().ExportToWkt(),
+#         "encoding": "WKT",
+#         "bbox": layer.GetExtent(),
+#     }
+
+
+def _spark_df_from_vector_files(
     directory: str,
     data_type_map: Dict[str, DataType],
     spark: SparkSession = SparkSession._activeSession,
     suffix: str = "*",
     geom_field_name: str = "geometry",
     geom_field_type: str = "WKB",
+    vsi_prefix: Optional[str] = None,
     layer: Optional[str] = None,
     sql: Optional[str] = None,
     **kwargs: Optional[str]
 ) -> SparkDataFrame:
-    """Given a folder of vector files, returns a Spark DataFrame."""
+    """Given a folder of vector files, returns a Spark DataFrame.
+
+    If a valid SQL statement is provided (and the vector file supports SQL
+    queries), the results will be returned as a layer:
+
+    Example:
+        >>> gdf = spark_df_from_vector_files(
+                directory="/path/to/vector/files",
+                sql="SELECT * FROM layer_name LIMIT 100"
+            )
+
+    Else if a layer name or index is provided, that layer will be returned:
+
+    Example:
+        >>> gdf = geodataframe_from_ogr(
+                path="/path/to/vector/files",
+                layer="layer_name"
+            )
+        >>> gdf = geodataframe_from_ogr(
+                path="/path/to/vector/files",
+                layer=1
+            )
+
+    Else if neither is provided, the 0th layer will be returned:
+
+    Example:
+        >>> gdf = geodataframe_from_ogr(
+                path="/path/to/vector/files",
+            )
+
+    Args:
+        directory (str): [description]
+        data_type_map (Dict[str, DataType]): [description]
+        spark (SparkSession): [description]. Defaults to SparkSession._activeSession.
+        suffix (str): [description]. Defaults to "*".
+        geom_field_name (str): [description]. Defaults to "geometry".
+        geom_field_type (str): [description]. Defaults to "WKB".
+        vsi_prefix (str, optional): [description]. Defaults to None.
+        layer (str, optional): [description]. Defaults to None.
+        sql (str, optional): [description]. Defaults to None.
+        **kwargs (str, optional): [description].
+
+    Returns:
+        SparkDataFrame: [description]
+    """
     paths = _get_paths(directory=directory, suffix=suffix)
+
+    if vsi_prefix:
+        paths = _add_vsi_prefix(paths=paths, vsi_prefix=vsi_prefix)
 
     num_of_files = len(paths)
 
@@ -185,6 +250,7 @@ def gdal_to_dataframe(
         sql=sql,
         layer=layer,
         geom_field_name=geom_field_name,
+        **kwargs,
     )
 
     return (
