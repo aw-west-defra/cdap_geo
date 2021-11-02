@@ -54,11 +54,11 @@ def _get_feature_schema(
     property_names = _get_property_names(layer=layer)
     property_types = _get_property_types(layer=layer)
     property_struct_fields = [
-        StructField(name, data_type_map[type]())
-        for name, type in zip(property_names, property_types)
+        StructField(field_name, data_type_map[field_type])
+        for field_name, field_type in zip(property_names, property_types)
     ]
     geometry_struct_field = [
-        StructField(geom_field_name, data_type_map[geom_field_type]())
+        StructField(geom_field_name, data_type_map[geom_field_type])
     ]
     return StructType(property_struct_fields + geometry_struct_field)
 
