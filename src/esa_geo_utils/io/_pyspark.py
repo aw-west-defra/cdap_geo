@@ -19,6 +19,8 @@ from pyspark.sql.types import (
     StructType,
 )
 
+from esa_geo_utils.io._vrt import _list_layers
+
 OGR_TO_SPARK = MappingProxyType(
     {
         "String": StringType(),
@@ -196,6 +198,20 @@ def _add_vsi_prefix(paths: Tuple[Any, ...], vsi_prefix: str) -> Tuple[Any, ...]:
     return tuple(vsi_prefix + "/" + path for path in paths)
 
 
+def _check_for_layer_generator(layer: Optional[str]) -> Callable:
+    def _(pdf: PandasDataFrame) -> PandasDataFrame:
+        path = pdf["path"][0]
+        layer_exists = layer in _list_layers(path)
+        return PandasDataFrame(
+            {
+                "path": [path],
+                "layer_exists": [layer_exists],
+            }
+        )
+
+    return _
+
+
 def _create_paths_df(spark: SparkSession, paths: Tuple[Any, ...]) -> SparkDataFrame:
     """Given a list of full paths, returns a DataFrame of those paths."""
     rows = [Row(path=path) for path in paths]
@@ -249,6 +265,7 @@ def _spark_df_from_vector_files(
     geom_field_name: str = "geometry",
     geom_field_type: str = "WKB",
     coerce_to_schema: bool = False,
+    check_for_layer: bool = False,
     spark_to_pandas_type_map: MappingProxyType = SPARK_TO_PANDAS,
     vsi_prefix: Optional[str] = None,
     schema: StructType = None,
@@ -296,6 +313,7 @@ def _spark_df_from_vector_files(
         geom_field_name (str): [description]. Defaults to "geometry".
         geom_field_type (str): [description]. Defaults to "WKB".
         coerce_to_schema (bool): [description]. Defaults to False.
+        check_for_layer (bool): [description]. Defaults to False.
         spark_to_pandas_type_map (MappingProxyType): [description]. Defaults
             to SPARK_TO_PANDAS.
         vsi_prefix (str, optional): [description]. Defaults to None.
@@ -317,6 +335,17 @@ def _spark_df_from_vector_files(
     spark.conf.set("spark.sql.shuffle.partitions", num_of_files)
 
     paths_df = _create_paths_df(spark=spark, paths=paths)
+
+    if check_for_layer:
+        _check_for_layer = _check_for_layer_generator(
+            layer=layer,
+        )
+
+        paths_df = (
+            paths_df.groupby("path")
+            .applyInPandas(_check_for_layer, schema="path string, layer_exists boolean")
+            .filter("layer_exists == true")
+        )
 
     _schema = (
         schema
