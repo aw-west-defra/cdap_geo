@@ -1,9 +1,11 @@
 from os import listdir
 from os.path import join
-from typing import Any, Callable, Dict, Generator, Optional, Tuple, Union
+from types import MappingProxyType
+from typing import Any, Callable, Generator, Optional, Tuple, Union
 
 from osgeo.ogr import DataSource, Feature, GetFieldTypeName, Layer, Open
 from pandas import DataFrame as PandasDataFrame
+from pandas import Series
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark.sql import Row, SparkSession
 from pyspark.sql.functions import col
@@ -18,14 +20,25 @@ from pyspark.sql.types import (
     StructType,
 )
 
-DATA_TYPE_MAP = {
-    "String": StringType(),
-    "StringList": ArrayType(StringType()),
-    "Integer": IntegerType(),
-    "DateTime": StringType(),
-    "Real": FloatType(),
-    "WKB": BinaryType(),
-}
+OGR_TO_SPARK = MappingProxyType(
+    {
+        "String": StringType(),
+        "StringList": ArrayType(StringType()),
+        "Integer": IntegerType(),
+        "DateTime": StringType(),
+        "Real": FloatType(),
+        "WKB": BinaryType(),
+    }
+)
+
+SPARK_TO_PANDAS = MappingProxyType(
+    {
+        "StringType": str,
+        "IntegerType": int,
+        "FloatType": float,
+        "BinaryType": bytearray,
+    }
+)
 
 
 def _get_layer(
@@ -64,7 +77,7 @@ def _get_property_types(layer: Layer) -> Tuple[Any, ...]:
 
 def _get_feature_schema(
     layer: Layer,
-    data_type_map: Dict[str, DataType],
+    ogr_to_spark_type_map: MappingProxyType[str, DataType],
     geom_field_name: str,
     geom_field_type: str,
 ) -> StructType:
@@ -72,11 +85,11 @@ def _get_feature_schema(
     property_names = _get_property_names(layer=layer)
     property_types = _get_property_types(layer=layer)
     property_struct_fields = [
-        StructField(field_name, data_type_map[field_type])
+        StructField(field_name, ogr_to_spark_type_map[field_type])
         for field_name, field_type in zip(property_names, property_types)
     ]
     geometry_struct_field = [
-        StructField(geom_field_name, data_type_map[geom_field_type])
+        StructField(geom_field_name, ogr_to_spark_type_map[geom_field_type])
     ]
     return StructType(property_struct_fields + geometry_struct_field)
 
@@ -85,7 +98,7 @@ def _create_schema(
     paths: Tuple[Any, ...],
     geom_field_name: str,
     geom_field_type: str,
-    data_type_map: Dict[str, DataType],
+    ogr_to_spark_type_map: MappingProxyType[str, DataType],
     layer: Optional[Union[str, int]],
     sql: Optional[str],
     **kwargs: Optional[str]
@@ -95,7 +108,7 @@ def _create_schema(
     _layer = _get_layer(data_source=data_source, sql=sql, layer=layer, **kwargs)
     return _get_feature_schema(
         layer=_layer,
-        data_type_map=data_type_map,
+        ogr_to_spark_type_map=ogr_to_spark_type_map,
         geom_field_name=geom_field_name,
         geom_field_type=geom_field_type,
     )
@@ -126,6 +139,9 @@ def _vector_file_to_pdf(
     sql: Optional[str],
     layer: Optional[Union[str, int]],
     geom_field_name: str,
+    coerce_to_schema: bool,
+    schema: StructType,
+    spark_to_pandas_type_map: MappingProxyType[str, Any],
     **kwargs: Optional[str]
 ) -> PandasDataFrame:
     """Given a file path and layer, returns a pandas DataFrame."""
@@ -133,7 +149,23 @@ def _vector_file_to_pdf(
     _layer = _get_layer(data_source=data_source, sql=sql, layer=layer, **kwargs)
     features_generator = _get_features(layer=_layer)
     feature_names = _get_property_names(layer=_layer) + tuple([geom_field_name])
-    return PandasDataFrame(data=features_generator, columns=feature_names)
+    pdf = PandasDataFrame(data=features_generator, columns=feature_names)
+    if coerce_to_schema:
+        schema_fields = tuple(
+            (index, field.name, field.dataType)
+            for index, field in enumerate(schema.fields)
+        )
+        for column in pdf.columns:
+            if column not in tuple(field[1] for field in schema_fields):
+                return pdf.drop(columns=column)
+        for field in schema_fields:
+            if field[1] not in pdf.columns:
+                return pdf.insert(
+                    loc=field[0],
+                    column=field[1],
+                    value=Series(dtype=spark_to_pandas_type_map[field[2]]),
+                )
+    return pdf
 
 
 def _get_paths(directory: str, suffix: str) -> Tuple[Any, ...]:
@@ -157,6 +189,9 @@ def _parallel_read_generator(
     sql: Optional[str],
     layer: Optional[Union[str, int]],
     geom_field_name: str,
+    coerce_to_schema: bool,
+    schema: StructType,
+    spark_to_pandas_type_map: MappingProxyType[str, Any],
     **kwargs: Optional[str]
 ) -> Callable:
     """Adds arbitrary key word arguments to the wrapped function."""
@@ -168,6 +203,9 @@ def _parallel_read_generator(
             sql=sql,
             layer=layer,
             geom_field_name=geom_field_name,
+            coerce_to_schema=coerce_to_schema,
+            schema=schema,
+            spark_to_pandas_type_map=spark_to_pandas_type_map,
             **kwargs,
         )
 
@@ -188,11 +226,13 @@ def _parallel_read_generator(
 
 def _spark_df_from_vector_files(
     directory: str,
-    data_type_map: Dict[str, DataType] = DATA_TYPE_MAP,
+    ogr_to_spark_type_map: MappingProxyType[str, Any] = OGR_TO_SPARK,
     spark: SparkSession = SparkSession._activeSession,
     suffix: str = "*",
     geom_field_name: str = "geometry",
     geom_field_type: str = "WKB",
+    coerce_to_schema: bool = False,
+    spark_to_pandas_type_map: MappingProxyType[str, Any] = SPARK_TO_PANDAS,
     vsi_prefix: Optional[str] = None,
     schema: StructType = None,
     layer: Optional[str] = None,
@@ -231,13 +271,16 @@ def _spark_df_from_vector_files(
 
     Args:
         directory (str): [description]
-        data_type_map (Dict[str, DataType]): [description]. Defaults to
-            DATA_TYPE_MAP.
+        ogr_to_spark_type_map (MappingProxyType[str, DataType]): [description]. Defaults
+            to OGR_TO_SPARK.
         spark (SparkSession): [description]. Defaults to
             SparkSession._activeSession.
         suffix (str): [description]. Defaults to "*".
         geom_field_name (str): [description]. Defaults to "geometry".
         geom_field_type (str): [description]. Defaults to "WKB".
+        coerce_to_schema (bool): [description]. Defaults to False.
+        spark_to_pandas_type_map (MappingProxyType[str, Any]): [description]. Defaults
+            to SPARK_TO_PANDAS.
         vsi_prefix (str, optional): [description]. Defaults to None.
         schema (StructType): [description]. Defaults to None.
         layer (str, optional): [description]. Defaults to None.
@@ -265,7 +308,7 @@ def _spark_df_from_vector_files(
             paths=paths,
             layer=layer,
             sql=sql,
-            data_type_map=data_type_map,
+            ogr_to_spark_type_map=ogr_to_spark_type_map,
             geom_field_name=geom_field_name,
             geom_field_type=geom_field_type,
             **kwargs,
@@ -276,6 +319,8 @@ def _spark_df_from_vector_files(
         sql=sql,
         layer=layer,
         geom_field_name=geom_field_name,
+        coerce_to_schema=coerce_to_schema,
+        spark_to_pandas_type_map=spark_to_pandas_type_map,
         **kwargs,
     )
 
