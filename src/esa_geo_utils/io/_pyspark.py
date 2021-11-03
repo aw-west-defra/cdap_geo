@@ -193,10 +193,10 @@ def _vector_file_to_pdf(
     pdf = PandasDataFrame(data=features_generator, columns=feature_names)
     if pdf is None:
         return PandasDataFrame(
-            tuple(
-                Series(name=field.name, dtype=SPARK_TO_PANDAS[field.dataType])
+            data={
+                field.name: Series(dtype=SPARK_TO_PANDAS[field.dataType])
                 for field in schema.fields
-            )
+            }
         )
     if coerce_to_schema:
         coerced_pdf = _coerce_to_schema(
@@ -206,10 +206,10 @@ def _vector_file_to_pdf(
         )
         if coerced_pdf is None:
             return PandasDataFrame(
-                tuple(
-                    Series(name=field.name, dtype=SPARK_TO_PANDAS[field.dataType])
+                data={
+                    field.name: Series(dtype=SPARK_TO_PANDAS[field.dataType])
                     for field in schema.fields
-                )
+                }
             )
         else:
             return coerced_pdf
