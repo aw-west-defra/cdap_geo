@@ -19,8 +19,6 @@ from pyspark.sql.types import (
     StructType,
 )
 
-from esa_geo_utils.io._vrt import _list_layers
-
 OGR_TO_SPARK = MappingProxyType(
     {
         "String": StringType(),
@@ -139,25 +137,30 @@ def _get_features(layer: Layer) -> Generator:
 
 
 def _coerce_to_schema(
-    pdf: PandasDataFrame, schema: StructType, spark_to_pandas_type_map: MappingProxyType
+    pdf: PandasDataFrame,
+    schema: StructType,
+    spark_to_pandas_type_map: MappingProxyType,
 ) -> PandasDataFrame:
     schema_fields = tuple(
         (index, field.name, field.dataType) for index, field in enumerate(schema.fields)
     )
-    for column in pdf.columns:
-        if column not in tuple(field[1] for field in schema_fields):
-            pdf = pdf.drop(columns=column)
-        else:
-            pdf = pdf
-    for field in schema_fields:
-        if field[1] not in pdf.columns:
+    schema_field_names = tuple(field[1] for field in schema_fields)
+    additional_columns = tuple(
+        column for column in pdf.columns if column not in schema_field_names
+    )
+    if len(additional_columns) > 0:
+        pdf = pdf.drop(columns=additional_columns)
+
+    missing_fields = tuple(
+        field for field in schema_fields if field[1] not in pdf.columns
+    )
+    if len(missing_fields) > 0:
+        for field in missing_fields:
             pdf = pdf.insert(
                 loc=field[0],
                 column=field[1],
                 value=Series(dtype=spark_to_pandas_type_map[field[2]]),
             )
-        else:
-            pdf = pdf
     return pdf
 
 
@@ -174,7 +177,10 @@ def _vector_file_to_pdf(
     """Given a file path and layer, returns a pandas DataFrame."""
     data_source = Open(path)
     _layer = _get_layer(
-        data_source=data_source, sql=sql, layer=layer, sql_kwargs=sql_kwargs
+        data_source=data_source,
+        sql=sql,
+        layer=layer,
+        sql_kwargs=sql_kwargs,
     )
     features_generator = _get_features(layer=_layer)
     feature_names = _get_property_names(layer=_layer) + tuple([geom_field_name])
@@ -197,20 +203,6 @@ def _get_paths(directory: str, suffix: str) -> Tuple[Any, ...]:
 def _add_vsi_prefix(paths: Tuple[Any, ...], vsi_prefix: str) -> Tuple[Any, ...]:
     """Adds GDAL virtual file system prefix to the paths."""
     return tuple(vsi_prefix + "/" + path for path in paths)
-
-
-def _check_for_layer_generator(layer: Optional[str]) -> Callable:
-    def _(pdf: PandasDataFrame) -> PandasDataFrame:
-        path = pdf["path"][0]
-        layer_exists = layer in _list_layers(path)
-        return PandasDataFrame(
-            {
-                "path": [path],
-                "layer_exists": [layer_exists],
-            }
-        )
-
-    return _
 
 
 def _create_paths_df(spark: SparkSession, paths: Tuple[Any, ...]) -> SparkDataFrame:
@@ -266,7 +258,6 @@ def _spark_df_from_vector_files(
     geom_field_name: str = "geometry",
     geom_field_type: str = "WKB",
     coerce_to_schema: bool = False,
-    check_for_layer: bool = False,
     spark_to_pandas_type_map: MappingProxyType = SPARK_TO_PANDAS,
     vsi_prefix: Optional[str] = None,
     schema: StructType = None,
@@ -314,7 +305,6 @@ def _spark_df_from_vector_files(
         geom_field_name (str): [description]. Defaults to "geometry".
         geom_field_type (str): [description]. Defaults to "WKB".
         coerce_to_schema (bool): [description]. Defaults to False.
-        check_for_layer (bool): [description]. Defaults to False.
         spark_to_pandas_type_map (MappingProxyType): [description]. Defaults
             to SPARK_TO_PANDAS.
         vsi_prefix (str, optional): [description]. Defaults to None.
@@ -336,17 +326,6 @@ def _spark_df_from_vector_files(
     spark.conf.set("spark.sql.shuffle.partitions", num_of_files)
 
     paths_df = _create_paths_df(spark=spark, paths=paths)
-
-    if check_for_layer:
-        _check_for_layer = _check_for_layer_generator(
-            layer=layer,
-        )
-
-        paths_df = (
-            paths_df.groupby("path")
-            .applyInPandas(_check_for_layer, schema="path string, layer_exists boolean")
-            .filter("layer_exists == true")
-        )
 
     _schema = (
         schema
