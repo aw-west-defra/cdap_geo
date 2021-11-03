@@ -32,10 +32,10 @@ OGR_TO_SPARK = MappingProxyType(
 
 SPARK_TO_PANDAS = MappingProxyType(
     {
-        "StringType": str,
-        "IntegerType": int,
-        "FloatType": float,
-        "BinaryType": bytearray,
+        StringType(): str,
+        IntegerType(): int,
+        FloatType(): float,
+        BinaryType(): bytearray,
     }
 )
 
