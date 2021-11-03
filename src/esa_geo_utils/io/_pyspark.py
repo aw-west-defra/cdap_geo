@@ -152,17 +152,15 @@ def _coerce_to_schema(
         field for field in schema_fields if field[1] not in pdf.columns
     )
     if len(additional_columns) > 0:
-        return pdf.drop(columns=additional_columns)
-    elif len(missing_fields) > 0:
+        pdf = pdf.drop(columns=additional_columns)
+    if len(missing_fields) > 0:
         for field in missing_fields:
             pdf.insert(
                 loc=field[0],
                 column=field[1],
                 value=Series(dtype=spark_to_pandas_type_map[field[2]]),
             )
-        return pdf
-    else:
-        return pdf
+    return pdf
 
 
 def _vector_file_to_pdf(
