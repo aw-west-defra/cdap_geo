@@ -187,12 +187,14 @@ def _vector_file_to_pdf(
     feature_names = _get_property_names(layer=_layer) + tuple([geom_field_name])
     pdf = PandasDataFrame(data=features_generator, columns=feature_names)
     if coerce_to_schema:
-        pdf = _coerce_to_schema(
+        coerced_pdf = _coerce_to_schema(
             pdf=pdf,
             schema=schema,
             spark_to_pandas_type_map=spark_to_pandas_type_map,
         )
-    return pdf
+        return coerced_pdf
+    else:
+        return pdf
 
 
 def _get_paths(directory: str, suffix: str) -> Tuple[Any, ...]:
