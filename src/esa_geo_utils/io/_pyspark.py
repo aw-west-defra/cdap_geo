@@ -98,7 +98,7 @@ def _create_schema(
     paths: Tuple[Any, ...],
     geom_field_name: str,
     geom_field_type: str,
-    ogr_to_spark_type_map: MappingProxyType[str, DataType],
+    ogr_to_spark_type_map: MappingProxyType,
     layer: Optional[Union[str, int]],
     sql: Optional[str],
     **kwargs: Optional[str]
@@ -141,7 +141,7 @@ def _vector_file_to_pdf(
     geom_field_name: str,
     coerce_to_schema: bool,
     schema: StructType,
-    spark_to_pandas_type_map: MappingProxyType[str, Any],
+    spark_to_pandas_type_map: MappingProxyType,
     **kwargs: Optional[str]
 ) -> PandasDataFrame:
     """Given a file path and layer, returns a pandas DataFrame."""
@@ -191,7 +191,7 @@ def _parallel_read_generator(
     geom_field_name: str,
     coerce_to_schema: bool,
     schema: StructType,
-    spark_to_pandas_type_map: MappingProxyType[str, Any],
+    spark_to_pandas_type_map: MappingProxyType,
     **kwargs: Optional[str]
 ) -> Callable:
     """Adds arbitrary key word arguments to the wrapped function."""
@@ -226,13 +226,13 @@ def _parallel_read_generator(
 
 def _spark_df_from_vector_files(
     directory: str,
-    ogr_to_spark_type_map: MappingProxyType[str, Any] = OGR_TO_SPARK,
+    ogr_to_spark_type_map: MappingProxyType = OGR_TO_SPARK,
     spark: SparkSession = SparkSession._activeSession,
     suffix: str = "*",
     geom_field_name: str = "geometry",
     geom_field_type: str = "WKB",
     coerce_to_schema: bool = False,
-    spark_to_pandas_type_map: MappingProxyType[str, Any] = SPARK_TO_PANDAS,
+    spark_to_pandas_type_map: MappingProxyType = SPARK_TO_PANDAS,
     vsi_prefix: Optional[str] = None,
     schema: StructType = None,
     layer: Optional[str] = None,
@@ -271,7 +271,7 @@ def _spark_df_from_vector_files(
 
     Args:
         directory (str): [description]
-        ogr_to_spark_type_map (MappingProxyType[str, DataType]): [description]. Defaults
+        ogr_to_spark_type_map (MappingProxyType): [description]. Defaults
             to OGR_TO_SPARK.
         spark (SparkSession): [description]. Defaults to
             SparkSession._activeSession.
@@ -279,7 +279,7 @@ def _spark_df_from_vector_files(
         geom_field_name (str): [description]. Defaults to "geometry".
         geom_field_type (str): [description]. Defaults to "WKB".
         coerce_to_schema (bool): [description]. Defaults to False.
-        spark_to_pandas_type_map (MappingProxyType[str, Any]): [description]. Defaults
+        spark_to_pandas_type_map (MappingProxyType): [description]. Defaults
             to SPARK_TO_PANDAS.
         vsi_prefix (str, optional): [description]. Defaults to None.
         schema (StructType): [description]. Defaults to None.
