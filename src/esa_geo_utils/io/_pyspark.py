@@ -145,6 +145,8 @@ def _coerce_to_schema(
     for column in pdf.columns:
         if column not in tuple(field[1] for field in schema_fields):
             pdf = pdf.drop(columns=column)
+        else:
+            pdf = pdf
     for field in schema_fields:
         if field[1] not in pdf.columns:
             pdf = pdf.insert(
@@ -152,6 +154,8 @@ def _coerce_to_schema(
                 column=field[1],
                 value=Series(dtype=spark_to_pandas_type_map[field[2]]),
             )
+        else:
+            pdf = pdf
     return pdf
 
 
