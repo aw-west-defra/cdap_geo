@@ -181,32 +181,33 @@ def _vector_file_to_pdf(
     sql_kwargs: Optional[Dict[str, str]],
 ) -> PandasDataFrame:
     """Given a file path and layer, returns a pandas DataFrame."""
-    try:
-        data_source = Open(path)
-        _layer = _get_layer(
-            data_source=data_source,
-            sql=sql,
-            layer=layer,
-            sql_kwargs=sql_kwargs,
-        )
-        features_generator = _get_features(layer=_layer)
-        feature_names = _get_property_names(layer=_layer) + tuple([geom_field_name])
-        pdf = PandasDataFrame(data=features_generator, columns=feature_names)
-        if coerce_to_schema:
+    data_source = Open(path)
+    _layer = _get_layer(
+        data_source=data_source,
+        sql=sql,
+        layer=layer,
+        sql_kwargs=sql_kwargs,
+    )
+    features_generator = _get_features(layer=_layer)
+    feature_names = _get_property_names(layer=_layer) + tuple([geom_field_name])
+    pdf = PandasDataFrame(data=features_generator, columns=feature_names)
+    if coerce_to_schema:
+        try:
             coerced_pdf = _coerce_to_schema(
                 pdf=pdf,
                 schema=schema,
                 spark_to_pandas_type_map=spark_to_pandas_type_map,
             )
             return coerced_pdf
-        else:
-            return pdf
-    except Exception:
-        return PandasDataFrame(
-            tuple(
-                Series(name=field.name, dtype=field.dataType) for field in schema.fields
+        except Exception:
+            return PandasDataFrame(
+                tuple(
+                    Series(name=field.name, dtype=field.dataType)
+                    for field in schema.fields
+                )
             )
-        )
+    else:
+        return pdf
 
 
 def _get_paths(directory: str, suffix: str) -> Tuple[Any, ...]:
