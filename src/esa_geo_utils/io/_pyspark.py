@@ -166,7 +166,8 @@ def _coerce_to_schema(
             for field in missing_fields
         )
         pdf_plus_missing_fields = pdf.append(missing_field_series)
-        return pdf_plus_missing_fields
+        reindexed_pdf = pdf_plus_missing_fields.reindex(columns=schema_field_names)
+        return reindexed_pdf
 
 
 def _vector_file_to_pdf(
