@@ -12,7 +12,6 @@ from pyspark.sql.functions import col
 from pyspark.sql.types import (
     ArrayType,
     BinaryType,
-    DataType,
     FloatType,
     IntegerType,
     StringType,
@@ -77,7 +76,7 @@ def _get_property_types(layer: Layer) -> Tuple[Any, ...]:
 
 def _get_feature_schema(
     layer: Layer,
-    ogr_to_spark_type_map: MappingProxyType[str, DataType],
+    ogr_to_spark_type_map: MappingProxyType,
     geom_field_name: str,
     geom_field_type: str,
 ) -> StructType:
