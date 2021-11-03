@@ -152,16 +152,17 @@ def _coerce_to_schema(
         field for field in schema_fields if field[1] not in pdf.columns
     )
     if len(additional_columns) > 0:
-        print(f"additional columns: {additional_columns}")
-        pdf = pdf.drop(columns=additional_columns)
+        pdf_minus_additional_columns = pdf.drop(columns=additional_columns)
+        return pdf_minus_additional_columns
+
     if len(missing_fields) > 0:
-        for field in missing_fields:
-            print(f"missing field: {field}")
-            pdf.insert(
-                loc=field[0],
-                column=field[1],
-                value=Series(dtype=spark_to_pandas_type_map[field[2]]),
-            )
+        missing_field_series = tuple(
+            Series(name=field[1], dtype=spark_to_pandas_type_map[field[2]])
+            for field in missing_fields
+        )
+        pdf_plus_missing_fields = pdf.append(missing_field_series)
+        return pdf_plus_missing_fields
+
     return pdf
 
 
