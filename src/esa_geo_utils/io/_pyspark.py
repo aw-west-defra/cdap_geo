@@ -141,29 +141,32 @@ def _coerce_to_schema(
     schema: StructType,
     spark_to_pandas_type_map: MappingProxyType,
 ) -> PandasDataFrame:
-    schema_fields = tuple(
-        (index, field.name, field.dataType) for index, field in enumerate(schema.fields)
-    )
-    schema_field_names = tuple(field[1] for field in schema_fields)
+    schema_fields = tuple((field.name, field.dataType) for field in schema.fields)
+
+    schema_field_names = tuple(field[0] for field in schema_fields)
+    column_names = tuple(column for column in pdf.columns)
+
+    if column_names == schema_field_names:
+        return pdf
+
     additional_columns = tuple(
-        column for column in pdf.columns if column not in schema_field_names
+        column for column in column_names if column not in schema_field_names
     )
     missing_fields = tuple(
-        field for field in schema_fields if field[1] not in pdf.columns
+        field for field in schema_fields if field[0] not in column_names
     )
+
     if len(additional_columns) > 0:
         pdf_minus_additional_columns = pdf.drop(columns=additional_columns)
         return pdf_minus_additional_columns
 
     if len(missing_fields) > 0:
         missing_field_series = tuple(
-            Series(name=field[1], dtype=spark_to_pandas_type_map[field[2]])
+            Series(name=field[0], dtype=spark_to_pandas_type_map[field[1]])
             for field in missing_fields
         )
         pdf_plus_missing_fields = pdf.append(missing_field_series)
         return pdf_plus_missing_fields
-
-    return pdf
 
 
 def _vector_file_to_pdf(
