@@ -199,6 +199,8 @@ def _vector_file_to_pdf(
         layer=layer,
         sql_kwargs=sql_kwargs,
     )
+    if _layer is None:
+        return _null_data_frame_from_schema(schema=schema)
     features_generator = _get_features(layer=_layer)
     feature_names = _get_property_names(layer=_layer) + tuple([geom_field_name])
     pdf = PandasDataFrame(data=features_generator, columns=feature_names)
