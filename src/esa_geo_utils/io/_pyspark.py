@@ -152,7 +152,7 @@ def _coerce_to_schema(
                 column=field[1],
                 value=Series(dtype=spark_to_pandas_type_map[field[2]]),
             )
-            return pdf
+        return pdf
 
 
 def _vector_file_to_pdf(
