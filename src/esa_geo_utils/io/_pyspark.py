@@ -191,21 +191,28 @@ def _vector_file_to_pdf(
     features_generator = _get_features(layer=_layer)
     feature_names = _get_property_names(layer=_layer) + tuple([geom_field_name])
     pdf = PandasDataFrame(data=features_generator, columns=feature_names)
-    if coerce_to_schema:
-        try:
-            coerced_pdf = _coerce_to_schema(
-                pdf=pdf,
-                schema=schema,
-                spark_to_pandas_type_map=spark_to_pandas_type_map,
+    if not pdf:
+        return PandasDataFrame(
+            tuple(
+                Series(name=field.name, dtype=SPARK_TO_PANDAS[field.dataType])
+                for field in schema.fields
             )
-            return coerced_pdf
-        except Exception:
+        )
+    if coerce_to_schema:
+        coerced_pdf = _coerce_to_schema(
+            pdf=pdf,
+            schema=schema,
+            spark_to_pandas_type_map=spark_to_pandas_type_map,
+        )
+        if not coerced_pdf:
             return PandasDataFrame(
                 tuple(
                     Series(name=field.name, dtype=SPARK_TO_PANDAS[field.dataType])
                     for field in schema.fields
                 )
             )
+        else:
+            return coerced_pdf
     else:
         return pdf
 
