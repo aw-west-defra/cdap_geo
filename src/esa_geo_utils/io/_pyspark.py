@@ -159,11 +159,12 @@ def _vector_file_to_pdf(
                 return pdf.drop(columns=column)
         for field in schema_fields:
             if field[1] not in pdf.columns:
-                return pdf.insert(
+                pdf.insert(
                     loc=field[0],
                     column=field[1],
                     value=Series(dtype=spark_to_pandas_type_map[field[2]]),
                 )
+                return pdf
     return pdf
 
 
