@@ -1,7 +1,7 @@
 from os import listdir
 from os.path import join
 from types import MappingProxyType
-from typing import Any, Callable, Generator, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Generator, Optional, Tuple, Union
 
 from osgeo.ogr import DataSource, Feature, GetFieldTypeName, Layer, Open
 from pandas import DataFrame as PandasDataFrame
@@ -32,6 +32,7 @@ OGR_TO_SPARK = MappingProxyType(
 
 SPARK_TO_PANDAS = MappingProxyType(
     {
+        ArrayType(StringType()): "list",
         StringType(): "str",
         IntegerType(): "int",
         FloatType(): "float",
@@ -44,11 +45,11 @@ def _get_layer(
     data_source: DataSource,
     sql: Optional[str],
     layer: Optional[Union[str, int]],
-    **kwargs: Optional[str]
+    sql_kwargs: Optional[Dict[str, str]],
 ) -> Layer:
     """Returns a GDAL Layer from a SQL statement, name or index, or 0th layer."""
     if sql:
-        return data_source.ExecuteSQL(sql, **kwargs)
+        return data_source.ExecuteSQL(sql, **sql_kwargs)
     elif layer:
         return data_source.GetLayer(layer)
     else:
@@ -100,11 +101,13 @@ def _create_schema(
     ogr_to_spark_type_map: MappingProxyType,
     layer: Optional[Union[str, int]],
     sql: Optional[str],
-    **kwargs: Optional[str]
+    sql_kwargs: Optional[Dict[str, str]],
 ) -> StructType:
     """Returns a schema for a given layer in the first file in a list of file paths."""
     data_source = Open(paths[0])
-    _layer = _get_layer(data_source=data_source, sql=sql, layer=layer, **kwargs)
+    _layer = _get_layer(
+        data_source=data_source, sql=sql, layer=layer, sql_kwargs=sql_kwargs
+    )
     return _get_feature_schema(
         layer=_layer,
         ogr_to_spark_type_map=ogr_to_spark_type_map,
@@ -133,6 +136,25 @@ def _get_features(layer: Layer) -> Generator:
     )
 
 
+def _coerce_to_schema(
+    pdf: PandasDataFrame, schema: StructType, spark_to_pandas_type_map: MappingProxyType
+) -> PandasDataFrame:
+    schema_fields = tuple(
+        (index, field.name, field.dataType) for index, field in enumerate(schema.fields)
+    )
+    for column in pdf.columns:
+        if column not in tuple(field[1] for field in schema_fields):
+            return pdf.drop(columns=column)
+    for field in schema_fields:
+        if field[1] not in pdf.columns:
+            pdf.insert(
+                loc=field[0],
+                column=field[1],
+                value=Series(dtype=spark_to_pandas_type_map[field[2]]),
+            )
+            return pdf
+
+
 def _vector_file_to_pdf(
     path: str,
     sql: Optional[str],
@@ -141,30 +163,22 @@ def _vector_file_to_pdf(
     coerce_to_schema: bool,
     schema: StructType,
     spark_to_pandas_type_map: MappingProxyType,
-    **kwargs: Optional[str]
+    sql_kwargs: Optional[Dict[str, str]],
 ) -> PandasDataFrame:
     """Given a file path and layer, returns a pandas DataFrame."""
     data_source = Open(path)
-    _layer = _get_layer(data_source=data_source, sql=sql, layer=layer, **kwargs)
+    _layer = _get_layer(
+        data_source=data_source, sql=sql, layer=layer, sql_kwargs=sql_kwargs
+    )
     features_generator = _get_features(layer=_layer)
     feature_names = _get_property_names(layer=_layer) + tuple([geom_field_name])
     pdf = PandasDataFrame(data=features_generator, columns=feature_names)
     if coerce_to_schema:
-        schema_fields = tuple(
-            (index, field.name, field.dataType)
-            for index, field in enumerate(schema.fields)
+        return _coerce_to_schema(
+            pdf=pdf,
+            schema=schema,
+            spark_to_pandas_type_map=spark_to_pandas_type_map,
         )
-        for column in pdf.columns:
-            if column not in tuple(field[1] for field in schema_fields):
-                return pdf.drop(columns=column)
-        for field in schema_fields:
-            if field[1] not in pdf.columns:
-                pdf.insert(
-                    loc=field[0],
-                    column=field[1],
-                    value=Series(dtype=spark_to_pandas_type_map[field[2]]),
-                )
-                return pdf
     return pdf
 
 
@@ -192,7 +206,7 @@ def _parallel_read_generator(
     coerce_to_schema: bool,
     schema: StructType,
     spark_to_pandas_type_map: MappingProxyType,
-    **kwargs: Optional[str]
+    sql_kwargs: Optional[Dict[str, str]],
 ) -> Callable:
     """Adds arbitrary key word arguments to the wrapped function."""
 
@@ -206,7 +220,7 @@ def _parallel_read_generator(
             coerce_to_schema=coerce_to_schema,
             schema=schema,
             spark_to_pandas_type_map=spark_to_pandas_type_map,
-            **kwargs,
+            sql_kwargs=sql_kwargs,
         )
 
     return _
@@ -237,7 +251,7 @@ def _spark_df_from_vector_files(
     schema: StructType = None,
     layer: Optional[str] = None,
     sql: Optional[str] = None,
-    **kwargs: Optional[str]
+    sql_kwargs: Optional[Dict[str, str]] = None,
 ) -> SparkDataFrame:
     """Given a folder of vector files, returns a Spark DataFrame.
 
@@ -285,7 +299,7 @@ def _spark_df_from_vector_files(
         schema (StructType): [description]. Defaults to None.
         layer (str, optional): [description]. Defaults to None.
         sql (str, optional): [description]. Defaults to None.
-        **kwargs (str, optional): [description].
+        sql_kwargs (Dict[str, str], optional): [description]. Defaults to None.
 
     Returns:
         SparkDataFrame: [description]
@@ -311,7 +325,7 @@ def _spark_df_from_vector_files(
             ogr_to_spark_type_map=ogr_to_spark_type_map,
             geom_field_name=geom_field_name,
             geom_field_type=geom_field_type,
-            **kwargs,
+            sql_kwargs=sql_kwargs,
         )
     )
 
@@ -322,7 +336,7 @@ def _spark_df_from_vector_files(
         coerce_to_schema=coerce_to_schema,
         spark_to_pandas_type_map=spark_to_pandas_type_map,
         schema=schema,
-        **kwargs,
+        sql_kwargs=sql_kwargs,
     )
 
     return (
