@@ -202,7 +202,7 @@ def _vector_file_to_pdf(
         except Exception:
             return PandasDataFrame(
                 tuple(
-                    Series(name=field.name, dtype=field.dataType)
+                    Series(name=field.name, dtype=SPARK_TO_PANDAS[field.dataType])
                     for field in schema.fields
                 )
             )
