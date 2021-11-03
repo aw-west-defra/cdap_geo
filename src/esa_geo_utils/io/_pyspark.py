@@ -192,8 +192,7 @@ def _vector_file_to_pdf(
             schema=schema,
             spark_to_pandas_type_map=spark_to_pandas_type_map,
         )
-    else:
-        return pdf
+    return pdf
 
 
 def _get_paths(directory: str, suffix: str) -> Tuple[Any, ...]:
