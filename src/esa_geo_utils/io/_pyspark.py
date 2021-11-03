@@ -32,11 +32,11 @@ OGR_TO_SPARK = MappingProxyType(
 
 SPARK_TO_PANDAS = MappingProxyType(
     {
-        ArrayType(StringType()): "list",
+        ArrayType(StringType()): "object",
         StringType(): "str",
         IntegerType(): "int",
         FloatType(): "float",
-        BinaryType(): "bytearray",
+        BinaryType(): "object",
     }
 )
 
@@ -148,20 +148,21 @@ def _coerce_to_schema(
     additional_columns = tuple(
         column for column in pdf.columns if column not in schema_field_names
     )
-    if len(additional_columns) > 0:
-        pdf = pdf.drop(columns=additional_columns)
-
     missing_fields = tuple(
         field for field in schema_fields if field[1] not in pdf.columns
     )
-    if len(missing_fields) > 0:
+    if len(additional_columns) > 0:
+        return pdf.drop(columns=additional_columns)
+    elif len(missing_fields) > 0:
         for field in missing_fields:
-            pdf = pdf.insert(
+            pdf.insert(
                 loc=field[0],
                 column=field[1],
                 value=Series(dtype=spark_to_pandas_type_map[field[2]]),
             )
-    return pdf
+        return pdf
+    else:
+        return pdf
 
 
 def _vector_file_to_pdf(
