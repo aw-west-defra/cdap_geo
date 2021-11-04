@@ -20,6 +20,12 @@ from pyspark.sql.types import (
     StructType,
 )
 
+# See:
+# https://gdal.org/python/index.html
+# https://spark.apache.org/docs/latest/sql-ref-datatypes.html
+# https://pandas.pydata.org/docs/user_guide/basics.html#dtypes
+# https://numpy.org/doc/stable/reference/arrays.dtypes.html
+
 OGR_TO_SPARK = MappingProxyType(
     {
         "Binary": BinaryType(),
