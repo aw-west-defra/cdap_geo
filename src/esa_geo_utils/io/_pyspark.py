@@ -157,40 +157,101 @@ def _get_features(layer: Layer) -> Generator:
     )
 
 
+def _get_fields_field_names_and_columns_names(
+    pdf: PandasDataFrame, schema: StructType
+) -> Tuple:
+    schema_fields = tuple((field.name, field.dataType) for field in schema.fields)
+    schema_field_names = tuple(field[0] for field in schema_fields)
+    column_names = tuple(column for column in pdf.columns)
+    return schema_fields, schema_field_names, column_names
+
+
+def _get_missing_fields_and_additional_columns(
+    schema_field_names: Tuple, column_names: Tuple
+) -> Tuple:
+    missing_fields = tuple(
+        field_name not in column_names for field_name in schema_field_names
+    )
+    additional_columns = tuple(
+        column not in schema_field_names for column in column_names
+    )
+    return missing_fields, additional_columns
+
+
+def _drop_additional_columns(
+    pdf: PandasDataFrame,
+    column_names: Tuple,
+    additional_columns: Tuple,
+) -> PandasDataFrame:
+    to_drop = list(compress(column_names, additional_columns))
+    return pdf.drop(columns=to_drop)
+
+
+def _add_missing_fields(
+    pdf: PandasDataFrame,
+    schema_fields: Tuple,
+    missing_fields: Tuple,
+    spark_to_pandas_type_map: MappingProxyType,
+    schema_field_names: Tuple,
+) -> PandasDataFrame:
+    to_add = compress(schema_fields, missing_fields)
+    missing_field_series = tuple(
+        Series(name=field[0], dtype=spark_to_pandas_type_map[field[1]])
+        for field in to_add
+    )
+    pdf_plus_missing_fields = pdf.append(missing_field_series)
+    reindexed_pdf = pdf_plus_missing_fields.reindex(columns=schema_field_names)
+    return reindexed_pdf
+
+
 def _coerce_to_schema(
     pdf: PandasDataFrame,
     schema: StructType,
     spark_to_pandas_type_map: MappingProxyType,
 ) -> PandasDataFrame:
-    schema_fields = tuple((field.name, field.dataType) for field in schema.fields)
-    schema_field_names = tuple(field[0] for field in schema_fields)
-    column_names = tuple(column for column in pdf.columns)
+    (
+        schema_fields,
+        schema_field_names,
+        column_names,
+    ) = _get_fields_field_names_and_columns_names(
+        pdf=pdf,
+        schema=schema,
+    )
 
     if column_names == schema_field_names:
         return pdf
-
-    missing_fields = tuple(
-        field_name not in column_names for field_name in schema_field_names
-    )
-
-    if any(missing_fields):
-        to_add = compress(schema_fields, missing_fields)
-        missing_field_series = tuple(
-            Series(name=field[0], dtype=spark_to_pandas_type_map[field[1]])
-            for field in to_add
+    else:
+        missing_fields, additional_columns = _get_missing_fields_and_additional_columns(
+            schema_field_names=schema_field_names,
+            column_names=column_names,
         )
-        pdf_plus_missing_fields = pdf.append(missing_field_series)
-        reindexed_pdf = pdf_plus_missing_fields.reindex(columns=schema_field_names)
-        return reindexed_pdf
-
-    additional_columns = tuple(
-        column not in schema_field_names for column in column_names
-    )
-
-    if any(additional_columns):
-        to_drop = list(compress(column_names, additional_columns))
-        pdf_minus_additional_columns = pdf.drop(columns=to_drop)
-        return pdf_minus_additional_columns
+        if any(missing_fields) and any(additional_columns):
+            pdf_minus_additional_columns = _drop_additional_columns(
+                pdf=pdf,
+                column_names=column_names,
+                additional_columns=additional_columns,
+            )
+            return _add_missing_fields(
+                pdf=pdf_minus_additional_columns,
+                schema_fields=schema_fields,
+                missing_fields=missing_fields,
+                spark_to_pandas_type_map=spark_to_pandas_type_map,
+                schema_field_names=schema_field_names,
+            )
+        elif any(missing_fields):
+            return _add_missing_fields(
+                pdf=pdf,
+                schema_fields=schema_fields,
+                missing_fields=missing_fields,
+                spark_to_pandas_type_map=spark_to_pandas_type_map,
+                schema_field_names=schema_field_names,
+            )
+        else:
+            return _drop_additional_columns(
+                pdf=pdf,
+                column_names=column_names,
+                additional_columns=additional_columns,
+            )
 
 
 def _null_data_frame_from_schema(schema: StructType) -> PandasDataFrame:
