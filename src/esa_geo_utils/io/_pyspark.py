@@ -290,42 +290,39 @@ def _vector_file_to_pdf(
     sql_kwargs: Optional[Dict[str, str]],
 ) -> PandasDataFrame:
     """Given a file path and layer, returns a pandas DataFrame."""
-    try:
-        data_source = Open(path)
-        if data_source is None:
-            return _null_data_frame_from_schema(schema=schema)
-        _layer = _get_layer(
-            data_source=data_source,
-            sql=sql,
-            layer=layer,
-            sql_kwargs=sql_kwargs,
+    data_source = Open(path)
+    if data_source is None:
+        return _null_data_frame_from_schema(schema=schema)
+    _layer = _get_layer(
+        data_source=data_source,
+        sql=sql,
+        layer=layer,
+        sql_kwargs=sql_kwargs,
+    )
+    if _layer is None:
+        return _null_data_frame_from_schema(schema=schema)
+    features_generator = _get_features(layer=_layer)
+    feature_names = _get_property_names(layer=_layer) + tuple([geom_field_name])
+    pdf = PandasDataFrame(data=features_generator, columns=feature_names)
+    if pdf is None:
+        return _null_data_frame_from_schema(schema=schema)
+    if coerce_to_schema:
+        schema_fields = _get_fields(schema=schema)
+        coerced_pdf = _coerce_columns_to_schema(
+            pdf=pdf,
+            schema_fields=schema_fields,
+            spark_to_pandas_type_map=spark_to_pandas_type_map,
         )
-        if _layer is None:
+        if coerced_pdf is None:
             return _null_data_frame_from_schema(schema=schema)
-        features_generator = _get_features(layer=_layer)
-        feature_names = _get_property_names(layer=_layer) + tuple([geom_field_name])
-        pdf = PandasDataFrame(data=features_generator, columns=feature_names)
-        if pdf is None:
-            return _null_data_frame_from_schema(schema=schema)
-        if coerce_to_schema:
-            schema_fields = _get_fields(schema=schema)
-            coerced_pdf = _coerce_columns_to_schema(
-                pdf=pdf,
+        else:
+            return _coerce_types_to_schema(
+                pdf=coerced_pdf,
                 schema_fields=schema_fields,
                 spark_to_pandas_type_map=spark_to_pandas_type_map,
             )
-            if coerced_pdf is None:
-                return _null_data_frame_from_schema(schema=schema)
-            else:
-                return _coerce_types_to_schema(
-                    pdf=coerced_pdf,
-                    schema_fields=schema_fields,
-                    spark_to_pandas_type_map=spark_to_pandas_type_map,
-                )
-        else:
-            return pdf
-    except Exception:
-        return _null_data_frame_from_schema(schema=schema)
+    else:
+        return pdf
 
 
 def _get_paths(directory: str, suffix: str) -> Tuple[Any, ...]:
