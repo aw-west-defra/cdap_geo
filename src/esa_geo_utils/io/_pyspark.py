@@ -14,6 +14,7 @@ from pyspark.sql.types import (
     BinaryType,
     FloatType,
     IntegerType,
+    LongType,
     StringType,
     StructField,
     StructType,
@@ -21,22 +22,34 @@ from pyspark.sql.types import (
 
 OGR_TO_SPARK = MappingProxyType(
     {
+        "Binary": BinaryType(),
+        "Date": StringType(),
+        "DateTime": StringType(),
+        "Integer": IntegerType(),
+        "IntegerList": ArrayType(IntegerType()),
+        "Integer64": LongType(),
+        "Integer64List": ArrayType(LongType()),
+        "Real": FloatType(),
+        "RealList": ArrayType(FloatType()),
         "String": StringType(),
         "StringList": ArrayType(StringType()),
-        "Integer": IntegerType(),
-        "DateTime": StringType(),
-        "Real": FloatType(),
-        "WKB": BinaryType(),
+        "Time": StringType(),
+        "WideString": StringType(),
+        "WideStringList": ArrayType(StringType()),
     }
 )
 
 SPARK_TO_PANDAS = MappingProxyType(
     {
+        ArrayType(FloatType()): "object",
+        ArrayType(IntegerType()): "object",
+        ArrayType(LongType()): "object",
         ArrayType(StringType()): "object",
-        StringType(): "str",
-        IntegerType(): "int",
-        FloatType(): "float",
         BinaryType(): "object",
+        FloatType(): "float",
+        IntegerType(): "int",
+        LongType(): "int",
+        StringType(): "str",
     }
 )
 
@@ -282,7 +295,7 @@ def _spark_df_from_vector_files(
     spark: SparkSession = SparkSession._activeSession,
     suffix: str = "*",
     geom_field_name: str = "geometry",
-    geom_field_type: str = "WKB",
+    geom_field_type: str = "Binary",
     coerce_to_schema: bool = False,
     spark_to_pandas_type_map: MappingProxyType = SPARK_TO_PANDAS,
     vsi_prefix: Optional[str] = None,
