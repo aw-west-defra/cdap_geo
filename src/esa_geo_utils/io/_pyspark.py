@@ -160,6 +160,7 @@ def _get_features(layer: Layer) -> Generator:
 def _get_fields_field_names_and_columns_names(
     pdf: PandasDataFrame, schema: StructType
 ) -> Tuple:
+    """Returns fields and field names from schema and columns from DataFrame."""
     schema_fields = tuple((field.name, field.dataType) for field in schema.fields)
     schema_field_names = tuple(field[0] for field in schema_fields)
     column_names = tuple(column for column in pdf.columns)
@@ -169,6 +170,7 @@ def _get_fields_field_names_and_columns_names(
 def _get_missing_fields_and_additional_columns(
     schema_field_names: Tuple, column_names: Tuple
 ) -> Tuple:
+    """Returns tuples of missing fields and additional columns."""
     missing_fields = tuple(
         field_name not in column_names for field_name in schema_field_names
     )
@@ -183,6 +185,7 @@ def _drop_additional_columns(
     column_names: Tuple,
     additional_columns: Tuple,
 ) -> PandasDataFrame:
+    """Removes additional columns from pandas DataFrame."""
     to_drop = list(compress(column_names, additional_columns))
     return pdf.drop(columns=to_drop)
 
@@ -194,6 +197,7 @@ def _add_missing_fields(
     spark_to_pandas_type_map: MappingProxyType,
     schema_field_names: Tuple,
 ) -> PandasDataFrame:
+    """Adds missing fields to pandas DataFrame."""
     to_add = compress(schema_fields, missing_fields)
     missing_field_series = tuple(
         Series(name=field[0], dtype=spark_to_pandas_type_map[field[1]])
@@ -209,6 +213,7 @@ def _coerce_to_schema(
     schema: StructType,
     spark_to_pandas_type_map: MappingProxyType,
 ) -> PandasDataFrame:
+    """Adds missing fields or removes additional columns to match schema."""
     (
         schema_fields,
         schema_field_names,
@@ -255,6 +260,7 @@ def _coerce_to_schema(
 
 
 def _null_data_frame_from_schema(schema: StructType) -> PandasDataFrame:
+    """Generates an empty DataFrame that fits the schema."""
     return PandasDataFrame(
         data={
             field.name: Series(dtype=SPARK_TO_PANDAS[field.dataType])
