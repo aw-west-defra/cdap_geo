@@ -168,7 +168,7 @@ def _get_field_names_and_columns_names(
     """Returns field names from fields and columns from DataFrame."""
     schema_field_names = tuple(field[0] for field in schema_fields)
     column_names = tuple(column for column in pdf.columns)
-    return schema_fields, schema_field_names, column_names
+    return schema_field_names, column_names
 
 
 def _get_missing_fields_and_additional_columns(
