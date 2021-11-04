@@ -5,8 +5,7 @@ from types import MappingProxyType
 from typing import Any, Callable, Dict, Generator, Optional, Tuple, Union
 
 from numpy import bytes0, float32, int32, int64, object0, str0
-from osgeo.gdal import SetConfigOption
-from osgeo.ogr import DataSource, Feature, GetFieldTypeName, Layer, Open, UseExceptions
+from osgeo.ogr import DataSource, Feature, GetFieldTypeName, Layer, Open
 from pandas import DataFrame as PandasDataFrame
 from pandas import Series
 from pyspark.sql import DataFrame as SparkDataFrame
@@ -214,10 +213,6 @@ def _vector_file_to_pdf(
     sql_kwargs: Optional[Dict[str, str]],
 ) -> PandasDataFrame:
     """Given a file path and layer, returns a pandas DataFrame."""
-    UseExceptions()
-
-    SetConfigOption("GML_FIELDTYPES", "ALWAYS_STRING")
-
     data_source = Open(path)
     if data_source is None:
         return _null_data_frame_from_schema(schema=schema)
