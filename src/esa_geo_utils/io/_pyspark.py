@@ -3,6 +3,7 @@ from os.path import join
 from types import MappingProxyType
 from typing import Any, Callable, Dict, Generator, Optional, Tuple, Union
 
+from numpy import bytes0, float32, int32, int64, object0, str0
 from osgeo.ogr import DataSource, Feature, GetFieldTypeName, Layer, Open
 from pandas import DataFrame as PandasDataFrame
 from pandas import Series
@@ -47,15 +48,15 @@ OGR_TO_SPARK = MappingProxyType(
 
 SPARK_TO_PANDAS = MappingProxyType(
     {
-        ArrayType(FloatType()): "object",
-        ArrayType(IntegerType()): "object",
-        ArrayType(LongType()): "object",
-        ArrayType(StringType()): "object",
-        BinaryType(): "object",
-        FloatType(): "float",
-        IntegerType(): "int",
-        LongType(): "int",
-        StringType(): "str",
+        ArrayType(FloatType()): object0,
+        ArrayType(IntegerType()): object0,
+        ArrayType(LongType()): object0,
+        ArrayType(StringType()): object0,
+        BinaryType(): bytes0,
+        FloatType(): float32,
+        IntegerType(): int32,
+        LongType(): int64,
+        StringType(): str0,
     }
 )
 
