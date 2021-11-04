@@ -1,3 +1,4 @@
+from itertools import compress
 from os import listdir
 from os.path import join
 from types import MappingProxyType
@@ -163,39 +164,33 @@ def _coerce_to_schema(
     spark_to_pandas_type_map: MappingProxyType,
 ) -> PandasDataFrame:
     schema_fields = tuple((field.name, field.dataType) for field in schema.fields)
-
     schema_field_names = tuple(field[0] for field in schema_fields)
     column_names = tuple(column for column in pdf.columns)
 
     if column_names == schema_field_names:
         return pdf
 
-    additional_columns = tuple(
-        column for column in column_names if column not in schema_field_names
-    )
     missing_fields = tuple(
-        field for field in schema_fields if field[0] not in column_names
+        field_name not in column_names for field_name in schema_field_names
     )
 
-    if len(additional_columns) > 0:
-        pdf_minus_additional_columns = pdf.drop(columns=additional_columns)
-        return pdf_minus_additional_columns
-
-    if len(missing_fields) > 0:
+    if any(missing_fields):
+        to_add = compress(schema_fields, missing_fields)
         missing_field_series = tuple(
             Series(name=field[0], dtype=spark_to_pandas_type_map[field[1]])
-            for field in missing_fields
+            for field in to_add
         )
         pdf_plus_missing_fields = pdf.append(missing_field_series)
         reindexed_pdf = pdf_plus_missing_fields.reindex(columns=schema_field_names)
         return reindexed_pdf
 
     additional_columns = tuple(
-        column for column in column_names if column not in schema_field_names
+        column not in schema_field_names for column in column_names
     )
 
-    if len(additional_columns) > 0:
-        pdf_minus_additional_columns = pdf.drop(columns=additional_columns)
+    if any(additional_columns):
+        to_drop = list(compress(column_names, additional_columns))
+        pdf_minus_additional_columns = pdf.drop(columns=to_drop)
         return pdf_minus_additional_columns
 
 
