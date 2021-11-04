@@ -189,6 +189,14 @@ def _coerce_to_schema(
         reindexed_pdf = pdf_plus_missing_fields.reindex(columns=schema_field_names)
         return reindexed_pdf
 
+    additional_columns = tuple(
+        column for column in column_names if column not in schema_field_names
+    )
+
+    if len(additional_columns) > 0:
+        pdf_minus_additional_columns = pdf.drop(columns=additional_columns)
+        return pdf_minus_additional_columns
+
 
 def _null_data_frame_from_schema(schema: StructType) -> PandasDataFrame:
     return PandasDataFrame(
