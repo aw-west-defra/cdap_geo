@@ -157,11 +157,15 @@ def _get_features(layer: Layer) -> Generator:
     )
 
 
-def _get_fields_field_names_and_columns_names(
-    pdf: PandasDataFrame, schema: StructType
+def _get_fields(schema: StructType) -> Tuple:
+    """Returns fields from schema."""
+    return tuple((field.name, field.dataType) for field in schema.fields)
+
+
+def _get_field_names_and_columns_names(
+    pdf: PandasDataFrame, schema_fields: Tuple
 ) -> Tuple:
-    """Returns fields and field names from schema and columns from DataFrame."""
-    schema_fields = tuple((field.name, field.dataType) for field in schema.fields)
+    """Returns field names from fields and columns from DataFrame."""
     schema_field_names = tuple(field[0] for field in schema_fields)
     column_names = tuple(column for column in pdf.columns)
     return schema_fields, schema_field_names, column_names
@@ -208,19 +212,15 @@ def _add_missing_fields(
     return reindexed_pdf
 
 
-def _coerce_to_schema(
+def _coerce_columns_to_schema(
     pdf: PandasDataFrame,
-    schema: StructType,
+    schema_fields: Tuple,
     spark_to_pandas_type_map: MappingProxyType,
 ) -> PandasDataFrame:
     """Adds missing fields or removes additional columns to match schema."""
-    (
-        schema_fields,
-        schema_field_names,
-        column_names,
-    ) = _get_fields_field_names_and_columns_names(
+    schema_field_names, column_names = _get_field_names_and_columns_names(
         pdf=pdf,
-        schema=schema,
+        schema_fields=schema_fields,
     )
 
     if column_names == schema_field_names:
@@ -257,6 +257,16 @@ def _coerce_to_schema(
                 column_names=column_names,
                 additional_columns=additional_columns,
             )
+
+
+def _coerce_types_to_schema(
+    pdf: PandasDataFrame,
+    schema_fields: Tuple,
+    spark_to_pandas_type_map: MappingProxyType,
+) -> PandasDataFrame:
+    for column_name, data_type in schema_fields:
+        pdf[column_name] = pdf[column_name].astype(spark_to_pandas_type_map[data_type])
+    return pdf
 
 
 def _null_data_frame_from_schema(schema: StructType) -> PandasDataFrame:
@@ -298,15 +308,20 @@ def _vector_file_to_pdf(
         if pdf is None:
             return _null_data_frame_from_schema(schema=schema)
         if coerce_to_schema:
-            coerced_pdf = _coerce_to_schema(
+            schema_fields = _get_fields(schema=schema)
+            coerced_pdf = _coerce_columns_to_schema(
                 pdf=pdf,
-                schema=schema,
+                schema_fields=schema_fields,
                 spark_to_pandas_type_map=spark_to_pandas_type_map,
             )
             if coerced_pdf is None:
                 return _null_data_frame_from_schema(schema=schema)
             else:
-                return coerced_pdf
+                return _coerce_types_to_schema(
+                    pdf=coerced_pdf,
+                    schema_fields=schema_fields,
+                    spark_to_pandas_type_map=spark_to_pandas_type_map,
+                )
         else:
             return pdf
     except Exception:
