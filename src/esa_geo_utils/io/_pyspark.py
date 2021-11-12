@@ -149,12 +149,7 @@ def _get_geometry(feature: Feature) -> Tuple:
 
 def _get_features(layer: Layer) -> Generator:
     """Given a GDAL Layer, return the all fields."""
-    properties_generator = (_get_properties(feature=feature) for feature in layer)
-    geometry_generator = (_get_geometry(feature=feature) for feature in layer)
-    return (
-        properties + geometry
-        for properties, geometry in zip(properties_generator, geometry_generator)
-    )
+    return ((_get_properties(feature) + _get_geometry(feature)) for feature in layer)
 
 
 def _get_fields(schema: StructType) -> Tuple:
