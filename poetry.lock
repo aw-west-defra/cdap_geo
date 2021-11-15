@@ -411,11 +411,14 @@ flake8 = "*"
 
 [[package]]
 name = "gdal"
-version = "3.0.4"
+version = "3.3.2"
 description = "GDAL: Geospatial Data Abstraction Library"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3.6.0"
+
+[package.extras]
+numpy = ["numpy (>1.0.0)"]
 
 [[package]]
 name = "geojson"
@@ -1218,7 +1221,7 @@ python-versions = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "8e394f9acef835f2da607b0825e6f703053ee64028adffbc613fcdf503036f89"
+content-hash = "ad330da92312f29cd50eca87ff0d6550e0f1b8fb5d47ed2e5b9514c5bd80416c"
 
 [metadata.files]
 appnope = [
@@ -1481,7 +1484,7 @@ flake8-polyfill = [
     {file = "flake8_polyfill-1.0.2-py2.py3-none-any.whl", hash = "sha256:12be6a34ee3ab795b19ca73505e7b55826d5f6ad7230d31b18e106400169b9e9"},
 ]
 gdal = [
-    {file = "GDAL-3.0.4.tar.gz", hash = "sha256:a17eaa6872e4b7f7fa82f86aeccecc57d224bd054952a56db64368ecaf18509c"},
+    {file = "GDAL-3.3.2.tar.gz", hash = "sha256:b74d310cc837cfc45b7dfa82eb7cd7ca7d2c2c2114bc31db66e01cc1ea6d0124"},
 ]
 geojson = [
     {file = "geojson-2.5.0-py2.py3-none-any.whl", hash = "sha256:ccbd13368dd728f4e4f13ffe6aaf725b6e802c692ba0dde628be475040c534ba"},
