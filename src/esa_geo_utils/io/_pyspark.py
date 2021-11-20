@@ -53,7 +53,7 @@ SPARK_TO_PANDAS = MappingProxyType(
         ArrayType(IntegerType()): object0,
         ArrayType(LongType()): object0,
         ArrayType(StringType()): object0,
-        BinaryType(): bytes0,
+        BinaryType(): object0,
         FloatType(): float32,
         IntegerType(): int32,
         LongType(): int64,
