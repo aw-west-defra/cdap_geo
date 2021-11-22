@@ -6,10 +6,13 @@ from typing import Dict, Optional, Union
 import pytest
 from osgeo.ogr import Layer, Open
 from pyspark.sql.types import BinaryType, LongType, StringType, StructField, StructType
+from shapely.geometry import Point
+from shapely.wkb import loads
 
 from esa_geo_utils.io._pyspark import (
     _create_schema,
     _get_feature_schema,
+    _get_geometry,
     _get_layer,
     _get_paths,
     _get_properties,
@@ -168,9 +171,19 @@ def test__create_schema(
 
 
 def test__get_properties(fileGDB_path: str) -> None:
-    """First row from second layer."""
+    """Properties from 0th row from 0th layer."""
     data_source = Open(fileGDB_path)
     layer = data_source.GetLayer()
     feature = layer.GetFeature(0)
     properties = _get_properties(feature)
-    assert properties == (0, "A")
+    assert properties == (0, "C")
+
+
+def test__get_geometry(fileGDB_path: str) -> None:
+    """Geometry from 0th row from 0th layer."""
+    data_source = Open(fileGDB_path)
+    layer = data_source.GetLayer()
+    feature = layer.GetFeature(0)
+    geometry = _get_geometry(feature)
+    shapely_object = loads(bytes(geometry[0]))
+    assert shapely_object == Point(1, 1)
