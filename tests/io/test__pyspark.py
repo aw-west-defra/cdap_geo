@@ -12,6 +12,7 @@ from esa_geo_utils.io._pyspark import (
     _get_feature_schema,
     _get_layer,
     _get_paths,
+    _get_properties,
     _get_property_names,
     _get_property_types,
 )
@@ -87,13 +88,15 @@ def test__get_property_types(fileGDB_path: str) -> None:
     assert property_types == ("Integer64", "String")
 
 
-def test__get_feature_schema(fileGDB_path: str, OGR_TO_SPARK: MappingProxyType) -> None:
+def test__get_feature_schema(
+    fileGDB_path: str, ogr_to_spark_mapping: MappingProxyType
+) -> None:
     """Returns expected Spark schema."""
     data_source = Open(fileGDB_path)
     layer = data_source.GetLayer()
     schema = _get_feature_schema(
         layer=layer,
-        ogr_to_spark_type_map=OGR_TO_SPARK,
+        ogr_to_spark_type_map=ogr_to_spark_mapping,
         geom_field_name="geometry",
         geom_field_type="Binary",
     )
@@ -162,3 +165,12 @@ def test__create_schema(
             StructField("geometry", BinaryType()),
         ]
     )
+
+
+def test__get_properties(fileGDB_path: str) -> None:
+    """First row from second layer."""
+    data_source = Open(fileGDB_path)
+    layer = data_source.GetLayer()
+    feature = layer.GetFeature(0)
+    properties = _get_properties(feature)
+    assert properties == (0, "A")
