@@ -1,8 +1,13 @@
 """Module level fixtures."""
+from pathlib import Path
+from types import MappingProxyType
+
 from _pytest.tmpdir import TempPathFactory
 from geopandas import GeoDataFrame
 from pytest import fixture
 from shapely.geometry import Point
+
+from esa_geo_utils.io._pyspark import OGR_TO_SPARK
 
 
 @fixture
@@ -10,7 +15,8 @@ def first_layer() -> GeoDataFrame:
     """First dummy layer."""
     return GeoDataFrame(
         data={
-            "id": ["first_id", "second_id"],
+            "id": [0, 1],
+            "category": ["A", "B"],
             "geometry": [Point(0, 0), Point(1, 0)],
         },
         crs="EPSG:27700",
@@ -22,7 +28,8 @@ def second_layer() -> GeoDataFrame:
     """Second dummy layer."""
     return GeoDataFrame(
         data={
-            "id": ["first_id", "second_id"],
+            "id": [0, 1],
+            "category": ["A", "B"],
             "geometry": [Point(1, 1), Point(0, 1)],
         },
         crs="EPSG:27700",
@@ -30,13 +37,21 @@ def second_layer() -> GeoDataFrame:
 
 
 @fixture
-def fileGDB_path(
+def directory_path(
     tmp_path_factory: TempPathFactory,
+) -> Path:
+    """Pytest temporary directory as Path object."""
+    return tmp_path_factory.getbasetemp()
+
+
+@fixture
+def fileGDB_path(
+    directory_path: Path,
     first_layer: GeoDataFrame,
     second_layer: GeoDataFrame,
 ) -> str:
     """Writes dummy layers to FileGDB and returns path as string."""
-    path = tmp_path_factory.getbasetemp() / "data_source.gdb"
+    path = directory_path / "data_source.gdb"
 
     path_as_string = str(path)
 
@@ -53,3 +68,9 @@ def fileGDB_path(
     )
 
     return path_as_string
+
+
+@fixture
+def ogr_to_spark_mapping() -> MappingProxyType:
+    """OGR to Spark data type mapping."""
+    return OGR_TO_SPARK
