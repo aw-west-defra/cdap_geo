@@ -69,8 +69,10 @@ def _get_layer(
     sql_kwargs: Optional[Dict[str, str]],
 ) -> Layer:
     """Returns a GDAL Layer from a SQL statement, name or index, or 0th layer."""
-    if sql:
+    if sql and sql_kwargs:
         return data_source.ExecuteSQL(sql, **sql_kwargs)
+    elif sql:
+        return data_source.ExecuteSQL(sql)
     elif layer:
         return data_source.GetLayer(layer)
     else:
