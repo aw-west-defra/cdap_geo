@@ -29,7 +29,7 @@ def second_layer() -> GeoDataFrame:
     return GeoDataFrame(
         data={
             "id": [0, 1],
-            "category": ["A", "B"],
+            "category": ["C", "D"],
             "geometry": [Point(1, 1), Point(0, 1)],
         },
         crs="EPSG:27700",
