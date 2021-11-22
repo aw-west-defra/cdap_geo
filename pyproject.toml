@@ -36,8 +36,8 @@ source = ["src", "*/site-packages"]
 
 [tool.coverage.run]
 branch = true
-omit = ["src/oiflib/core.py"]
-source = ["oiflib"]
+omit = ["src/esa_geo_utils/core.py"]
+source = ["esa_geo_utils"]
 
 [tool.isort]
 profile = "black"
