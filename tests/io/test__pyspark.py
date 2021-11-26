@@ -12,6 +12,7 @@ from shapely.wkb import loads
 from esa_geo_utils.io._pyspark import (
     _create_schema,
     _get_feature_schema,
+    _get_features,
     _get_geometry,
     _get_layer,
     _get_paths,
@@ -186,4 +187,15 @@ def test__get_geometry(fileGDB_path: str) -> None:
     feature = layer.GetFeature(0)
     geometry = _get_geometry(feature)
     shapely_object = loads(bytes(geometry[0]))
+    assert shapely_object == Point(1, 1)
+
+
+def test__get_features(fileGDB_path: str) -> None:
+    """All fields from the 0th row of the 0th layer."""
+    data_source = Open(fileGDB_path)
+    layer = data_source.GetLayer()
+    features_generator = _get_features(layer)
+    *properties, geometry = next(features_generator)
+    shapely_object = loads(bytes(geometry))
+    assert tuple(properties) == (0, "C")
     assert shapely_object == Point(1, 1)
