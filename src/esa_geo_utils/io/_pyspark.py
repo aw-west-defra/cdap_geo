@@ -4,7 +4,7 @@ from os.path import join
 from types import MappingProxyType
 from typing import Any, Callable, Dict, Generator, Optional, Tuple, Union
 
-from numpy import bytes0, float32, int32, int64, object0, str0
+from numpy import float32, int32, int64, object0, str0
 from osgeo.ogr import DataSource, Feature, GetFieldTypeName, Layer, Open
 from pandas import DataFrame as PandasDataFrame
 from pandas import Series
@@ -53,7 +53,7 @@ SPARK_TO_PANDAS = MappingProxyType(
         ArrayType(IntegerType()): object0,
         ArrayType(LongType()): object0,
         ArrayType(StringType()): object0,
-        BinaryType(): bytes0,
+        BinaryType(): object0,
         FloatType(): float32,
         IntegerType(): int32,
         LongType(): int64,
