@@ -10,6 +10,7 @@ from shapely.geometry import (
     MultiPolygon,
 )
 
+# CONSTANTS
 # Note no I
 LETTERS = "ABCDEFGHJKLMNOPQRSTUVWXYZ"
 NUMBERS_LENGTH = {1: 5, 10: 4, 100: 3, 1_000: 2, 10_000: 1, 100_000: 0}
@@ -44,12 +45,18 @@ def _coords_to_bng(
     return letters + eastings_remainder[:length] + northings_remainder[:length]
 
 
-def _bng_polygon_bounding_box(
-    geometry: Polygon,
-    resolution: int
+def _bng_geom_bounding_box(
+    geometry: Union[LineString, Polygon],
+    resolution: int,
+    pad: int,
 ) -> Sequence[str]:
-    """Get bng references that cover a polygon's bounding box."""
+    """Get bng references that cover a geometry's bounding box."""
     x1, y1, x2, y2 = geometry.bounds
+    # Arbitrary pad to ensure bounding box not on vertex/edge
+    x1 -= pad
+    y1 -= pad
+    x2 += pad
+    y2 += pad
 
     # Floor lower bounds
     x1 = int(x1 // resolution * resolution)
@@ -75,39 +82,87 @@ def _bng_polygon_bounding_box(
             for eastings, northings in grid_coordinates]
 
 
-def _bng_multipolygon_bounding_box(
-    geometry: MultiPolygon,
-    resolution: int
+def _bng_multigeom_bounding_box(
+    geometry: Union[MultiLineString, MultiPolygon],
+    resolution: int,
+    pad: int
 ) -> Sequence[str]:
-    """Get bng references that cover a multipolygon's bounding boxes."""
+    """Get bng references that cover a multigeometry's bounding boxes."""
     return (list(set(
         [bng for geom in geometry.geoms
-         for bng in _bng_polygon_bounding_box(geom, resolution)])))
+         for bng in _bng_geom_bounding_box(geom, resolution, pad)])))
+
+
+def _on_edge(easting: Union[int, float],
+             northing: Union[int, float],
+             resolution: int) -> bool:
+    """Test if point lies on edge."""
+    return (True if (int(easting) % resolution == 0)
+            or (int(northing) % resolution == 0) else False)
+
+
+def _on_vertex(easting: Union[int, float],
+               northing: Union[int, float],
+               resolution: int) -> bool:
+    """Test if point lies on vertex."""
+    return (True if (int(easting) % resolution == 0)
+            and (int(northing) % resolution == 0) else False)
+
+
+def _bng_point(
+    geometry: Point,
+    resolution: int,
+    pad: int
+) -> Sequence[str]:
+    """Get bng references for point geometries."""
+    # Test for special cases
+    if _on_edge(geometry.x, geometry.y, resolution):
+        if _on_vertex(geometry.x, geometry.y, resolution):
+            return [_coords_to_bng(geometry.x + adjust_x,
+                                   geometry.y + adjust_y,
+                                   resolution)
+                    for adjust_x in [pad, -1 * pad]
+                    for adjust_y in [pad, -1 * pad]]
+        elif geometry.x % resolution == 0:
+            # Vertical edge
+            return [_coords_to_bng(geometry.x + adjust, geometry.y, resolution)
+                    for adjust in [pad, -1 * pad]]
+        else:
+            # Horizontal edge
+            return [_coords_to_bng(geometry.x, geometry.y + adjust, resolution)
+                    for adjust in [pad, -1 * pad]]
+    else:
+        # Not on edge/vertex return single bng ref
+        return [_coords_to_bng(geometry.x, geometry.y, resolution)]
 
 
 def _bng_multipoint(
     geometry: MultiPoint,
-    resolution: int
+    resolution: int,
+    pad: int
 ) -> Sequence[str]:
     """Get bng references for multipoint geometries."""
     return (list(set(
         [bng for geom in geometry.geoms
-         for bng in _coords_to_bng(geom.x, geom.y, resolution)])))
+         for bng in _bng_point(geom, resolution, pad)])))
 
 
-def apply_bng_index(wkb: bytearray, resolution: int, how: str = None) -> Sequence[str]:
+def apply_bng_index(wkb: bytearray,
+                    resolution: int,
+                    how: str = None,
+                    pad: int = 1) -> Sequence[str]:
     if resolution not in RESOLUTION:
         raise ValueError(f"resolution must be one of: {RESOLUTION}")
 
     geometry = loads(bytes(wkb))
 
     if isinstance(geometry, Point):
-        return [_coords_to_bng(geometry.x, geometry.y, resolution)]
+        return _bng_point(geometry, resolution, pad)
     elif isinstance(geometry, MultiPoint):
-        return _bng_multipoint(geometry, resolution)
+        return _bng_multipoint(geometry, resolution, pad)
     elif isinstance(geometry, Polygon):
         if (not how) or (how == 'bounding box'):
-            return _bng_polygon_bounding_box(geometry, resolution)
+            return _bng_geom_bounding_box(geometry, resolution, pad)
     elif isinstance(geometry, MultiPolygon):
         if (not how) or (how == 'bounding box'):
-            return _bng_multipolygon_bounding_box(geometry, resolution)
+            return _bng_multigeom_bounding_box(geometry, resolution, pad)
