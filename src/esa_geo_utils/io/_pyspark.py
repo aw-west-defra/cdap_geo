@@ -100,7 +100,10 @@ def _get_layer_name(
     )
 
     if isinstance(layer, str):
-        _layer = layer
+        if layer not in layers:
+            raise ValueError(f"Expecting one of {layers} but received {layer}.")
+        else:
+            _layer = layer
     elif isinstance(layer, int):
         _layer = layers[layer]
     elif not layer:
@@ -134,6 +137,10 @@ def _get_layer(
         layer=layer,
     )
 
+    # ! "S608: Possible SQL injection vector through string-based query
+    # ! construction" is turned off here because `_get_layer_name` will
+    # ! raise an error if the user supplied layer doesn't exist and
+    # ! `start` and `stop` are generated within the function.
     if start and stop:
         sql = f"SELECT * from {_layer} WHERE FID >= {start} AND FID < {stop}"  # noqa: S608, B950
     else:
