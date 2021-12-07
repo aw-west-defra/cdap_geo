@@ -3,6 +3,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Optional, Union
 
+
 import pytest
 from osgeo.ogr import Layer, Open
 from pyspark.sql.types import BinaryType, LongType, StringType, StructField, StructType
