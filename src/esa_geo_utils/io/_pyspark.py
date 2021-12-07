@@ -1,4 +1,4 @@
-from itertools import chain, compress
+from itertools import compress
 from os import listdir
 from os.path import join
 from types import MappingProxyType
@@ -178,9 +178,10 @@ def _create_feature_count_df(
 def _get_ranges_udf(
     feature_count: int, ideal_chunk_size: int
 ) -> Tuple[Tuple[int, int], ...]:
-    chained = chain(range(0, feature_count, ideal_chunk_size), [feature_count])
-    pairs = pairwise(chained)
-    return tuple(pairs)
+    exclusive_range = range(0, feature_count, ideal_chunk_size)
+    inclusive_range = tuple(exclusive_range) + (feature_count + 1,)
+    range_pairs = pairwise(inclusive_range)
+    return tuple(range_pairs)
 
 
 def _create_spark_df(
