@@ -1,34 +1,42 @@
 """Tests for _pyspark module."""
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 import pytest
 from osgeo.ogr import Layer, Open
 
 from esa_geo_utils.io._pyspark import _get_layer
 
-PARAMETERS = [
+_get_layer_PARAMETER_NAMES = [
+    "layer",
+    "start",
+    "stop",
+    "expected_layer_name",
+    "expected_feature_count",
+]
+
+_get_layer_PARAMETER_VALUES = [
     (None, None, None, "second", 2),
-    (None, None, 0, "second", 2),
-    (None, None, "first", "first", 2),
-    ("SELECT * FROM first WHERE id LIKE 'first_id'", None, None, "first", 1),
+    (0, None, None, "second", 2),
+    ("first", None, None, "first", 2),
+]
+
+_get_layer_PARAMETER_IDS = [
+    "No arguments",
+    "Layer by index",
+    "Layer by name",
 ]
 
 
 @pytest.mark.parametrize(
-    "sql,sql_kwargs,layer,expected_layer_name,expected_feature_count",
-    PARAMETERS,
-    ids=[
-        "No arguments",
-        "Layer by index",
-        "Layer by name",
-        "Layer by SQL",
-    ],
+    argnames=_get_layer_PARAMETER_NAMES,
+    argvalues=_get_layer_PARAMETER_VALUES,
+    ids=_get_layer_PARAMETER_IDS,
 )
 def test__get_layer(
     fileGDB_path: str,
-    sql: Optional[str],
-    sql_kwargs: Optional[Dict[str, str]],
     layer: Optional[Union[str, int]],
+    start: int,
+    stop: int,
     expected_layer_name: str,
     expected_feature_count: int,
 ) -> None:
@@ -37,9 +45,9 @@ def test__get_layer(
 
     _layer: Layer = _get_layer(
         data_source=data_source,
-        sql=sql,
         layer=layer,
-        sql_kwargs=sql_kwargs,
+        start=start,
+        stop=stop,
     )
 
     layer_name = _layer.GetName()
