@@ -498,7 +498,7 @@ def _spark_df_from_vector_files(
     ogr_to_spark_type_map: MappingProxyType = OGR_TO_SPARK,
     spark: SparkSession = SparkSession._activeSession,
     suffix: str = "*",
-    ideal_chunk_size: int = 5_000_000,
+    ideal_chunk_size: int = 3_000_000,
     geom_field_name: str = "geometry",
     geom_field_type: str = "Binary",
     coerce_to_schema: bool = False,
