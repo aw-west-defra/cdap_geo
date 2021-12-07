@@ -1,4 +1,4 @@
-name: CI
+name: Coverage
 
 on:
   push:
@@ -7,10 +7,8 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  build:
-
+  coverage:
     runs-on: ubuntu-latest
-
     steps:
     - name: Checkout repo
       uses: actions/checkout@v2
@@ -28,4 +26,6 @@ jobs:
       run: python -m pip install poetry==1.1.4
 
     - name: Run nox
-      run: nox
+      run: nox --sessions tests coverage
+      env:
+        CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}

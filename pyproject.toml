@@ -5,11 +5,11 @@ description = "A python library for the Environment Science and Analysis divisio
 authors = ["Ed Fawcett-Taylor <ed.fawcett-taylor@defra.gov.uk>"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 pyspark = "3.0.1"
+geojson = "^2.5.0"
 geopandas = "^0.9.0"
-GDAL = "3.3.2"
-more-itertools = "^8.12.0"
+GDAL = "3.0.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
@@ -30,14 +30,6 @@ isort = "^5.9.3"
 safety = "^1.10.3"
 pre-commit = "^2.15.0"
 ipykernel = "^6.4.1"
-
-[tool.coverage.paths]
-source = ["src", "*/site-packages"]
-
-[tool.coverage.run]
-branch = true
-omit = ["src/esa_geo_utils/core.py"]
-source = ["esa_geo_utils"]
 
 [tool.isort]
 profile = "black"
