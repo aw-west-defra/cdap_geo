@@ -29,6 +29,7 @@ def test__get_layer(
     sql: Optional[str],
     sql_kwargs: Optional[Dict[str, str]],
     layer: Optional[Union[str, int]],
+    sql_kwargs: Optional[Dict[str, str]],
     expected_layer_name: str,
     expected_feature_count: int,
 ) -> None:
