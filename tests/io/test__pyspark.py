@@ -1,7 +1,7 @@
 """Tests for _pyspark module."""
 from pathlib import Path
 from types import MappingProxyType
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 
 import pytest
 from osgeo.ogr import Layer, Open
@@ -22,25 +22,23 @@ from esa_geo_utils.io._pyspark import (
 )
 
 _get_layer_PARAMETER_NAMES = [
-    "sql",
-    "sql_kwargs",
     "layer",
+    "start",
+    "stop",
     "expected_layer_name",
     "expected_feature_count",
 ]
 
 _get_layer_PARAMETER_VALUES = [
     (None, None, None, "second", 2),
-    (None, None, 0, "second", 2),
-    (None, None, "first", "first", 2),
-    ("SELECT * FROM first WHERE id = 1", None, None, "first", 1),
+    (0, None, None, "second", 2),
+    ("first", None, None, "first", 2),
 ]
 
 _get_layer_PARAMETER_IDS = [
     "No arguments",
     "Layer by index",
     "Layer by name",
-    "Layer by SQL",
 ]
 
 
@@ -51,9 +49,9 @@ _get_layer_PARAMETER_IDS = [
 )
 def test__get_layer(
     fileGDB_path: str,
-    sql: Optional[str],
-    sql_kwargs: Optional[Dict[str, str]],
     layer: Optional[Union[str, int]],
+    start: int,
+    stop: int,
     expected_layer_name: str,
     expected_feature_count: int,
 ) -> None:
@@ -62,9 +60,9 @@ def test__get_layer(
 
     _layer: Layer = _get_layer(
         data_source=data_source,
-        sql=sql,
         layer=layer,
-        sql_kwargs=sql_kwargs,
+        start=start,
+        stop=stop,
     )
 
     layer_name = _layer.GetName()
@@ -120,23 +118,19 @@ def test__get_paths(directory_path: Path, fileGDB_path: str) -> None:
 
 
 _create_schema_PARAMETER_NAMES = [
-    "sql",
-    "sql_kwargs",
     "layer",
 ]
 
 _create_schema_PARAMETER_VALUES = [
-    (None, None, None),
-    (None, None, 0),
-    (None, None, "first"),
-    ("SELECT * FROM first WHERE id = 1", None, None),
+    (None,),
+    (0,),
+    ("first",),
 ]
 
 _create_schema_PARAMETER_IDS = [
     "No arguments",
     "Layer by index",
     "Layer by name",
-    "Layer by SQL",
 ]
 
 
@@ -148,8 +142,6 @@ _create_schema_PARAMETER_IDS = [
 def test__create_schema(
     fileGDB_path: str,
     ogr_to_spark_mapping: MappingProxyType,
-    sql: Optional[str],
-    sql_kwargs: Optional[Dict[str, str]],
     layer: Optional[Union[str, int]],
 ) -> None:
     """Returns expected Spark schema regardless of `_get_layer` function used."""
@@ -159,8 +151,6 @@ def test__create_schema(
         geom_field_type="Binary",
         ogr_to_spark_type_map=ogr_to_spark_mapping,
         layer=layer,
-        sql=sql,
-        sql_kwargs=sql_kwargs,
     )
     assert schema == StructType(
         [
