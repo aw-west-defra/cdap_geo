@@ -1,9 +1,10 @@
-from itertools import chain, compress, tee
+from itertools import chain, compress
 from os import listdir
 from os.path import join
 from types import MappingProxyType
-from typing import Any, Callable, Generator, Iterable, Iterator, Optional, Tuple, Union
+from typing import Any, Callable, Generator, Optional, Tuple, Union
 
+from more_itertools import pairwise
 from numpy import float32, int32, int64, object0, str0
 from osgeo.ogr import DataSource, Feature, GetFieldTypeName, Layer, Open
 from pandas import DataFrame as PandasDataFrame
@@ -166,19 +167,12 @@ def _create_feature_count_df(
     )
 
 
-def _pairwise(iterable: Iterable) -> Iterator[Tuple[Any, Any]]:
-    """New in version 3.10. pairwise('ABCDEFG') --> AB BC CD DE EF FG."""
-    a, b = tee(iterable)
-    next(b, None)
-    return zip(a, b)
-
-
 @udf(returnType=ArrayType(ArrayType(IntegerType())))
 def _get_ranges_udf(
     feature_count: int, ideal_chunk_size: int
 ) -> Tuple[Tuple[int, int], ...]:
     chained = chain(range(0, feature_count, ideal_chunk_size), [feature_count])
-    pairs = _pairwise(chained)
+    pairs = pairwise(chained)
     return tuple(pairs)
 
 
