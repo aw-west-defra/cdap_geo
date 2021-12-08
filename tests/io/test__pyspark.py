@@ -14,6 +14,7 @@ from shapely.wkb import loads
 from esa_geo_utils.io._pyspark import (
     _add_vsi_prefix,
     _create_schema,
+    _get_feature_count,
     _get_feature_schema,
     _get_features,
     _get_geometry,
@@ -99,6 +100,14 @@ def test__get_layer_name(
             layer=layer,
         )
         assert layer_name == expected_layer_name
+
+
+def test__get_feature_count(fileGDB_path: str) -> None:
+    """0th layer in dummy FileGDB has 2 features."""
+    data_source = Open(fileGDB_path)
+    layer = data_source.GetLayer()
+    feat_count = _get_feature_count(layer=layer)
+    assert feat_count == 2
 
 
 @pytest.mark.parametrize(
