@@ -39,10 +39,10 @@ def test__get_paths(directory_path: Path, fileGDB_path: str) -> None:
         "vsi_prefix",
     ],
     argvalues=[
-        "/vsigzip/",
-        "vsigzip",
-        "/vsigzip",
-        "vsigzip/",
+        ("/vsigzip/",),
+        ("vsigzip",),
+        ("/vsigzip",),
+        ("vsigzip/",),
     ],
     ids=[
         "Wrapped by slashes",
@@ -71,7 +71,7 @@ def test__get_layer_names(fileGDB_path: str) -> None:
     argnames=[
         "layer",
         "expected_layer_name",
-        "expected_exception ",
+        "expected_exception",
     ],
     argvalues=[
         ("first", "first", does_not_raise()),
