@@ -6,7 +6,7 @@ from typing import ContextManager, Optional, Union
 
 import pytest
 from osgeo.ogr import Layer, Open
-from pyspark.sql.types import BinaryType, LongType, StringType, StructField, StructType
+from pyspark.sql.types import StructType
 from pytest import raises
 from shapely.geometry import Point
 from shapely.wkb import loads
@@ -175,7 +175,9 @@ def test__get_property_types(fileGDB_path: str) -> None:
 
 
 def test__get_feature_schema(
-    fileGDB_path: str, ogr_to_spark_mapping: MappingProxyType
+    fileGDB_path: str,
+    fileGDB_schema: StructType,
+    ogr_to_spark_mapping: MappingProxyType,
 ) -> None:
     """Returns expected Spark schema."""
     data_source = Open(fileGDB_path)
@@ -186,13 +188,7 @@ def test__get_feature_schema(
         geom_field_name="geometry",
         geom_field_type="Binary",
     )
-    assert schema == StructType(
-        [
-            StructField("id", LongType()),
-            StructField("category", StringType()),
-            StructField("geometry", BinaryType()),
-        ]
-    )
+    assert schema == fileGDB_schema
 
 
 @pytest.mark.parametrize(
@@ -212,6 +208,7 @@ def test__get_feature_schema(
 )
 def test__create_schema(
     fileGDB_path: str,
+    fileGDB_schema: StructType,
     ogr_to_spark_mapping: MappingProxyType,
     layer: Optional[Union[str, int]],
 ) -> None:
@@ -223,13 +220,7 @@ def test__create_schema(
         ogr_to_spark_type_map=ogr_to_spark_mapping,
         layer=layer,
     )
-    assert schema == StructType(
-        [
-            StructField("id", LongType()),
-            StructField("category", StringType()),
-            StructField("geometry", BinaryType()),
-        ]
-    )
+    assert schema == fileGDB_schema
 
 
 def test__get_properties(fileGDB_path: str) -> None:
@@ -260,3 +251,7 @@ def test__get_features(fileGDB_path: str) -> None:
     shapely_object = loads(bytes(geometry))
     assert tuple(properties) == (0, "C")
     assert shapely_object == Point(1, 1)
+
+
+# def test__get_fields(fileGDB_schema: StructType) -> None:
+#     pass

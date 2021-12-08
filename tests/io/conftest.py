@@ -4,6 +4,7 @@ from types import MappingProxyType
 
 from _pytest.tmpdir import TempPathFactory
 from geopandas import GeoDataFrame
+from pyspark.sql.types import BinaryType, LongType, StringType, StructField, StructType
 from pytest import fixture
 from shapely.geometry import Point
 
@@ -68,6 +69,18 @@ def fileGDB_path(
     )
 
     return path_as_string
+
+
+@fixture
+def fileGDB_schema() -> StructType:
+    """Schema for dummy FileGDB."""
+    return StructType(
+        [
+            StructField("id", LongType()),
+            StructField("category", StringType()),
+            StructField("geometry", BinaryType()),
+        ]
+    )
 
 
 @fixture
