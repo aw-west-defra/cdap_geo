@@ -10,6 +10,7 @@ from shapely.geometry import Point
 from shapely.wkb import loads
 
 from esa_geo_utils.io._pyspark import (
+    _add_vsi_prefix,
     _create_schema,
     _get_feature_schema,
     _get_features,
@@ -20,6 +21,30 @@ from esa_geo_utils.io._pyspark import (
     _get_property_names,
     _get_property_types,
 )
+
+
+def test__get_paths(directory_path: Path, fileGDB_path: str) -> None:
+    """Returns collection of FileGDB file paths."""
+    paths = _get_paths(directory=str(directory_path), suffix="gdb")
+    assert paths == (fileGDB_path,)
+
+
+@pytest.mark.parametrize(
+    argnames="vsi_prefix",
+    argvalues=["/vsigzip/", "vsigzip", "/vsigzip", "vsigzip/"],
+    ids=[
+        "Wrapped by slashes",
+        "No slashes",
+        "Prefixed with slash",
+        "Postfixed with slash",
+    ],
+)
+def test__add_vsi_prefix(fileGDB_path: str, vsi_prefix: str) -> None:
+    """VSI prefix is prepended to paths."""
+    _paths = (fileGDB_path,)
+    prefixed_paths = _add_vsi_prefix(paths=_paths, vsi_prefix=vsi_prefix)
+    assert prefixed_paths == ("/" + vsi_prefix.strip("/") + "/" + fileGDB_path,)
+
 
 _get_layer_PARAMETER_NAMES = [
     "layer",
@@ -109,12 +134,6 @@ def test__get_feature_schema(
             StructField("geometry", BinaryType()),
         ]
     )
-
-
-def test__get_paths(directory_path: Path, fileGDB_path: str) -> None:
-    """Returns collection of FileGDB file paths."""
-    paths = _get_paths(directory=str(directory_path), suffix="gdb")
-    assert paths == tuple([fileGDB_path])
 
 
 _create_schema_PARAMETER_NAMES = [
