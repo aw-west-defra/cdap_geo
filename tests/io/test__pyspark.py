@@ -16,6 +16,7 @@ from esa_geo_utils.io._pyspark import (
     _get_features,
     _get_geometry,
     _get_layer,
+    _get_layer_names,
     _get_paths,
     _get_properties,
     _get_property_names,
@@ -44,6 +45,15 @@ def test__add_vsi_prefix(fileGDB_path: str, vsi_prefix: str) -> None:
     _paths = (fileGDB_path,)
     prefixed_paths = _add_vsi_prefix(paths=_paths, vsi_prefix=vsi_prefix)
     assert prefixed_paths == ("/" + vsi_prefix.strip("/") + "/" + fileGDB_path,)
+
+
+def test__get_layer_names(fileGDB_path: str) -> None:
+    """Returns layer names from dummy FileGDB."""
+    data_source = Open(fileGDB_path)
+    layer_names = _get_layer_names(
+        data_source=data_source,
+    )
+    assert layer_names == ("second", "first")
 
 
 _get_layer_PARAMETER_NAMES = [
