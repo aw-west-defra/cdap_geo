@@ -122,6 +122,7 @@ def tests(session: Session) -> None:
         "coverage[toml]",
         "pytest",
         "pytest-cov",
+        "geopandas",
     )
     session.run("pytest", *args)
 
