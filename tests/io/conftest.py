@@ -1,10 +1,18 @@
 """Module level fixtures."""
 from pathlib import Path
 from types import MappingProxyType
+from typing import Tuple
 
 from _pytest.tmpdir import TempPathFactory
 from geopandas import GeoDataFrame
-from pyspark.sql.types import BinaryType, LongType, StringType, StructField, StructType
+from pyspark.sql.types import (
+    BinaryType,
+    DataType,
+    LongType,
+    StringType,
+    StructField,
+    StructType,
+)
 from pytest import fixture
 from shapely.geometry import Point
 
@@ -80,6 +88,16 @@ def fileGDB_schema() -> StructType:
             StructField("category", StringType()),
             StructField("geometry", BinaryType()),
         ]
+    )
+
+
+@fixture
+def fileGDB_schema_field_details() -> Tuple[Tuple[str, DataType], ...]:
+    """Field details from dummy FileGDB schema."""
+    return (
+        ("id", LongType()),
+        ("category", StringType()),
+        ("geometry", BinaryType()),
     )
 
 

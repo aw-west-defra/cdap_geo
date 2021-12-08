@@ -2,11 +2,11 @@
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
 from types import MappingProxyType
-from typing import ContextManager, Optional, Union
+from typing import ContextManager, Optional, Tuple, Union
 
 import pytest
 from osgeo.ogr import Layer, Open
-from pyspark.sql.types import BinaryType, LongType, StringType, StructType
+from pyspark.sql.types import DataType, StructType
 from pytest import raises
 from shapely.geometry import Point
 from shapely.wkb import loads
@@ -17,6 +17,7 @@ from esa_geo_utils.io._pyspark import (
     _get_feature_count,
     _get_feature_schema,
     _get_features,
+    _get_field_names,
     _get_fields,
     _get_geometry,
     _get_layer,
@@ -254,11 +255,18 @@ def test__get_features(fileGDB_path: str) -> None:
     assert shapely_object == Point(1, 1)
 
 
-def test__get_fields(fileGDB_schema: StructType) -> None:
-    """Field names and types from dummy FileGDB schema."""
+def test__get_fields(
+    fileGDB_schema: StructType,
+    fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
+) -> None:
+    """Field details from dummy FileGDB schema."""
     fields = _get_fields(schema=fileGDB_schema)
-    assert fields == (
-        ("id", LongType()),
-        ("category", StringType()),
-        ("geometry", BinaryType()),
-    )
+    assert fields == fileGDB_schema_field_details
+
+
+def test__get_field_names(
+    fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
+) -> None:
+    """Field names from dummy FileGDB schema details."""
+    field_names = _get_field_names(schema_fields=fileGDB_schema_field_details)
+    assert field_names == ("id", "category", "geometry")
