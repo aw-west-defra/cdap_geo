@@ -143,8 +143,8 @@ def _get_layer(
     # ! construction" is turned off here because `_get_layer_name` will
     # ! raise an error if the user supplied layer doesn't exist and
     # ! `start` and `stop` are generated within the function.
-    if start and stop:
-        sql = f"SELECT * from {_layer} WHERE FID >= {start} AND FID < {stop}"  # noqa: S608, B950
+    if isinstance(start, int) and isinstance(stop, int):
+        sql = f"SELECT * from {_layer} WHERE FID BETWEEN {start} AND {stop}"  # noqa: S608, B950
     else:
         sql = f"SELECT * from {_layer}"  # noqa: S608
 
