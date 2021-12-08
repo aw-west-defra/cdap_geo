@@ -299,21 +299,21 @@ def _get_fields(schema: StructType) -> Tuple[Tuple[str, DataType], ...]:
 
 def _get_field_names(
     schema_fields: Tuple[Tuple[str, DataType], ...],
-) -> Tuple:
+) -> Tuple[str, ...]:
     """Returns field names from schema fields."""
     return tuple(field[0] for field in schema_fields)
 
 
 def _get_columns_names(
     pdf: PandasDataFrame,
-) -> Tuple:
+) -> Tuple[str, ...]:
     """Returns columns names from DataFrame."""
     return tuple(column for column in pdf.columns)
 
 
 def _get_missing_fields_and_additional_columns(
-    schema_field_names: Tuple,
-    column_names: Tuple,
+    schema_field_names: Tuple[str, ...],
+    column_names: Tuple[str, ...],
 ) -> Tuple:
     """Returns tuples of missing fields and additional columns."""
     missing_fields = tuple(
