@@ -29,6 +29,7 @@ from esa_geo_utils.io._pyspark import (
     _get_properties,
     _get_property_names,
     _get_property_types,
+    _identify_additional_columns,
     _identify_missing_columns,
 )
 
@@ -297,7 +298,7 @@ def test__get_columns_names(
     ],
     argvalues=[
         ("layer_column_names", (False, False, False)),
-        ("layer_column_names_missing_id", (True, False, False)),
+        ("layer_column_names_missing_column", (True, False, False)),
     ],
     ids=[
         "Same column names",
@@ -316,3 +317,31 @@ def test__identify_missing_columns(
         column_names=request.getfixturevalue(column_names),
     )
     assert missing_columns == expected_mask
+
+
+@pytest.mark.parametrize(
+    argnames=[
+        "column_names",
+        "expected_mask",
+    ],
+    argvalues=[
+        ("layer_column_names", (False, False, False)),
+        ("layer_column_names_additional_column", (False, False, False, True)),
+    ],
+    ids=[
+        "Same column names",
+        "Additional column name",
+    ],
+)
+def test__identify_additional_columns(
+    layer_column_names: Tuple[str, ...],
+    request: FixtureRequest,
+    column_names: str,
+    expected_mask: Tuple[bool, ...],
+) -> None:
+    """Additional column is identified as `True`."""
+    additional_columns = _identify_additional_columns(
+        schema_field_names=layer_column_names,
+        column_names=request.getfixturevalue(column_names),
+    )
+    assert additional_columns == expected_mask

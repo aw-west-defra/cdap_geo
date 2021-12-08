@@ -28,11 +28,19 @@ def layer_column_names() -> Tuple[str, ...]:
 
 
 @fixture
-def layer_column_names_missing_id(
+def layer_column_names_missing_column(
     layer_column_names: Tuple[str, ...]
 ) -> Tuple[str, ...]:
-    """Shared column names missing `id`."""
+    """Shared column names but missing `id` column."""
     return tuple(name for name in layer_column_names if name != "id")
+
+
+@fixture
+def layer_column_names_additional_column(
+    layer_column_names: Tuple[str, ...]
+) -> Tuple[str, ...]:
+    """Shared column names but with extra column name."""
+    return layer_column_names + ("additional",)
 
 
 @fixture
