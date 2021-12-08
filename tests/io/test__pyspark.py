@@ -214,7 +214,7 @@ def test__create_schema(
 ) -> None:
     """Returns expected Spark schema regardless of `_get_layer` function used."""
     schema = _create_schema(
-        paths=tuple([fileGDB_path]),
+        paths=(fileGDB_path,),
         geom_field_name="geometry",
         geom_field_type="Binary",
         ogr_to_spark_type_map=ogr_to_spark_mapping,
