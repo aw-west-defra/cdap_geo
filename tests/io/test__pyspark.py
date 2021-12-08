@@ -34,8 +34,15 @@ def test__get_paths(directory_path: Path, fileGDB_path: str) -> None:
 
 
 @pytest.mark.parametrize(
-    argnames="vsi_prefix",
-    argvalues=["/vsigzip/", "vsigzip", "/vsigzip", "vsigzip/"],
+    argnames=[
+        "vsi_prefix",
+    ],
+    argvalues=[
+        "/vsigzip/",
+        "vsigzip",
+        "/vsigzip",
+        "vsigzip/",
+    ],
     ids=[
         "Wrapped by slashes",
         "No slashes",
@@ -94,31 +101,24 @@ def test__get_layer_name(
         assert layer_name == expected_layer_name
 
 
-_get_layer_PARAMETER_NAMES = [
-    "layer",
-    "start",
-    "stop",
-    "expected_layer_name",
-    "expected_feature_count",
-]
-
-_get_layer_PARAMETER_VALUES = [
-    (None, None, None, "second", 2),
-    (0, None, None, "second", 2),
-    ("first", None, None, "first", 2),
-]
-
-_get_layer_PARAMETER_IDS = [
-    "No arguments",
-    "Layer by index",
-    "Layer by name",
-]
-
-
 @pytest.mark.parametrize(
-    argnames=_get_layer_PARAMETER_NAMES,
-    argvalues=_get_layer_PARAMETER_VALUES,
-    ids=_get_layer_PARAMETER_IDS,
+    argnames=[
+        "layer",
+        "start",
+        "stop",
+        "expected_layer_name",
+        "expected_feature_count",
+    ],
+    argvalues=[
+        (None, None, None, "second", 2),
+        (0, None, None, "second", 2),
+        ("first", None, None, "first", 2),
+    ],
+    ids=[
+        "No arguments",
+        "Layer by index",
+        "Layer by name",
+    ],
 )
 def test__get_layer(
     fileGDB_path: str,
@@ -184,27 +184,20 @@ def test__get_feature_schema(
     )
 
 
-_create_schema_PARAMETER_NAMES = [
-    "layer",
-]
-
-_create_schema_PARAMETER_VALUES = [
-    (None,),
-    (0,),
-    ("first",),
-]
-
-_create_schema_PARAMETER_IDS = [
-    "No arguments",
-    "Layer by index",
-    "Layer by name",
-]
-
-
 @pytest.mark.parametrize(
-    argnames=_create_schema_PARAMETER_NAMES,
-    argvalues=_create_schema_PARAMETER_VALUES,
-    ids=_create_schema_PARAMETER_IDS,
+    argnames=[
+        "layer",
+    ],
+    argvalues=[
+        (None,),
+        (0,),
+        ("first",),
+    ],
+    ids=[
+        "No arguments",
+        "Layer by index",
+        "Layer by name",
+    ],
 )
 def test__create_schema(
     fileGDB_path: str,
