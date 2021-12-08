@@ -2,7 +2,7 @@ from itertools import compress
 from os import listdir
 from os.path import join
 from types import MappingProxyType
-from typing import Any, Callable, Generator, Optional, Tuple, Union
+from typing import Callable, Generator, Optional, Tuple, Union
 
 from more_itertools import pairwise
 from numpy import float32, int32, int64, object0, str0
@@ -215,7 +215,7 @@ def _create_spark_df(
     )
 
 
-def _get_property_names(layer: Layer) -> Tuple[Any, ...]:
+def _get_property_names(layer: Layer) -> Tuple[str, ...]:
     """Given a GDAL Layer, return the non-geometry field names."""
     layer_definition = layer.GetLayerDefn()
     return tuple(
@@ -224,7 +224,7 @@ def _get_property_names(layer: Layer) -> Tuple[Any, ...]:
     )
 
 
-def _get_property_types(layer: Layer) -> Tuple[Any, ...]:
+def _get_property_types(layer: Layer) -> Tuple[str, ...]:
     """Given a GDAL Layer, return the non-geometry field types."""
     layer_definition = layer.GetLayerDefn()
     type_codes = tuple(
@@ -254,7 +254,7 @@ def _get_feature_schema(
 
 
 def _create_schema(
-    paths: Tuple[Any, ...],
+    paths: Tuple[str, ...],
     geom_field_name: str,
     geom_field_type: str,
     ogr_to_spark_type_map: MappingProxyType,
