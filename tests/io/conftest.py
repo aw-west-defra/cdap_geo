@@ -5,6 +5,7 @@ from typing import Tuple
 
 from _pytest.tmpdir import TempPathFactory
 from geopandas import GeoDataFrame
+from pandas import DataFrame as PandasDataFrame
 from pyspark.sql.types import (
     BinaryType,
     DataType,
@@ -15,32 +16,82 @@ from pyspark.sql.types import (
 )
 from pytest import fixture
 from shapely.geometry import Point
+from shapely.geometry.base import BaseGeometry
 
 from esa_geo_utils.io._pyspark import OGR_TO_SPARK
 
 
 @fixture
-def first_layer() -> GeoDataFrame:
+def layer_column_names() -> Tuple[str, ...]:
+    """Column names shared by both dummy layers."""
+    return ("id", "category", "geometry")
+
+
+@fixture
+def first_layer_first_row() -> Tuple[int, str, BaseGeometry]:
+    """First row of first dummy layers."""
+    return (0, "A", Point(0, 0))
+
+
+@fixture
+def first_layer_second_row() -> Tuple[int, str, BaseGeometry]:
+    """Second row of first dummy layers."""
+    return (1, "B", Point(1, 0))
+
+
+@fixture
+def first_layer_gdf(
+    layer_column_names: Tuple[str, ...],
+    first_layer_first_row: Tuple[int, str, BaseGeometry],
+    first_layer_second_row: Tuple[int, str, BaseGeometry],
+) -> GeoDataFrame:
     """First dummy layer."""
     return GeoDataFrame(
-        data={
-            "id": [0, 1],
-            "category": ["A", "B"],
-            "geometry": [Point(0, 0), Point(1, 0)],
-        },
+        data=(
+            first_layer_first_row,
+            first_layer_second_row,
+        ),
+        columns=layer_column_names,
         crs="EPSG:27700",
     )
 
 
 @fixture
-def second_layer() -> GeoDataFrame:
+def first_layer_pdf(
+    first_layer_gdf: GeoDataFrame,
+) -> PandasDataFrame:
+    """First dummy layer as pdf with wkb geometry column."""
+    first_layer_gdf["geometry"] = first_layer_gdf["geometry"].to_wkb()
+    return PandasDataFrame(
+        first_layer_gdf,
+    )
+
+
+@fixture
+def second_layer_first_row() -> Tuple[int, str, BaseGeometry]:
+    """First row of second dummy layers."""
+    return (0, "C", Point(1, 1))
+
+
+@fixture
+def second_layer_second_row() -> Tuple[int, str, BaseGeometry]:
+    """Second row of second dummy layers."""
+    return (1, "D", Point(0, 1))
+
+
+@fixture
+def second_layer_gdf(
+    layer_column_names: Tuple[str, ...],
+    second_layer_first_row: Tuple[int, str, BaseGeometry],
+    second_layer_second_row: Tuple[int, str, BaseGeometry],
+) -> GeoDataFrame:
     """Second dummy layer."""
     return GeoDataFrame(
-        data={
-            "id": [0, 1],
-            "category": ["C", "D"],
-            "geometry": [Point(1, 1), Point(0, 1)],
-        },
+        data=(
+            second_layer_first_row,
+            second_layer_second_row,
+        ),
+        columns=layer_column_names,
         crs="EPSG:27700",
     )
 
@@ -56,21 +107,21 @@ def directory_path(
 @fixture
 def fileGDB_path(
     directory_path: Path,
-    first_layer: GeoDataFrame,
-    second_layer: GeoDataFrame,
+    first_layer_gdf: GeoDataFrame,
+    second_layer_gdf: GeoDataFrame,
 ) -> str:
     """Writes dummy layers to FileGDB and returns path as string."""
     path = directory_path / "data_source.gdb"
 
     path_as_string = str(path)
 
-    first_layer.to_file(
+    first_layer_gdf.to_file(
         filename=path_as_string,
         index=False,
         layer="first",
     )
 
-    second_layer.to_file(
+    second_layer_gdf.to_file(
         filename=path_as_string,
         index=False,
         layer="second",

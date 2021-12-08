@@ -6,6 +6,7 @@ from typing import ContextManager, Optional, Tuple, Union
 
 import pytest
 from osgeo.ogr import Layer, Open
+from pandas import DataFrame as PandasDataFrame
 from pyspark.sql.types import DataType, StructType
 from pytest import raises
 from shapely.geometry import Point
@@ -14,6 +15,7 @@ from shapely.wkb import loads
 from esa_geo_utils.io._pyspark import (
     _add_vsi_prefix,
     _create_schema,
+    _get_columns_names,
     _get_feature_count,
     _get_feature_schema,
     _get_features,
@@ -160,12 +162,15 @@ def test__get_layer(
     )
 
 
-def test__get_property_names(fileGDB_path: str) -> None:
+def test__get_property_names(
+    fileGDB_path: str,
+    layer_column_names: Tuple[str, ...],
+) -> None:
     """Returns expected non-geometry field names."""
     data_source = Open(fileGDB_path)
     layer = data_source.GetLayer()
     property_names = _get_property_names(layer=layer)
-    assert property_names == ("id", "category")
+    assert property_names == layer_column_names[:2]
 
 
 def test__get_property_types(fileGDB_path: str) -> None:
@@ -266,7 +271,19 @@ def test__get_field_details(
 
 def test__get_field_names(
     fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
+    layer_column_names: Tuple[str, ...],
 ) -> None:
     """Field names from dummy FileGDB schema details."""
     field_names = _get_field_names(schema_fields=fileGDB_schema_field_details)
-    assert field_names == ("id", "category", "geometry")
+    assert field_names == layer_column_names
+
+
+def test__get_columns_names(
+    first_layer_pdf: PandasDataFrame,
+    layer_column_names: Tuple[str, ...],
+) -> None:
+    """Column names from pandas version of dummy first layer."""
+    column_names = _get_columns_names(
+        pdf=first_layer_pdf,
+    )
+    assert column_names == layer_column_names
