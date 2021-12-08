@@ -311,18 +311,20 @@ def _get_columns_names(
     return tuple(column for column in pdf.columns)
 
 
-def _get_missing_fields_and_additional_columns(
+def _identify_missing_fields(
     schema_field_names: Tuple[str, ...],
     column_names: Tuple[str, ...],
-) -> Tuple:
-    """Returns tuples of missing fields and additional columns."""
-    missing_fields = tuple(
-        field_name not in column_names for field_name in schema_field_names
-    )
-    additional_columns = tuple(
-        column not in schema_field_names for column in column_names
-    )
-    return missing_fields, additional_columns
+) -> Tuple[bool, ...]:
+    """Returns boolean mask of schema field names not in column names."""
+    return tuple(field_name not in column_names for field_name in schema_field_names)
+
+
+def _identify_additional_columns(
+    schema_field_names: Tuple[str, ...],
+    column_names: Tuple[str, ...],
+) -> Tuple[bool, ...]:
+    """Returns boolean mask of column names not in schema field names."""
+    return tuple(column not in schema_field_names for column in column_names)
 
 
 def _drop_additional_columns(
@@ -370,7 +372,11 @@ def _coerce_columns_to_schema(
     if column_names == schema_field_names:
         return pdf
     else:
-        missing_fields, additional_columns = _get_missing_fields_and_additional_columns(
+        missing_fields = _identify_missing_fields(
+            schema_field_names=schema_field_names,
+            column_names=column_names,
+        )
+        additional_columns = _identify_additional_columns(
             schema_field_names=schema_field_names,
             column_names=column_names,
         )
