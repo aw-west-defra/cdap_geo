@@ -122,7 +122,7 @@ def test__get_feature_count(fileGDB_path: str) -> None:
         (None, None, None, "second", 2),
         (0, None, None, "second", 2),
         ("first", None, None, "first", 2),
-        ("second", 0, 0, "second", 1),
+        ("second", 0, 1, "second", 1),
     ],
     ids=[
         "No arguments",
