@@ -283,7 +283,7 @@ def _get_properties(feature: Feature) -> Tuple:
 
 def _get_geometry(feature: Feature) -> Tuple:
     """Given a GDAL Feature, return the geometry fields."""
-    return tuple([feature.GetGeometryRef().ExportToWkb()])
+    return (feature.GetGeometryRef().ExportToWkb(),)
 
 
 def _get_features(layer: Layer) -> Generator:
@@ -436,7 +436,7 @@ def _vector_file_to_pdf(
     if _layer is None:
         return _null_data_frame_from_schema(schema=schema)
     features_generator = _get_features(layer=_layer)
-    feature_names = _get_property_names(layer=_layer) + tuple([geom_field_name])
+    feature_names = _get_property_names(layer=_layer) + (geom_field_name,)
     pdf = PandasDataFrame(data=features_generator, columns=feature_names)
     if pdf is None:
         return _null_data_frame_from_schema(schema=schema)
