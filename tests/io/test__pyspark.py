@@ -1,11 +1,13 @@
 """Tests for _pyspark module."""
+from contextlib import nullcontext as does_not_raise
 from pathlib import Path
 from types import MappingProxyType
-from typing import Optional, Union
+from typing import ContextManager, Optional, Union
 
 import pytest
 from osgeo.ogr import Layer, Open
 from pyspark.sql.types import BinaryType, LongType, StringType, StructField, StructType
+from pytest import raises
 from shapely.geometry import Point
 from shapely.wkb import loads
 
@@ -16,6 +18,7 @@ from esa_geo_utils.io._pyspark import (
     _get_features,
     _get_geometry,
     _get_layer,
+    _get_layer_name,
     _get_layer_names,
     _get_paths,
     _get_properties,
@@ -54,6 +57,41 @@ def test__get_layer_names(fileGDB_path: str) -> None:
         data_source=data_source,
     )
     assert layer_names == ("second", "first")
+
+
+@pytest.mark.parametrize(
+    argnames=[
+        "layer",
+        "expected_layer_name",
+        "expected_exception ",
+    ],
+    argvalues=[
+        ("first", "first", does_not_raise()),
+        ("third", None, raises(ValueError)),
+        (0, "second", does_not_raise()),
+        (None, "second", does_not_raise()),
+    ],
+    ids=[
+        "Valid layer name",
+        "Invalid layer name",
+        "Index",
+        "None",
+    ],
+)
+def test__get_layer_name(
+    fileGDB_path: str,
+    layer: Optional[Union[str, int]],
+    expected_layer_name: Optional[str],
+    expected_exception: ContextManager,
+) -> None:
+    """Returns given layer."""
+    data_source = Open(fileGDB_path)
+    with expected_exception:
+        layer_name = _get_layer_name(
+            data_source=data_source,
+            layer=layer,
+        )
+        assert layer_name == expected_layer_name
 
 
 _get_layer_PARAMETER_NAMES = [
