@@ -73,7 +73,9 @@ def _get_paths(directory: str, suffix: str) -> Tuple[str, ...]:
 
 def _add_vsi_prefix(paths: Tuple[str, ...], vsi_prefix: str) -> Tuple[str, ...]:
     """Adds GDAL virtual file system prefix to the paths."""
-    return tuple(vsi_prefix + "/" + path for path in paths)
+    _vsi_prefix = vsi_prefix.strip("/")
+    _paths = tuple(path.lstrip("/") for path in paths)
+    return tuple("/" + _vsi_prefix + "//" + path for path in _paths)
 
 
 def _create_paths_df(spark: SparkSession, paths: Tuple[str, ...]) -> SparkDataFrame:
