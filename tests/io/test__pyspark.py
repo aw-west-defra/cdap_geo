@@ -17,8 +17,8 @@ from esa_geo_utils.io._pyspark import (
     _get_feature_count,
     _get_feature_schema,
     _get_features,
+    _get_field_details,
     _get_field_names,
-    _get_fields,
     _get_geometry,
     _get_layer,
     _get_layer_name,
@@ -255,12 +255,12 @@ def test__get_features(fileGDB_path: str) -> None:
     assert shapely_object == Point(1, 1)
 
 
-def test__get_fields(
+def test__get_field_details(
     fileGDB_schema: StructType,
     fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
 ) -> None:
     """Field details from dummy FileGDB schema."""
-    fields = _get_fields(schema=fileGDB_schema)
+    fields = _get_field_details(schema=fileGDB_schema)
     assert fields == fileGDB_schema_field_details
 
 

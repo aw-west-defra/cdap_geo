@@ -292,7 +292,7 @@ def _get_features(layer: Layer) -> Generator:
     return ((_get_properties(feature) + _get_geometry(feature)) for feature in layer)
 
 
-def _get_fields(schema: StructType) -> Tuple[Tuple[str, DataType], ...]:
+def _get_field_details(schema: StructType) -> Tuple[Tuple[str, DataType], ...]:
     """Returns fields from schema."""
     return tuple((field.name, field.dataType) for field in schema.fields)
 
@@ -451,7 +451,7 @@ def _vector_file_to_pdf(
     if pdf is None:
         return _null_data_frame_from_schema(schema=schema)
     if coerce_to_schema:
-        schema_fields = _get_fields(schema=schema)
+        schema_fields = _get_field_details(schema=schema)
         coerced_pdf = _coerce_columns_to_schema(
             pdf=pdf,
             schema_fields=schema_fields,
