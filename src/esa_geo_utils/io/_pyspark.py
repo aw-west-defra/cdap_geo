@@ -15,6 +15,7 @@ from pyspark.sql.functions import col, explode, lit, udf
 from pyspark.sql.types import (
     ArrayType,
     BinaryType,
+    DataType,
     FloatType,
     IntegerType,
     LongType,
@@ -291,22 +292,28 @@ def _get_features(layer: Layer) -> Generator:
     return ((_get_properties(feature) + _get_geometry(feature)) for feature in layer)
 
 
-def _get_fields(schema: StructType) -> Tuple:
+def _get_fields(schema: StructType) -> Tuple[Tuple[str, DataType], ...]:
     """Returns fields from schema."""
     return tuple((field.name, field.dataType) for field in schema.fields)
 
 
-def _get_field_names_and_columns_names(
-    pdf: PandasDataFrame, schema_fields: Tuple
+def _get_field_names(
+    schema_fields: Tuple[Tuple[str, DataType], ...],
 ) -> Tuple:
-    """Returns field names from fields and columns from DataFrame."""
-    schema_field_names = tuple(field[0] for field in schema_fields)
-    column_names = tuple(column for column in pdf.columns)
-    return schema_field_names, column_names
+    """Returns field names from schema fields."""
+    return tuple(field[0] for field in schema_fields)
+
+
+def _get_columns_names(
+    pdf: PandasDataFrame,
+) -> Tuple:
+    """Returns columns names from DataFrame."""
+    return tuple(column for column in pdf.columns)
 
 
 def _get_missing_fields_and_additional_columns(
-    schema_field_names: Tuple, column_names: Tuple
+    schema_field_names: Tuple,
+    column_names: Tuple,
 ) -> Tuple:
     """Returns tuples of missing fields and additional columns."""
     missing_fields = tuple(
@@ -352,9 +359,12 @@ def _coerce_columns_to_schema(
     spark_to_pandas_type_map: MappingProxyType,
 ) -> PandasDataFrame:
     """Adds missing fields or removes additional columns to match schema."""
-    schema_field_names, column_names = _get_field_names_and_columns_names(
-        pdf=pdf,
+    schema_field_names = _get_field_names(
         schema_fields=schema_fields,
+    )
+
+    column_names = _get_columns_names(
+        pdf=pdf,
     )
 
     if column_names == schema_field_names:
