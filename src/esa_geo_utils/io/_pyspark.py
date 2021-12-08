@@ -311,7 +311,7 @@ def _get_columns_names(
     return tuple(column for column in pdf.columns)
 
 
-def _identify_missing_fields(
+def _identify_missing_columns(
     schema_field_names: Tuple[str, ...],
     column_names: Tuple[str, ...],
 ) -> Tuple[bool, ...]:
@@ -337,21 +337,21 @@ def _drop_additional_columns(
     return pdf.drop(columns=to_drop)
 
 
-def _add_missing_fields(
+def _add_missing_columns(
     pdf: PandasDataFrame,
     schema_fields: Tuple,
-    missing_fields: Tuple,
+    missing_columns: Tuple,
     spark_to_pandas_type_map: MappingProxyType,
     schema_field_names: Tuple,
 ) -> PandasDataFrame:
     """Adds missing fields to pandas DataFrame."""
-    to_add = compress(schema_fields, missing_fields)
+    to_add = compress(schema_fields, missing_columns)
     missing_field_series = tuple(
         Series(name=field[0], dtype=spark_to_pandas_type_map[field[1]])
         for field in to_add
     )
-    pdf_plus_missing_fields = pdf.append(missing_field_series)
-    reindexed_pdf = pdf_plus_missing_fields.reindex(columns=schema_field_names)
+    pdf_plus_missing_columns = pdf.append(missing_field_series)
+    reindexed_pdf = pdf_plus_missing_columns.reindex(columns=schema_field_names)
     return reindexed_pdf
 
 
@@ -372,7 +372,7 @@ def _coerce_columns_to_schema(
     if column_names == schema_field_names:
         return pdf
     else:
-        missing_fields = _identify_missing_fields(
+        missing_columns = _identify_missing_columns(
             schema_field_names=schema_field_names,
             column_names=column_names,
         )
@@ -380,24 +380,24 @@ def _coerce_columns_to_schema(
             schema_field_names=schema_field_names,
             column_names=column_names,
         )
-        if any(missing_fields) and any(additional_columns):
+        if any(missing_columns) and any(additional_columns):
             pdf_minus_additional_columns = _drop_additional_columns(
                 pdf=pdf,
                 column_names=column_names,
                 additional_columns=additional_columns,
             )
-            return _add_missing_fields(
+            return _add_missing_columns(
                 pdf=pdf_minus_additional_columns,
                 schema_fields=schema_fields,
-                missing_fields=missing_fields,
+                missing_columns=missing_columns,
                 spark_to_pandas_type_map=spark_to_pandas_type_map,
                 schema_field_names=schema_field_names,
             )
-        elif any(missing_fields):
-            return _add_missing_fields(
+        elif any(missing_columns):
+            return _add_missing_columns(
                 pdf=pdf,
                 schema_fields=schema_fields,
-                missing_fields=missing_fields,
+                missing_columns=missing_columns,
                 spark_to_pandas_type_map=spark_to_pandas_type_map,
                 schema_field_names=schema_field_names,
             )
