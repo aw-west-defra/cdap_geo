@@ -95,7 +95,7 @@ def _get_layer_names(data_source: DataSource) -> Tuple[str, ...]:
 def _get_layer_name(
     data_source: DataSource,
     layer: Optional[Union[str, int]],
-) -> Layer:
+) -> str:
     """Returns the given layer name, name at index, or name of 0th layer."""
     layers = _get_layer_names(
         data_source=data_source,
