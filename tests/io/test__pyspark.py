@@ -8,7 +8,7 @@ import pytest
 from osgeo.ogr import Layer, Open
 from pandas import DataFrame as PandasDataFrame
 from pyspark.sql.types import DataType, StructType
-from pytest import raises
+from pytest import FixtureRequest, raises
 from shapely.geometry import Point
 from shapely.wkb import loads
 
@@ -29,6 +29,7 @@ from esa_geo_utils.io._pyspark import (
     _get_properties,
     _get_property_names,
     _get_property_types,
+    _identify_missing_columns,
 )
 
 
@@ -287,3 +288,31 @@ def test__get_columns_names(
         pdf=first_layer_pdf,
     )
     assert column_names == layer_column_names
+
+
+@pytest.mark.parametrize(
+    argnames=[
+        "column_names",
+        "expected_mask",
+    ],
+    argvalues=[
+        ("layer_column_names", (False, False, False)),
+        ("layer_column_names_missing_id", (True, False, False)),
+    ],
+    ids=[
+        "Same column names",
+        "Missing column name",
+    ],
+)
+def test__identify_missing_columns(
+    layer_column_names: Tuple[str, ...],
+    request: FixtureRequest,
+    column_names: str,
+    expected_mask: Tuple[bool, ...],
+) -> None:
+    """Missing column is identified as `True`."""
+    missing_columns = _identify_missing_columns(
+        schema_field_names=layer_column_names,
+        column_names=request.getfixturevalue(column_names),
+    )
+    assert missing_columns == expected_mask

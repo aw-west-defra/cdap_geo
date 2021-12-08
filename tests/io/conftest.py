@@ -28,6 +28,14 @@ def layer_column_names() -> Tuple[str, ...]:
 
 
 @fixture
+def layer_column_names_missing_id(
+    layer_column_names: Tuple[str, ...]
+) -> Tuple[str, ...]:
+    """Shared column names missing `id`."""
+    return tuple(name for name in layer_column_names if name != "id")
+
+
+@fixture
 def first_layer_first_row() -> Tuple[int, str, BaseGeometry]:
     """First row of first dummy layers."""
     return (0, "A", Point(0, 0))
@@ -64,6 +72,16 @@ def first_layer_pdf(
     first_layer_gdf["geometry"] = first_layer_gdf["geometry"].to_wkb()
     return PandasDataFrame(
         first_layer_gdf,
+    )
+
+
+@fixture
+def first_layer_pdf_with_missing_column(
+    first_layer_pdf: PandasDataFrame,
+) -> PandasDataFrame:
+    """First layer pdf with missing 'id' column."""
+    return first_layer_pdf.drop(
+        columns=["id"],
     )
 
 
