@@ -6,7 +6,7 @@ from typing import ContextManager, Optional, Union
 
 import pytest
 from osgeo.ogr import Layer, Open
-from pyspark.sql.types import StructType
+from pyspark.sql.types import BinaryType, LongType, StringType, StructType
 from pytest import raises
 from shapely.geometry import Point
 from shapely.wkb import loads
@@ -17,6 +17,7 @@ from esa_geo_utils.io._pyspark import (
     _get_feature_count,
     _get_feature_schema,
     _get_features,
+    _get_fields,
     _get_geometry,
     _get_layer,
     _get_layer_name,
@@ -253,5 +254,11 @@ def test__get_features(fileGDB_path: str) -> None:
     assert shapely_object == Point(1, 1)
 
 
-# def test__get_fields(fileGDB_schema: StructType) -> None:
-#     pass
+def test__get_fields(fileGDB_schema: StructType) -> None:
+    """Field names and types from dummy FileGDB schema."""
+    fields = _get_fields(schema=fileGDB_schema)
+    assert fields == (
+        ("id", LongType()),
+        ("category", StringType()),
+        ("geometry", BinaryType()),
+    )
