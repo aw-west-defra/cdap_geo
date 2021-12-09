@@ -16,11 +16,6 @@ repos:
           - id: name-tests-test
             args: [--django]
           - id: trailing-whitespace
-    - repo: https://github.com/python-poetry/poetry
-      rev: ""
-      hooks:
-          - id: poetry-check
-          - id: poetry-lock
     - repo: local
       hooks:
           - id: isort
@@ -43,5 +38,10 @@ repos:
           - id: flake8
             name: flake8
             entry: poetry run flake8
+            language: system
+            types: [python]
+          - id: poetry
+            name: poetry
+            entry: poetry check && poetry lock
             language: system
             types: [python]
