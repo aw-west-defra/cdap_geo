@@ -40,8 +40,8 @@ repos:
             entry: poetry run flake8
             language: system
             types: [python]
-          - id: poetry
-            name: poetry
-            entry: poetry check && poetry lock
+          - id: poetry check
+            name: poetry check
+            entry: poetry check
             language: system
             types: [python]
