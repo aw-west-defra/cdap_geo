@@ -7,12 +7,15 @@ from typing import ContextManager, Optional, Tuple, Union
 import pytest
 from osgeo.ogr import Layer, Open
 from pandas import DataFrame as PandasDataFrame
+from pandas.testing import assert_series_equal
 from pyspark.sql.types import DataType, StructType
 from pytest import FixtureRequest, raises
 from shapely.geometry import Point
 from shapely.wkb import loads
 
 from esa_geo_utils.io._pyspark import (
+    SPARK_TO_PANDAS,
+    _add_missing_columns,
     _add_vsi_prefix,
     _create_schema,
     _get_columns_names,
@@ -276,7 +279,7 @@ def test__get_field_names(
     layer_column_names: Tuple[str, ...],
 ) -> None:
     """Field names from dummy FileGDB schema details."""
-    field_names = _get_field_names(schema_fields=fileGDB_schema_field_details)
+    field_names = _get_field_names(schema_field_details=fileGDB_schema_field_details)
     assert field_names == layer_column_names
 
 
@@ -345,3 +348,24 @@ def test__identify_additional_columns(
         column_names=request.getfixturevalue(column_names),
     )
     assert additional_columns == expected_mask
+
+
+def test__add_missing_columns(
+    first_layer_pdf_with_missing_column: PandasDataFrame,
+    fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
+    layer_column_names: Tuple[str, ...],
+    layer_column_names_missing_column: Tuple[bool, ...],
+    first_layer_pdf: PandasDataFrame,
+) -> None:
+    """The same columns, with the same data types, in the same order."""
+    pdf = _add_missing_columns(
+        pdf=first_layer_pdf_with_missing_column,
+        schema_field_details=fileGDB_schema_field_details,
+        missing_columns=layer_column_names_missing_column,
+        spark_to_pandas_type_map=SPARK_TO_PANDAS,
+        schema_field_names=layer_column_names,
+    )
+    assert_series_equal(
+        left=pdf.dtypes,
+        right=first_layer_pdf.dtypes,
+    )

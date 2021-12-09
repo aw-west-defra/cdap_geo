@@ -5,10 +5,10 @@ from types import MappingProxyType
 from typing import Callable, Generator, Optional, Tuple, Union
 
 from more_itertools import pairwise
-from numpy import float32, int32, int64, object0, str0
+from numpy import float32, object0
 from osgeo.ogr import DataSource, Feature, GetFieldTypeName, Layer, Open
 from pandas import DataFrame as PandasDataFrame
-from pandas import Series
+from pandas import Int32Dtype, Int64Dtype, Series, StringDtype
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark.sql import Row, SparkSession
 from pyspark.sql.functions import col, explode, lit, udf
@@ -57,9 +57,9 @@ SPARK_TO_PANDAS = MappingProxyType(
         ArrayType(StringType()): object0,
         BinaryType(): object0,
         FloatType(): float32,
-        IntegerType(): int32,
-        LongType(): int64,
-        StringType(): str0,
+        IntegerType(): Int32Dtype(),
+        LongType(): Int64Dtype(),
+        StringType(): StringDtype(),
     }
 )
 
@@ -298,10 +298,10 @@ def _get_field_details(schema: StructType) -> Tuple[Tuple[str, DataType], ...]:
 
 
 def _get_field_names(
-    schema_fields: Tuple[Tuple[str, DataType], ...],
+    schema_field_details: Tuple[Tuple[str, DataType], ...],
 ) -> Tuple[str, ...]:
     """Returns field names from schema fields."""
-    return tuple(field[0] for field in schema_fields)
+    return tuple(field[0] for field in schema_field_details)
 
 
 def _get_columns_names(
@@ -327,6 +327,16 @@ def _identify_additional_columns(
     return tuple(column not in schema_field_names for column in column_names)
 
 
+def _coerce_types_to_schema(
+    pdf: PandasDataFrame,
+    schema_field_details: Tuple,
+    spark_to_pandas_type_map: MappingProxyType,
+) -> PandasDataFrame:
+    for column_name, data_type in schema_field_details:
+        pdf[column_name] = pdf[column_name].astype(spark_to_pandas_type_map[data_type])
+    return pdf
+
+
 def _drop_additional_columns(
     pdf: PandasDataFrame,
     column_names: Tuple,
@@ -339,30 +349,37 @@ def _drop_additional_columns(
 
 def _add_missing_columns(
     pdf: PandasDataFrame,
-    schema_fields: Tuple,
-    missing_columns: Tuple,
-    spark_to_pandas_type_map: MappingProxyType,
     schema_field_names: Tuple,
+    missing_columns: Tuple,
+    schema_field_details: Tuple,
+    spark_to_pandas_type_map: MappingProxyType,
 ) -> PandasDataFrame:
     """Adds missing fields to pandas DataFrame."""
-    to_add = compress(schema_fields, missing_columns)
-    missing_field_series = tuple(
-        Series(name=field[0], dtype=spark_to_pandas_type_map[field[1]])
-        for field in to_add
+    to_add = compress(schema_field_names, missing_columns)
+    missing_column_series = tuple(
+        Series(
+            name=field_name,
+        )
+        for field_name in to_add
     )
-    pdf_plus_missing_columns = pdf.append(missing_field_series)
+    pdf_plus_missing_columns = pdf.append(missing_column_series)
     reindexed_pdf = pdf_plus_missing_columns.reindex(columns=schema_field_names)
-    return reindexed_pdf
+    coerced_pdf = _coerce_types_to_schema(
+        pdf=reindexed_pdf,
+        schema_field_details=schema_field_details,
+        spark_to_pandas_type_map=spark_to_pandas_type_map,
+    )
+    return coerced_pdf
 
 
 def _coerce_columns_to_schema(
     pdf: PandasDataFrame,
-    schema_fields: Tuple,
+    schema_field_details: Tuple,
     spark_to_pandas_type_map: MappingProxyType,
 ) -> PandasDataFrame:
     """Adds missing fields or removes additional columns to match schema."""
     schema_field_names = _get_field_names(
-        schema_fields=schema_fields,
+        schema_field_details=schema_field_details,
     )
 
     column_names = _get_columns_names(
@@ -388,7 +405,7 @@ def _coerce_columns_to_schema(
             )
             return _add_missing_columns(
                 pdf=pdf_minus_additional_columns,
-                schema_fields=schema_fields,
+                schema_field_details=schema_field_details,
                 missing_columns=missing_columns,
                 spark_to_pandas_type_map=spark_to_pandas_type_map,
                 schema_field_names=schema_field_names,
@@ -396,7 +413,7 @@ def _coerce_columns_to_schema(
         elif any(missing_columns):
             return _add_missing_columns(
                 pdf=pdf,
-                schema_fields=schema_fields,
+                schema_field_details=schema_field_details,
                 missing_columns=missing_columns,
                 spark_to_pandas_type_map=spark_to_pandas_type_map,
                 schema_field_names=schema_field_names,
@@ -407,16 +424,6 @@ def _coerce_columns_to_schema(
                 column_names=column_names,
                 additional_columns=additional_columns,
             )
-
-
-def _coerce_types_to_schema(
-    pdf: PandasDataFrame,
-    schema_fields: Tuple,
-    spark_to_pandas_type_map: MappingProxyType,
-) -> PandasDataFrame:
-    for column_name, data_type in schema_fields:
-        pdf[column_name] = pdf[column_name].astype(spark_to_pandas_type_map[data_type])
-    return pdf
 
 
 def _null_data_frame_from_schema(schema: StructType) -> PandasDataFrame:
@@ -457,10 +464,10 @@ def _vector_file_to_pdf(
     if pdf is None:
         return _null_data_frame_from_schema(schema=schema)
     if coerce_to_schema:
-        schema_fields = _get_field_details(schema=schema)
+        schema_field_details = _get_field_details(schema=schema)
         coerced_pdf = _coerce_columns_to_schema(
             pdf=pdf,
-            schema_fields=schema_fields,
+            schema_field_details=schema_field_details,
             spark_to_pandas_type_map=spark_to_pandas_type_map,
         )
         if coerced_pdf is None:
@@ -468,7 +475,7 @@ def _vector_file_to_pdf(
         else:
             return _coerce_types_to_schema(
                 pdf=coerced_pdf,
-                schema_fields=schema_fields,
+                schema_field_details=schema_field_details,
                 spark_to_pandas_type_map=spark_to_pandas_type_map,
             )
     else:

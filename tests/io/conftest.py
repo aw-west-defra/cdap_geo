@@ -6,6 +6,7 @@ from typing import Tuple
 from _pytest.tmpdir import TempPathFactory
 from geopandas import GeoDataFrame
 from pandas import DataFrame as PandasDataFrame
+from pandas import Int64Dtype, StringDtype
 from pyspark.sql.types import (
     BinaryType,
     DataType,
@@ -69,6 +70,11 @@ def first_layer_gdf(
         ),
         columns=layer_column_names,
         crs="EPSG:27700",
+    ).astype(
+        {
+            "id": Int64Dtype(),
+            "category": StringDtype(),
+        },
     )
 
 
