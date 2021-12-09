@@ -114,7 +114,7 @@ def tests(session: Session) -> None:
     """Run the test suite."""
     args = session.posargs or [
         "--cov",
-        "-v",
+        "-vv",
     ]
     session.run("poetry", "install", "--no-dev", external=True)
     install_with_constraints(
