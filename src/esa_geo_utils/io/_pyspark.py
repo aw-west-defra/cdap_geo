@@ -333,7 +333,7 @@ def _drop_additional_columns(
     additional_columns: Tuple,
 ) -> PandasDataFrame:
     """Removes additional columns from pandas DataFrame."""
-    to_drop = list(compress(column_names, additional_columns))
+    to_drop = tuple(compress(column_names, additional_columns))
     return pdf.drop(columns=to_drop)
 
 
