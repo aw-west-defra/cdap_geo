@@ -11,7 +11,7 @@ from pandas import DataFrame as PandasDataFrame
 from pandas import Series
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark.sql import Row, SparkSession
-from pyspark.sql.functions import col, explode, lit, udf
+from pyspark.sql.functions import col, explode, lit, monotonically_increasing_id, udf
 from pyspark.sql.types import (
     ArrayType,
     BinaryType,
@@ -207,6 +207,7 @@ def _create_spark_df(
             "ranges",
             explode("ranges"),
         )
+        .withColumn("id", monotonically_increasing_id())
         .withColumn("start", col("ranges")[0])
         .withColumn("stop", col("ranges")[1])
         .drop("ranges")
@@ -588,12 +589,12 @@ def _spark_df_from_vector_files(
         schema=schema,
     )
 
-    num_of_partitions = df.count()
+    num_of_partitions = df["id"].max()
 
     spark.conf.set("spark.sql.shuffle.partitions", num_of_partitions)
 
     return (
-        df.repartition(num_of_partitions, col("path"))
-        .groupby("path")
+        df.repartition(num_of_partitions, col("id"))
+        .groupby(col("id"))
         .applyInPandas(parallel_read, _schema)
     )
