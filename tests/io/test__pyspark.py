@@ -17,6 +17,7 @@ from esa_geo_utils.io._pyspark import (
     SPARK_TO_PANDAS,
     _add_missing_columns,
     _add_vsi_prefix,
+    _coerce_columns_to_schema,
     _create_schema,
     _drop_additional_columns,
     _get_columns_names,
@@ -387,3 +388,42 @@ def test__drop_additional_columns(
         left=pdf,
         right=first_layer_pdf,
     )
+
+
+@pytest.mark.parametrize(
+    argnames=[
+        "pdf",
+    ],
+    argvalues=[
+        ("first_layer_pdf",),
+        ("first_layer_pdf_with_missing_column",),
+        ("first_layer_pdf_with_additional_column",),
+    ],
+    ids=[
+        "Same PDF",
+        "PDF with missing column",
+        "PDF with additional column",
+    ],
+)
+def test__coerce_columns_to_schema(
+    request: FixtureRequest,
+    pdf: str,
+    fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
+    first_layer_pdf: PandasDataFrame,
+) -> None:
+    """Missing columns are added and additional columns removed."""
+    coerced_pdf = _coerce_columns_to_schema(
+        pdf=request.getfixturevalue(pdf),
+        schema_field_details=fileGDB_schema_field_details,
+        spark_to_pandas_type_map=SPARK_TO_PANDAS,
+    )
+    if pdf == "first_layer_pdf_with_missing_column":
+        assert_series_equal(
+            left=coerced_pdf.dtypes,
+            right=first_layer_pdf.dtypes,
+        )
+    else:
+        assert_frame_equal(
+            left=coerced_pdf,
+            right=first_layer_pdf,
+        )
