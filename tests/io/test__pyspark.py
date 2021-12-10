@@ -7,7 +7,7 @@ from typing import ContextManager, Optional, Tuple, Union
 import pytest
 from osgeo.ogr import Layer, Open
 from pandas import DataFrame as PandasDataFrame
-from pandas.testing import assert_series_equal
+from pandas.testing import assert_frame_equal, assert_series_equal
 from pyspark.sql.types import DataType, StructType
 from pytest import FixtureRequest, raises
 from shapely.geometry import Point
@@ -18,6 +18,7 @@ from esa_geo_utils.io._pyspark import (
     _add_missing_columns,
     _add_vsi_prefix,
     _create_schema,
+    _drop_additional_columns,
     _get_columns_names,
     _get_feature_count,
     _get_feature_schema,
@@ -368,4 +369,21 @@ def test__add_missing_columns(
     assert_series_equal(
         left=pdf.dtypes,
         right=first_layer_pdf.dtypes,
+    )
+
+
+def test__drop_additional_columns(
+    first_layer_pdf_with_additional_column: PandasDataFrame,
+    layer_column_names_additional_column: Tuple[bool, ...],
+    first_layer_pdf: PandasDataFrame,
+) -> None:
+    """Additional column is removed."""
+    pdf = _drop_additional_columns(
+        pdf=first_layer_pdf_with_additional_column,
+        column_names=layer_column_names_additional_column,
+        additional_columns=(False, False, False, True),
+    )
+    assert_frame_equal(
+        left=pdf,
+        right=first_layer_pdf,
     )

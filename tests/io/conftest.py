@@ -6,7 +6,7 @@ from typing import Tuple
 from _pytest.tmpdir import TempPathFactory
 from geopandas import GeoDataFrame
 from pandas import DataFrame as PandasDataFrame
-from pandas import Int64Dtype, StringDtype
+from pandas import Int64Dtype, Series, StringDtype
 from pyspark.sql.types import (
     BinaryType,
     DataType,
@@ -96,6 +96,16 @@ def first_layer_pdf_with_missing_column(
     """First layer pdf with missing 'id' column."""
     return first_layer_pdf.drop(
         columns=["id"],
+    )
+
+
+@fixture
+def first_layer_pdf_with_additional_column(
+    first_layer_pdf: PandasDataFrame,
+) -> PandasDataFrame:
+    """First layer pdf with additional 'id' column."""
+    return first_layer_pdf.assign(
+        additional=Series(),
     )
 
 
