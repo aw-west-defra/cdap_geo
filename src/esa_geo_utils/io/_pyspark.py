@@ -562,10 +562,6 @@ def _spark_df_from_vector_files(
     if vsi_prefix:
         paths = _add_vsi_prefix(paths=paths, vsi_prefix=vsi_prefix)
 
-    num_of_files = len(paths)
-
-    spark.conf.set("spark.sql.shuffle.partitions", num_of_files)
-
     df = _create_spark_df(
         spark=spark,
         paths=paths,
@@ -592,8 +588,12 @@ def _spark_df_from_vector_files(
         schema=schema,
     )
 
+    num_of_partitions = df.count()
+
+    spark.conf.set("spark.sql.shuffle.partitions", num_of_partitions)
+
     return (
-        df.repartition(num_of_files, col("path"))
+        df.repartition(num_of_partitions, col("path"))
         .groupby("path")
         .applyInPandas(parallel_read, _schema)
     )
