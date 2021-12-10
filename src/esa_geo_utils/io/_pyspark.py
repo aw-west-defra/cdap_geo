@@ -553,9 +553,9 @@ def _spark_df_from_vector_files(
         spark (SparkSession): [description]. Defaults to
             SparkSession._activeSession.
         suffix (str): [description]. Defaults to "*".
-        ideal_chunk_size (int): [description]. Defaults to 5_000_000.
+        ideal_chunk_size (int): [description]. Defaults to 3_000_000.
         geom_field_name (str): [description]. Defaults to "geometry".
-        geom_field_type (str): [description]. Defaults to "WKB".
+        geom_field_type (str): [description]. Defaults to "Binary".
         coerce_to_schema (bool): [description]. Defaults to False.
         spark_to_pandas_type_map (MappingProxyType): [description]. Defaults
             to SPARK_TO_PANDAS.
@@ -625,7 +625,7 @@ def _spark_df_from_vector_files(
     spark.conf.set("spark.sql.shuffle.partitions", total_chunks)
 
     return (
-        df.repartition(total_chunks, col("chunk_id"))
-        .groupby("chunk_id")
+        df.repartition(total_chunks)
+        .groupby("path", "layer_name", "start", "stop")
         .applyInPandas(parallel_read, _schema)
     )
