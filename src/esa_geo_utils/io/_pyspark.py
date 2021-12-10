@@ -595,6 +595,6 @@ def _spark_df_from_vector_files(
 
     return (
         df.repartition(num_of_partitions, col("id"))
-        .groupby(col("id"))
+        .groupby("id")
         .applyInPandas(parallel_read, _schema)
     )
