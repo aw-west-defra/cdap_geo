@@ -261,20 +261,13 @@ def _get_feature_schema(
 
 
 def _create_schema(
-    paths: Tuple[Any, ...],
+    data_source: DataSource,
+    layer_name: str,
     geom_field_name: str,
     geom_field_type: str,
     ogr_to_spark_type_map: MappingProxyType,
-    layer_identifier: Optional[Union[str, int]],
 ) -> StructType:
     """Returns a schema for a given layer in the first file in a list of file paths."""
-    data_source = Open(paths[0])
-
-    layer_name = _get_layer_name(
-        data_source=data_source,
-        layer_identifier=layer_identifier,
-    )
-
     layer = _get_layer(
         data_source=data_source,
         layer_name=layer_name,
@@ -573,15 +566,22 @@ def _spark_df_from_vector_files(
     Returns:
         SparkDataFrame: [description]
     """
-    paths = _get_paths(directory=directory, suffix=suffix)
+    paths = _get_paths(
+        directory=directory,
+        suffix=suffix,
+    )
 
     if vsi_prefix:
-        paths = _add_vsi_prefix(paths=paths, vsi_prefix=vsi_prefix)
+        paths = _add_vsi_prefix(
+            paths=paths,
+            vsi_prefix=vsi_prefix,
+        )
 
     data_sources = _get_data_sources(paths)
 
     layer_names = _get_layer_names(
-        data_sources=data_sources, layer_identifier=layer_identifier
+        data_sources=data_sources,
+        layer_identifier=layer_identifier,
     )
 
     feature_counts = _get_feature_counts(
@@ -607,8 +607,8 @@ def _spark_df_from_vector_files(
         schema
         if schema
         else _create_schema(
-            paths=paths,
-            layer_identifier=layer_identifier,
+            data_source=data_sources[0],
+            layer_name=layer_names[0],
             ogr_to_spark_type_map=ogr_to_spark_type_map,
             geom_field_name=geom_field_name,
             geom_field_type=geom_field_type,
