@@ -11,14 +11,7 @@ from pandas import DataFrame as PandasDataFrame
 from pandas import Series
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark.sql import Row, SparkSession
-from pyspark.sql.functions import (
-    col,
-    explode,
-    lit,
-    max,
-    monotonically_increasing_id,
-    udf,
-)
+from pyspark.sql.functions import col, explode, lit, monotonically_increasing_id, udf
 from pyspark.sql.types import (
     ArrayType,
     BinaryType,
@@ -596,7 +589,7 @@ def _spark_df_from_vector_files(
         schema=schema,
     )
 
-    num_of_partitions = max(df["id"])
+    num_of_partitions = df.count()
 
     spark.conf.set("spark.sql.shuffle.partitions", num_of_partitions)
 
