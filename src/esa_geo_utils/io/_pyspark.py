@@ -479,8 +479,8 @@ def _parallel_read_generator(
         return _vector_file_to_pdf(
             path=pdf["path"][0],
             layer_name=pdf["layer_name"][0],
-            start=pdf["start"][0],
-            stop=pdf["stop"][0],
+            start=int(pdf["start"][0]),
+            stop=int(pdf["stop"][0]),
             geom_field_name=geom_field_name,
             coerce_to_schema=coerce_to_schema,
             schema=schema,
@@ -619,13 +619,13 @@ def _spark_df_from_vector_files(
         geom_field_name=geom_field_name,
         coerce_to_schema=coerce_to_schema,
         spark_to_pandas_type_map=spark_to_pandas_type_map,
-        schema=schema,
+        schema=_schema,
     )
 
     spark.conf.set("spark.sql.shuffle.partitions", total_chunks)
 
     return (
-        df.repartition(total_chunks)
-        .groupby("path", "layer_name", "start", "stop")
+        df.repartition(total_chunks, "chunk_id")
+        .groupby("chunk_id")
         .applyInPandas(parallel_read, _schema)
     )
