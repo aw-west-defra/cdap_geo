@@ -1,3 +1,4 @@
+from functools import singledispatch
 from itertools import compress
 from os import listdir
 from os.path import join
@@ -11,7 +12,7 @@ from pandas import DataFrame as PandasDataFrame
 from pandas import Int32Dtype, Int64Dtype, Series, StringDtype
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark.sql import Row, SparkSession
-from pyspark.sql.functions import col, explode, lit, udf
+from pyspark.sql.functions import col, explode, monotonically_increasing_id
 from pyspark.sql.types import (
     ArrayType,
     BinaryType,
@@ -79,13 +80,11 @@ def _add_vsi_prefix(paths: Tuple[str, ...], vsi_prefix: str) -> Tuple[str, ...]:
     return tuple("/" + _vsi_prefix + "//" + path for path in _paths)
 
 
-def _create_paths_df(spark: SparkSession, paths: Tuple[str, ...]) -> SparkDataFrame:
-    """Given a list of full paths, returns a DataFrame of those paths."""
-    rows = [Row(path=path) for path in paths]
-    return spark.createDataFrame(rows)
+def _get_data_sources(paths: Tuple[str, ...]) -> Tuple[DataSource, ...]:
+    return tuple(Open(path) for path in paths)
 
 
-def _get_layer_names(data_source: DataSource) -> Tuple[str, ...]:
+def _get_data_source_layer_names(data_source: DataSource) -> Tuple[str, ...]:
     """Given a OGR DataSource, returns a sequence of layers."""
     return tuple(
         data_source.GetLayer(index).GetName()
@@ -93,92 +92,91 @@ def _get_layer_names(data_source: DataSource) -> Tuple[str, ...]:
     )
 
 
+@singledispatch
 def _get_layer_name(
+    layer_identifier: None,
     data_source: DataSource,
-    layer: Optional[Union[str, int]],
-) -> str:
-    """Returns the given layer name, name at index, or name of 0th layer."""
-    layers = _get_layer_names(
-        data_source=data_source,
+) -> Layer:
+    """Returns the name of the first layer."""
+    data_source_layer_names = _get_data_source_layer_names(
+        data_source,
     )
 
-    if isinstance(layer, str):
-        if layer not in layers:
-            raise ValueError(f"Expecting one of {layers} but received {layer}.")
-        else:
-            _layer = layer
-    elif isinstance(layer, int):
-        _layer = layers[layer]
-    elif not layer:
-        _layer = layers[0]
+    layer_name = data_source_layer_names[0]
 
-    return _layer
+    return layer_name
 
 
-@udf(returnType=StringType())
-def _get_layer_name_udf(path: str, layer: str) -> str:
-    data_source = Open(path)
-    return _get_layer_name(data_source, layer=layer)
+@_get_layer_name.register(str)
+def _get_layer_name_str(
+    layer_identifier: str,
+    data_source: DataSource,
+) -> Layer:
+    """Returns the given layer name, if that layer name exists."""
+    data_source_layer_names = _get_data_source_layer_names(
+        data_source,
+    )
+
+    if layer_identifier not in data_source_layer_names:
+        raise ValueError(
+            f"Expecting one of {data_source_layer_names} but received {layer_identifier}.",  # noqa B950
+        )
+    else:
+        layer_name = layer_identifier
+
+    return layer_name
 
 
-def _get_feature_count(layer: Layer) -> int:
+@_get_layer_name.register(int)
+def _get_layer_name_int(
+    layer_identifier: int,
+    data_source: DataSource,
+) -> Layer:
+    """Returns the layer name at given index, if that index is valid."""
+    data_source_layer_names = _get_data_source_layer_names(
+        data_source,
+    )
+
+    number_of_layers = len(data_source_layer_names)
+
+    if layer_identifier > number_of_layers:
+        raise ValueError(
+            f"Expecting index between 0 and {number_of_layers} but received {layer_identifier}.",  # noqa B950
+        )
+    else:
+        layer_name = data_source_layer_names[layer_identifier]
+
+    return layer_name
+
+
+def _get_layer_names(
+    data_sources: Tuple[DataSource, ...], layer_identifier: Optional[Union[str, int]]
+) -> Tuple[str, ...]:
+    return tuple(
+        _get_layer_name(data_source=data_source, layer_identifier=layer_identifier)
+        for data_source in data_sources
+    )
+
+
+def _get_feature_count(data_source: DataSource, layer_name: str) -> int:
+    layer = data_source.GetLayer(layer_name)
     feat_count = layer.GetFeatureCount()
     if feat_count == -1:
         feat_count = layer.GetFeatureCount(force=True)
     return feat_count
 
 
-def _get_layer(
-    data_source: DataSource,
-    layer: Optional[Union[str, int]],
-    start: Optional[int],
-    stop: Optional[int],
-) -> Layer:
-    """Returns a GDAL Layer from a SQL statement, name or index, or 0th layer."""
-    _layer = _get_layer_name(
-        data_source=data_source,
-        layer=layer,
-    )
-
-    # ! "S608: Possible SQL injection vector through string-based query
-    # ! construction" is turned off here because `_get_layer_name` will
-    # ! raise an error if the user supplied layer doesn't exist and
-    # ! `start` and `stop` are generated within the function.
-    if isinstance(start, int) and isinstance(stop, int):
-        sql = f"SELECT * from {_layer} WHERE FID >= {start} AND FID < {stop}"  # noqa: S608, B950
-    else:
-        sql = f"SELECT * from {_layer}"  # noqa: S608
-
-    return data_source.ExecuteSQL(sql)
-
-
-@udf(returnType=IntegerType())
-def _get_feature_count_udf(path: str, layer: str) -> int:
-    data_source = Open(path)
-    _layer = _get_layer(
-        data_source=data_source,
-        layer=layer,
-        start=None,
-        stop=None,
-    )
-    return _get_feature_count(_layer)
-
-
-def _create_feature_count_df(
-    paths_df: SparkDataFrame,
-    layer: Optional[str],
-) -> SparkDataFrame:
-    return paths_df.withColumn(
-        "layer",
-        _get_layer_name_udf("path", lit(layer)),
-    ).withColumn(
-        "feature_count",
-        _get_feature_count_udf("path", "layer"),
+def _get_feature_counts(
+    data_sources: Tuple[DataSource, ...],
+    layer_names: Tuple[str, ...],
+) -> Tuple[int, ...]:
+    return tuple(
+        _get_feature_count(data_source=data_source, layer_name=layer_name)
+        for data_source, layer_name in zip(data_sources, layer_names)
     )
 
 
-@udf(returnType=ArrayType(ArrayType(IntegerType())))
-def _get_ranges_udf(
+def _get_chunks(
     feature_count: int, ideal_chunk_size: int
 ) -> Tuple[Tuple[int, int], ...]:
     exclusive_range = range(0, feature_count, ideal_chunk_size)
@@ -187,33 +185,78 @@ def _get_ranges_udf(
     return tuple(range_pairs)
 
 
+def _get_sequence_of_chunks(
+    feature_counts: Tuple[int, ...],
+    ideal_chunk_size: int,
+) -> Tuple[Tuple[Tuple[int, int], ...], ...]:
+    return tuple(
+        _get_chunks(feature_count=feature_count, ideal_chunk_size=ideal_chunk_size)
+        for feature_count in feature_counts
+    )
+
+
+def _get_total_chunks(
+    sequence_of_chunks: Tuple[Tuple[Tuple[int, int], ...], ...]
+) -> int:
+    return sum(len(chunks) for chunks in sequence_of_chunks)
+
+
 def _create_spark_df(
     spark: SparkSession,
     paths: Tuple[str, ...],
-    ideal_chunk_size: int,
-    layer: Optional[str],
+    layer_names: Tuple[str, ...],
+    sequence_of_chunks: Tuple[Tuple[Tuple[int, int], ...], ...],
 ) -> SparkDataFrame:
-    paths_df = _create_paths_df(spark=spark, paths=paths)
-
-    feature_count_df = _create_feature_count_df(
-        paths_df=paths_df,
-        layer=layer,
+    rows = tuple(
+        Row(
+            path=path,
+            layer_name=layer_name,
+            chunks=chunks,
+        )
+        for path, layer_name, chunks in zip(
+            paths,
+            layer_names,
+            sequence_of_chunks,
+        )
     )
 
-    ranges_df = feature_count_df.withColumn(
-        "ranges",
-        _get_ranges_udf("feature_count", lit(ideal_chunk_size)),
+    sdf = spark.createDataFrame(
+        data=rows,
+        schema=StructType(
+            [
+                StructField("path", StringType()),
+                StructField("layer_name", StringType()),
+                StructField("chunks", ArrayType(ArrayType(IntegerType()))),
+            ]
+        ),
     )
 
     return (
-        ranges_df.withColumn(
-            "ranges",
-            explode("ranges"),
-        )
-        .withColumn("start", col("ranges")[0])
-        .withColumn("stop", col("ranges")[1])
-        .drop("ranges")
+        sdf.withColumn("chunk", explode("chunks"))
+        .withColumn("chunk_id", monotonically_increasing_id())
+        .withColumn("start", col("chunk")[0])
+        .withColumn("stop", col("chunk")[1])
+        .drop("chunk", "chunks")
     )
+
+
+def _get_layer(
+    data_source: DataSource,
+    layer_name: str,
+    start: Optional[int],
+    stop: Optional[int],
+) -> Layer:
+    """Returns a GDAL Layer from a SQL statement, name or index, or 0th layer."""
+    # ! "S608: Possible SQL injection vector through string-based query
+    # ! construction" is turned off here because `_get_layer_name` will
+    # ! raise an error if the user supplied layer doesn't exist and
+    # ! `start` and `stop` are generated within the function.
+    if isinstance(start, int) and isinstance(stop, int):
+        sql = f"SELECT * from {layer_name} WHERE FID >= {start} AND FID < {stop}"  # noqa: S608, B950
+    else:
+        sql = f"SELECT * from {layer_name}"  # noqa: S608
+
+    return data_source.ExecuteSQL(sql)
 
 
 def _get_property_names(layer: Layer) -> Tuple[str, ...]:
@@ -255,22 +298,22 @@ def _get_feature_schema(
 
 
 def _create_schema(
-    paths: Tuple[str, ...],
+    data_source: DataSource,
+    layer_name: str,
     geom_field_name: str,
     geom_field_type: str,
     ogr_to_spark_type_map: MappingProxyType,
-    layer: Optional[Union[str, int]],
 ) -> StructType:
     """Returns a schema for a given layer in the first file in a list of file paths."""
-    data_source = Open(paths[0])
-    _layer = _get_layer(
+    layer = _get_layer(
         data_source=data_source,
-        layer=layer,
+        layer_name=layer_name,
         start=None,
         stop=None,
     )
+
     return _get_feature_schema(
-        layer=_layer,
+        layer=layer,
         ogr_to_spark_type_map=ogr_to_spark_type_map,
         geom_field_name=geom_field_name,
         geom_field_type=geom_field_type,
@@ -441,7 +484,7 @@ def _vector_file_to_pdf(
     path: str,
     start: int,
     stop: int,
-    layer: Optional[Union[str, int]],
+    layer_name: str,
     geom_field_name: str,
     coerce_to_schema: bool,
     schema: StructType,
@@ -451,16 +494,16 @@ def _vector_file_to_pdf(
     data_source = Open(path)
     if data_source is None:
         return _null_data_frame_from_schema(schema=schema)
-    _layer = _get_layer(
+    layer = _get_layer(
         data_source=data_source,
-        layer=layer,
+        layer_name=layer_name,
         start=start,
         stop=stop,
     )
-    if _layer is None:
+    if layer is None:
         return _null_data_frame_from_schema(schema=schema)
-    features_generator = _get_features(layer=_layer)
-    feature_names = _get_property_names(layer=_layer) + (geom_field_name,)
+    features_generator = _get_features(layer=layer)
+    feature_names = _get_property_names(layer=layer) + (geom_field_name,)
     pdf = PandasDataFrame(data=features_generator, columns=feature_names)
     if pdf is None:
         return _null_data_frame_from_schema(schema=schema)
@@ -494,10 +537,10 @@ def _parallel_read_generator(
     def _(pdf: PandasDataFrame) -> PandasDataFrame:
         """Returns a the pandas_udf compatible version of _vector_file_to_pdf."""
         return _vector_file_to_pdf(
-            path=pdf["path"][0],
-            layer=pdf["layer"][0],
-            start=pdf["start"][0],
-            stop=pdf["stop"][0],
+            path=str(pdf["path"][0]),
+            layer_name=str(pdf["layer_name"][0]),
+            start=int(pdf["start"][0]),
+            stop=int(pdf["stop"][0]),
             geom_field_name=geom_field_name,
             coerce_to_schema=coerce_to_schema,
             schema=schema,
@@ -524,14 +567,14 @@ def _spark_df_from_vector_files(
     ogr_to_spark_type_map: MappingProxyType = OGR_TO_SPARK,
     spark: SparkSession = SparkSession._activeSession,
     suffix: str = "*",
-    ideal_chunk_size: int = 5_000_000,
+    ideal_chunk_size: int = 3_000_000,
     geom_field_name: str = "geometry",
     geom_field_type: str = "Binary",
     coerce_to_schema: bool = False,
     spark_to_pandas_type_map: MappingProxyType = SPARK_TO_PANDAS,
     vsi_prefix: Optional[str] = None,
     schema: StructType = None,
-    layer: Optional[str] = None,
+    layer_identifier: Optional[Union[str, int]] = None,
 ) -> SparkDataFrame:
     """Given a folder of vector files, returns a Spark DataFrame.
 
@@ -570,41 +613,62 @@ def _spark_df_from_vector_files(
         spark (SparkSession): [description]. Defaults to
             SparkSession._activeSession.
         suffix (str): [description]. Defaults to "*".
-        ideal_chunk_size (int): [description]. Defaults to 5_000_000.
+        ideal_chunk_size (int): [description]. Defaults to 3_000_000.
         geom_field_name (str): [description]. Defaults to "geometry".
-        geom_field_type (str): [description]. Defaults to "WKB".
+        geom_field_type (str): [description]. Defaults to "Binary".
         coerce_to_schema (bool): [description]. Defaults to False.
         spark_to_pandas_type_map (MappingProxyType): [description]. Defaults
             to SPARK_TO_PANDAS.
         vsi_prefix (str, optional): [description]. Defaults to None.
         schema (StructType): [description]. Defaults to None.
-        layer (str, optional): [description]. Defaults to None.
+        layer_identifier (str, optional): [description]. Defaults to None.
 
     Returns:
         SparkDataFrame: [description]
     """
-    paths = _get_paths(directory=directory, suffix=suffix)
+    paths = _get_paths(
+        directory=directory,
+        suffix=suffix,
+    )
 
     if vsi_prefix:
-        paths = _add_vsi_prefix(paths=paths, vsi_prefix=vsi_prefix)
+        paths = _add_vsi_prefix(
+            paths=paths,
+            vsi_prefix=vsi_prefix,
+        )
 
-    num_of_files = len(paths)
+    data_sources = _get_data_sources(paths)
 
-    spark.conf.set("spark.sql.shuffle.partitions", num_of_files)
+    layer_names = _get_layer_names(
+        data_sources=data_sources,
+        layer_identifier=layer_identifier,
+    )
+
+    feature_counts = _get_feature_counts(
+        data_sources=data_sources,
+        layer_names=layer_names,
+    )
+
+    sequence_of_chunks = _get_sequence_of_chunks(
+        feature_counts=feature_counts,
+        ideal_chunk_size=ideal_chunk_size,
+    )
+
+    total_chunks = _get_total_chunks(sequence_of_chunks)
 
     df = _create_spark_df(
         spark=spark,
         paths=paths,
-        ideal_chunk_size=ideal_chunk_size,
-        layer=layer,
+        layer_names=layer_names,
+        sequence_of_chunks=sequence_of_chunks,
     )
 
     _schema = (
         schema
         if schema
         else _create_schema(
-            paths=paths,
-            layer=layer,
+            data_source=data_sources[0],
+            layer_name=layer_names[0],
             ogr_to_spark_type_map=ogr_to_spark_type_map,
             geom_field_name=geom_field_name,
             geom_field_type=geom_field_type,
@@ -615,11 +679,13 @@ def _spark_df_from_vector_files(
         geom_field_name=geom_field_name,
         coerce_to_schema=coerce_to_schema,
         spark_to_pandas_type_map=spark_to_pandas_type_map,
-        schema=schema,
+        schema=_schema,
     )
 
+    spark.conf.set("spark.sql.shuffle.partitions", total_chunks)
+
     return (
-        df.repartition(num_of_files, col("path"))
-        .groupby("path")
+        df.repartition(total_chunks, "chunk_id")
+        .groupby("chunk_id")
         .applyInPandas(parallel_read, _schema)
     )
