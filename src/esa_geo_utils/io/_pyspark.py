@@ -1,3 +1,4 @@
+from functools import singledispatch
 from itertools import compress
 from os import listdir
 from os.path import join
@@ -88,26 +89,59 @@ def _get_data_source_layer_names(data_source: DataSource) -> Tuple[str, ...]:
     )
 
 
+@singledispatch
 def _get_layer_name(
+    layer_identifier: None,
     data_source: DataSource,
-    layer_identifier: Optional[Union[str, int]],
 ) -> Layer:
-    """Returns the given layer name, name at index, or name of 0th layer."""
+    """Returns the name of the first layer."""
     data_source_layer_names = _get_data_source_layer_names(
         data_source,
     )
 
-    if isinstance(layer_identifier, str):
-        if layer_identifier not in data_source_layer_names:
-            raise ValueError(
-                f"Expecting one of {data_source_layer_names} but received {layer_identifier}.",  # noqa B950
-            )
-        else:
-            layer_name = layer_identifier
-    elif isinstance(layer_identifier, int):
+    layer_name = data_source_layer_names[0]
+
+    return layer_name
+
+
+@_get_layer_name.register(str)
+def _get_layer_name_str(
+    layer_identifier: str,
+    data_source: DataSource,
+) -> Layer:
+    """Returns the given layer name, if that layer name exists."""
+    data_source_layer_names = _get_data_source_layer_names(
+        data_source,
+    )
+
+    if layer_identifier not in data_source_layer_names:
+        raise ValueError(
+            f"Expecting one of {data_source_layer_names} but received {layer_identifier}.",  # noqa B950
+        )
+    else:
+        layer_name = layer_identifier
+
+    return layer_name
+
+
+@_get_layer_name.register(int)
+def _get_layer_name_int(
+    layer_identifier: int,
+    data_source: DataSource,
+) -> Layer:
+    """Returns the layer name at given index, if that index is valid."""
+    data_source_layer_names = _get_data_source_layer_names(
+        data_source,
+    )
+
+    number_of_layers = len(data_source_layer_names)
+
+    if layer_identifier > number_of_layers:
+        raise ValueError(
+            f"Expecting index between 0 and {number_of_layers} but received {layer_identifier}.",  # noqa B950
+        )
+    else:
         layer_name = data_source_layer_names[layer_identifier]
-    elif not layer_identifier:
-        layer_name = data_source_layer_names[0]
 
     return layer_name
 
