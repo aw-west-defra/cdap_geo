@@ -619,7 +619,7 @@ def _spark_df_from_vector_files(
         geom_field_name=geom_field_name,
         coerce_to_schema=coerce_to_schema,
         spark_to_pandas_type_map=spark_to_pandas_type_map,
-        schema=schema,
+        schema=_schema,
     )
 
     spark.conf.set("spark.sql.shuffle.partitions", total_chunks)
