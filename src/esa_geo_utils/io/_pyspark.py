@@ -625,7 +625,7 @@ def _spark_df_from_vector_files(
     spark.conf.set("spark.sql.shuffle.partitions", total_chunks)
 
     return (
-        df.repartition(total_chunks)
-        .groupby("path", "layer_name", "start", "stop")
+        df.repartition(total_chunks, "chunk_id")
+        .groupby("chunk_id")
         .applyInPandas(parallel_read, _schema)
     )
