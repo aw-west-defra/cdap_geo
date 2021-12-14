@@ -477,10 +477,10 @@ def _parallel_read_generator(
     def _(pdf: PandasDataFrame) -> PandasDataFrame:
         """Returns a the pandas_udf compatible version of _vector_file_to_pdf."""
         return _vector_file_to_pdf(
-            path=pdf["path"][0],
-            layer_name=pdf["layer_name"][0],
-            start=pdf["start"][0],
-            stop=pdf["stop"][0],
+            path=str(pdf["path"][0]),
+            layer_name=str(pdf["layer_name"][0]),
+            start=int(pdf["start"][0]),
+            stop=int(pdf["stop"][0]),
             geom_field_name=geom_field_name,
             coerce_to_schema=coerce_to_schema,
             schema=schema,
