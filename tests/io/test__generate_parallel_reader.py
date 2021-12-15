@@ -1,0 +1,218 @@
+"""Tests for _pyspark module."""
+from typing import Tuple
+
+import pytest
+from osgeo.ogr import Open
+from pandas import DataFrame as PandasDataFrame
+from pandas.testing import assert_frame_equal, assert_series_equal
+from pyspark.sql.types import DataType, StructType
+from pytest import FixtureRequest
+from shapely.geometry import Point
+from shapely.wkb import loads
+
+from esa_geo_utils.io import SPARK_TO_PANDAS
+from esa_geo_utils.io._generate_parallel_reader import (
+    _add_missing_columns,
+    _coerce_columns_to_schema,
+    _drop_additional_columns,
+    _get_columns_names,
+    _get_features,
+    _get_field_details,
+    _get_field_names,
+    _get_geometry,
+    _get_properties,
+    _identify_additional_columns,
+    _identify_missing_columns,
+)
+
+
+def test__get_properties(fileGDB_path: str) -> None:
+    """Properties from 0th row from 0th layer."""
+    data_source = Open(fileGDB_path)
+    layer = data_source.GetLayer()
+    feature = layer.GetFeature(0)
+    properties = _get_properties(feature)
+    assert properties == (0, "C")
+
+
+def test__get_geometry(fileGDB_path: str) -> None:
+    """Geometry from 0th row from 0th layer."""
+    data_source = Open(fileGDB_path)
+    layer = data_source.GetLayer()
+    feature = layer.GetFeature(0)
+    geometry = _get_geometry(feature)
+    shapely_object = loads(bytes(geometry[0]))
+    assert shapely_object == Point(1, 1)
+
+
+def test__get_features(fileGDB_path: str) -> None:
+    """All fields from the 0th row of the 0th layer."""
+    data_source = Open(fileGDB_path)
+    layer = data_source.GetLayer()
+    features_generator = _get_features(layer)
+    *properties, geometry = next(features_generator)
+    shapely_object = loads(bytes(geometry))
+    assert tuple(properties) == (0, "C")
+    assert shapely_object == Point(1, 1)
+
+
+def test__get_field_details(
+    fileGDB_schema: StructType,
+    fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
+) -> None:
+    """Field details from dummy FileGDB schema."""
+    fields = _get_field_details(schema=fileGDB_schema)
+    assert fields == fileGDB_schema_field_details
+
+
+def test__get_field_names(
+    fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
+    layer_column_names: Tuple[str, ...],
+) -> None:
+    """Field names from dummy FileGDB schema details."""
+    field_names = _get_field_names(schema_field_details=fileGDB_schema_field_details)
+    assert field_names == layer_column_names
+
+
+def test__get_columns_names(
+    first_layer_pdf: PandasDataFrame,
+    layer_column_names: Tuple[str, ...],
+) -> None:
+    """Column names from pandas version of dummy first layer."""
+    column_names = _get_columns_names(
+        pdf=first_layer_pdf,
+    )
+    assert column_names == layer_column_names
+
+
+@pytest.mark.parametrize(
+    argnames=[
+        "column_names",
+        "expected_mask",
+    ],
+    argvalues=[
+        ("layer_column_names", (False, False, False)),
+        ("layer_column_names_missing_column", (True, False, False)),
+    ],
+    ids=[
+        "Same column names",
+        "Missing column name",
+    ],
+)
+def test__identify_missing_columns(
+    layer_column_names: Tuple[str, ...],
+    request: FixtureRequest,
+    column_names: str,
+    expected_mask: Tuple[bool, ...],
+) -> None:
+    """Missing column is identified as `True`."""
+    missing_columns = _identify_missing_columns(
+        schema_field_names=layer_column_names,
+        column_names=request.getfixturevalue(column_names),
+    )
+    assert missing_columns == expected_mask
+
+
+@pytest.mark.parametrize(
+    argnames=[
+        "column_names",
+        "expected_mask",
+    ],
+    argvalues=[
+        ("layer_column_names", (False, False, False)),
+        ("layer_column_names_additional_column", (False, False, False, True)),
+    ],
+    ids=[
+        "Same column names",
+        "Additional column name",
+    ],
+)
+def test__identify_additional_columns(
+    layer_column_names: Tuple[str, ...],
+    request: FixtureRequest,
+    column_names: str,
+    expected_mask: Tuple[bool, ...],
+) -> None:
+    """Additional column is identified as `True`."""
+    additional_columns = _identify_additional_columns(
+        schema_field_names=layer_column_names,
+        column_names=request.getfixturevalue(column_names),
+    )
+    assert additional_columns == expected_mask
+
+
+def test__add_missing_columns(
+    first_layer_pdf_with_missing_column: PandasDataFrame,
+    fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
+    layer_column_names: Tuple[str, ...],
+    layer_column_names_missing_column: Tuple[bool, ...],
+    first_layer_pdf: PandasDataFrame,
+) -> None:
+    """The same columns, with the same data types, in the same order."""
+    pdf = _add_missing_columns(
+        pdf=first_layer_pdf_with_missing_column,
+        schema_field_details=fileGDB_schema_field_details,
+        missing_columns=layer_column_names_missing_column,
+        spark_to_pandas_type_map=SPARK_TO_PANDAS,
+        schema_field_names=layer_column_names,
+    )
+    assert_series_equal(
+        left=pdf.dtypes,
+        right=first_layer_pdf.dtypes,
+    )
+
+
+def test__drop_additional_columns(
+    first_layer_pdf_with_additional_column: PandasDataFrame,
+    layer_column_names_additional_column: Tuple[bool, ...],
+    first_layer_pdf: PandasDataFrame,
+) -> None:
+    """Additional column is removed."""
+    pdf = _drop_additional_columns(
+        pdf=first_layer_pdf_with_additional_column,
+        column_names=layer_column_names_additional_column,
+        additional_columns=(False, False, False, True),
+    )
+    assert_frame_equal(
+        left=pdf,
+        right=first_layer_pdf,
+    )
+
+
+@pytest.mark.parametrize(
+    argnames=[
+        "pdf",
+    ],
+    argvalues=[
+        ("first_layer_pdf",),
+        ("first_layer_pdf_with_missing_column",),
+        ("first_layer_pdf_with_additional_column",),
+    ],
+    ids=[
+        "Same PDF",
+        "PDF with missing column",
+        "PDF with additional column",
+    ],
+)
+def test__coerce_columns_to_schema(
+    request: FixtureRequest,
+    pdf: str,
+    fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
+    first_layer_pdf: PandasDataFrame,
+) -> None:
+    """Missing columns are added and additional columns removed."""
+    coerced_pdf = _coerce_columns_to_schema(
+        pdf=request.getfixturevalue(pdf),
+        schema_field_details=fileGDB_schema_field_details,
+        spark_to_pandas_type_map=SPARK_TO_PANDAS,
+    )
+    if pdf == "first_layer_pdf_with_missing_column":
+        assert_series_equal(
+            left=coerced_pdf.dtypes,
+            right=first_layer_pdf.dtypes,
+        )
+    else:
+        assert_frame_equal(
+            left=coerced_pdf,
+            right=first_layer_pdf,
+        )

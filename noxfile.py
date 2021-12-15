@@ -93,6 +93,11 @@ def safety(session: Session) -> None:
             "check",
             f"--file={requirements.name}",
             "--full-report",
+            # ! Ignoring recommendation to upgrade to GDAL 3.3.3 because the
+            # ! vulnerability affects netcdf, which we aren't using, and 3.3.2
+            # ! is the latest version available through ubuntugis-unstable as of
+            # ! 2021-12-07.
+            "--ignore=42369",
         )
 
 
@@ -109,7 +114,7 @@ def tests(session: Session) -> None:
     """Run the test suite."""
     args = session.posargs or [
         "--cov",
-        "-v",
+        "-vv",
     ]
     session.run("poetry", "install", "--no-dev", external=True)
     install_with_constraints(
@@ -117,6 +122,7 @@ def tests(session: Session) -> None:
         "coverage[toml]",
         "pytest",
         "pytest-cov",
+        "geopandas",
     )
     session.run("pytest", *args)
 
