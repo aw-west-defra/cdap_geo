@@ -19,7 +19,7 @@ from pytest import fixture
 from shapely.geometry import Point
 from shapely.geometry.base import BaseGeometry
 
-from esa_geo_utils.io._pyspark import OGR_TO_SPARK
+from esa_geo_utils.io import OGR_TO_SPARK
 
 
 @fixture
