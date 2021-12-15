@@ -57,7 +57,7 @@ def _get_layer_name(
     return layer_name
 
 
-@_get_layer_name.register(str)
+@_get_layer_name.register
 def _get_layer_name_str(
     layer_identifier: str,
     data_source: DataSource,
@@ -77,7 +77,7 @@ def _get_layer_name_str(
     return layer_name
 
 
-@_get_layer_name.register(int)
+@_get_layer_name.register
 def _get_layer_name_int(
     layer_identifier: int,
     data_source: DataSource,
@@ -89,7 +89,7 @@ def _get_layer_name_int(
 
     number_of_layers = len(data_source_layer_names)
 
-    if layer_identifier > number_of_layers:
+    if layer_identifier >= number_of_layers:
         raise ValueError(
             f"Expecting index between 0 and {number_of_layers} but received {layer_identifier}.",  # noqa B950
         )
@@ -100,11 +100,11 @@ def _get_layer_name_int(
 
 
 def _get_layer_names(
-    data_sources: Tuple[DataSource, ...],
     layer_identifier: Optional[Union[str, int]],
+    data_sources: Tuple[DataSource, ...],
 ) -> Tuple[str, ...]:
     return tuple(
-        _get_layer_name(data_source=data_source, layer_identifier=layer_identifier)
+        _get_layer_name(layer_identifier, data_source=data_source)
         for data_source in data_sources
     )
 

@@ -86,7 +86,7 @@ def test__get_layer_name(
     data_source = Open(fileGDB_path)
     with expected_exception:
         layer_name = _get_layer_name(
-            layer_identifier=layer_identifier,
+            layer_identifier,
             data_source=data_source,
         )
         assert layer_name == expected_layer_name
