@@ -139,7 +139,7 @@ def second_layer_gdf(
 
 
 @fixture
-def directory_path(
+def path_path(
     tmp_path_factory: TempPathFactory,
 ) -> Path:
     """Pytest temporary directory as Path object."""

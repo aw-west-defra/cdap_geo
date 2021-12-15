@@ -70,8 +70,8 @@ SPARK_TO_PANDAS = MappingProxyType(
 )
 
 
-def _spark_df_from_vector_files(
-    directory: str,
+def read_vector_files(
+    path: str,
     ogr_to_spark_type_map: MappingProxyType = OGR_TO_SPARK,
     spark: SparkSession = SparkSession._activeSession,
     suffix: str = "*",
@@ -91,7 +91,7 @@ def _spark_df_from_vector_files(
 
     Example:
         >>> gdf = spark_df_from_vector_files(
-                directory="/path/to/vector/files",
+                path="/path/to/vector/files",
                 sql="SELECT * FROM layer_name LIMIT 100"
             )
 
@@ -115,7 +115,7 @@ def _spark_df_from_vector_files(
             )
 
     Args:
-        directory (str): [description]
+        path (str): [description]
         ogr_to_spark_type_map (MappingProxyType): [description]. Defaults
             to OGR_TO_SPARK.
         spark (SparkSession): [description]. Defaults to
@@ -135,7 +135,7 @@ def _spark_df_from_vector_files(
         SparkDataFrame: [description]
     """
     paths = _get_paths(
-        directory=directory,
+        path=path,
         suffix=suffix,
     )
 

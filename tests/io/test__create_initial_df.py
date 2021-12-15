@@ -18,7 +18,7 @@ from esa_geo_utils.io._create_initial_df import (
 
 def test__get_paths(directory_path: Path, fileGDB_path: str) -> None:
     """Returns collection of FileGDB file paths."""
-    paths = _get_paths(directory=str(directory_path), suffix="gdb")
+    paths = _get_paths(path=str(directory_path), suffix="gdb")
     assert paths == (fileGDB_path,)
 
 
