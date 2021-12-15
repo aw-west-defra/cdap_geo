@@ -20,7 +20,7 @@ from pyspark.sql.types import (
 def _get_paths(path: str, suffix: str) -> Tuple[str, ...]:
     """Returns full paths for all files in a path, with the given suffix."""
     paths = listdir(path)
-    return tuple(join(path, path) for path in paths if path.endswith(suffix))
+    return tuple(join(path, _path) for _path in paths if _path.endswith(suffix))
 
 
 def _add_vsi_prefix(paths: Tuple[str, ...], vsi_prefix: str) -> Tuple[str, ...]:
