@@ -17,7 +17,7 @@ from esa_geo_utils.io._create_schema import (
 
 @pytest.mark.parametrize(
     argnames=[
-        "layer",
+        "layer_name",
         "start",
         "stop",
         "expected_feature_count",

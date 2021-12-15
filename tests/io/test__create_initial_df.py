@@ -57,7 +57,7 @@ def test__get_data_source_layer_names(fileGDB_path: str) -> None:
 
 @pytest.mark.parametrize(
     argnames=[
-        "layer",
+        "layer_identifier",
         "expected_layer_name",
         "expected_exception",
     ],
