@@ -127,9 +127,11 @@ def _get_feature_counts(
     )
 
 
-def _get_chunks(
-    feature_count: int, ideal_chunk_size: int
-) -> Tuple[Tuple[int, int], ...]:
+Chunk = Union[Tuple[int, int], Tuple[None, None]]
+Chunks = Tuple[Chunk, ...]
+
+
+def _get_chunks(feature_count: int, ideal_chunk_size: int) -> Chunks:
     exclusive_range = range(0, feature_count, ideal_chunk_size)
     inclusive_range = tuple(exclusive_range) + (feature_count + 1,)
     range_pairs = pairwise(inclusive_range)
@@ -139,16 +141,14 @@ def _get_chunks(
 def _get_sequence_of_chunks(
     feature_counts: Tuple[int, ...],
     ideal_chunk_size: int,
-) -> Tuple[Tuple[Tuple[int, int], ...], ...]:
+) -> Tuple[Chunks, ...]:
     return tuple(
         _get_chunks(feature_count=feature_count, ideal_chunk_size=ideal_chunk_size)
         for feature_count in feature_counts
     )
 
 
-def _get_total_chunks(
-    sequence_of_chunks: Tuple[Tuple[Tuple[int, int], ...], ...]
-) -> int:
+def _get_total_chunks(sequence_of_chunks: Tuple[Chunks, ...]) -> int:
     return sum(len(chunks) for chunks in sequence_of_chunks)
 
 
@@ -156,7 +156,7 @@ def _create_initial_df(
     spark: SparkSession,
     paths: Tuple[str, ...],
     layer_names: Tuple[str, ...],
-    sequence_of_chunks: Tuple[Tuple[Tuple[int, int], ...], ...],
+    sequence_of_chunks: Tuple[Chunks, ...],
 ) -> SparkDataFrame:
     rows = tuple(
         Row(
