@@ -79,7 +79,7 @@ SPARK_TO_PANDAS = MappingProxyType(
 
 
 @contextmanager
-def local_spark_context(
+def temporary_spark_context(
     configuration_key: str,
     new_configuration_value: Union[str, int],
     spark: SparkSession = SparkSession._activeSession,
@@ -196,7 +196,7 @@ def read_vector_files(
 
     total_chunks = _get_total_chunks(sequence_of_chunks)
 
-    with local_spark_context(
+    with temporary_spark_context(
         configuration_key="spark.sql.shuffle.partitions",
         new_configuration_value=total_chunks,
     ) as spark:
