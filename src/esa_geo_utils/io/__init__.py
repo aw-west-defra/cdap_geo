@@ -30,6 +30,7 @@ from esa_geo_utils.io._create_initial_df import (
     _create_initial_df,
     _get_data_sources,
     _get_feature_counts,
+    _get_layer_name,
     _get_layer_names,
     _get_paths,
     _get_sequence_of_chunks,
@@ -98,6 +99,7 @@ def read_vector_files(
     ogr_to_spark_type_map: MappingProxyType = OGR_TO_SPARK,
     spark: SparkSession = SparkSession._activeSession,
     suffix: str = "*",
+    chunk: bool = True,
     ideal_chunk_size: int = 3_000_000,
     geom_field_name: str = "geometry",
     geom_field_type: str = "Binary",
@@ -106,6 +108,7 @@ def read_vector_files(
     vsi_prefix: Optional[str] = None,
     schema: StructType = None,
     layer_identifier: Optional[Union[str, int]] = None,
+    check_layer_name: bool = True,
 ) -> SparkDataFrame:
     """Read vector file(s) into a Spark DataFrame.
 
@@ -153,6 +156,7 @@ def read_vector_files(
         spark (SparkSession): [description]. Defaults to
             SparkSession._activeSession.
         suffix (str): [description]. Defaults to "*".
+        chunk (bool): [description]. Defaults to True.
         ideal_chunk_size (int): [description]. Defaults to 3_000_000.
         geom_field_name (str): [description]. Defaults to "geometry".
         geom_field_type (str): [description]. Defaults to "Binary".
@@ -162,6 +166,7 @@ def read_vector_files(
         vsi_prefix (str, optional): [description]. Defaults to None.
         schema (StructType): [description]. Defaults to None.
         layer_identifier (str, optional): [description]. Defaults to None.
+        check_layer_name (bool): [description]. Defaults to True.
 
     Returns:
         SparkDataFrame: [description]
@@ -177,28 +182,41 @@ def read_vector_files(
             vsi_prefix=vsi_prefix,
         )
 
-    data_sources = _get_data_sources(paths)
+    if check_layer_name:
+        data_sources = _get_data_sources(paths)
 
-    layer_names = _get_layer_names(
-        data_sources=data_sources,
-        layer_identifier=layer_identifier,
-    )
+        layer_names = _get_layer_names(
+            data_sources=data_sources,
+            layer_identifier=layer_identifier,
+        )
+    else:
+        data_source = _get_data_sources((paths[0],))
 
-    feature_counts = _get_feature_counts(
-        data_sources=data_sources,
-        layer_names=layer_names,
-    )
+        layer_name = _get_layer_names(
+            data_sources=data_source,
+            layer_identifier=layer_identifier,
+        )
+        layer_names = layer_name * len(paths)
 
-    sequence_of_chunks = _get_sequence_of_chunks(
-        feature_counts=feature_counts,
-        ideal_chunk_size=ideal_chunk_size,
-    )
+    if chunk:
+        feature_counts = _get_feature_counts(
+            data_sources=data_sources,
+            layer_names=layer_names,
+        )
 
-    total_chunks = _get_total_chunks(sequence_of_chunks)
+        sequence_of_chunks = _get_sequence_of_chunks(
+            feature_counts=feature_counts,
+            ideal_chunk_size=ideal_chunk_size,
+        )
+
+        number_of_partitions = _get_total_chunks(sequence_of_chunks)
+    else:
+        sequence_of_chunks = (((None, None),),) * len(paths)
+        number_of_partitions = len(paths)
 
     with temporary_spark_context(
         configuration_key="spark.sql.shuffle.partitions",
-        new_configuration_value=total_chunks,
+        new_configuration_value=number_of_partitions,
     ) as spark:
 
         df = _create_initial_df(
@@ -228,7 +246,7 @@ def read_vector_files(
         )
 
         return (
-            df.repartition(total_chunks, "chunk_id")
+            df.repartition(number_of_partitions, "chunk_id")
             .groupby("chunk_id")
             .applyInPandas(parallel_read, _schema)
         )
