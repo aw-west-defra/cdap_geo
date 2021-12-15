@@ -1,5 +1,5 @@
 from itertools import product
-from typing import Sequence, Union
+from typing import Iterator, Sequence, Tuple, Union
 
 from shapely.geometry import (
     LineString,
@@ -10,7 +10,7 @@ from shapely.geometry import (
     Polygon,
     box,
 )
-from shapely.prepared import prep
+from shapely.prepared import PreparedGeometry, prep
 from shapely.wkb import loads
 
 # CONSTANTS
@@ -18,6 +18,43 @@ from shapely.wkb import loads
 LETTERS = "ABCDEFGHJKLMNOPQRSTUVWXYZ"
 NUMBERS_LENGTH = {1: 5, 10: 4, 100: 3, 1_000: 2, 10_000: 1, 100_000: 0}
 RESOLUTION = (1, 10, 100, 1_000, 10_000, 100_000)
+RESOLUTION_LENGTH = {2: 100000, 4: 10000, 6: 1000, 8: 100, 10: 10, 12: 1}
+# First letter identifies the 500x500 km grid
+G500 = {"S": (0, 0),
+        "T": (500000, 0),
+        "N": (0, 500000),
+        "O": (500000, 500000),
+        "H": (0, 1000000),
+        "J": (500000, 1000000)}
+# Second letter identifies the 100x100 km grid
+G100 = {"A": (0, 400000),
+        "B": (100000, 400000),
+        "C": (200000, 400000),
+        "D": (300000, 400000),
+        "E": (400000, 400000),
+        "F": (0, 300000),
+        "G": (100000, 300000),
+        "H": (200000, 300000),
+        "J": (300000, 300000),
+        "K": (400000, 300000),
+        "L": (0, 200000),
+        "M": (100000, 200000),
+        "N": (200000, 200000),
+        "O": (300000, 200000),
+        "P": (400000, 200000),
+        "Q": (0, 100000),
+        "R": (100000, 100000),
+        "S": (200000, 100000),
+        "T": (300000, 100000),
+        "U": (400000, 100000),
+        "V": (0, 0),
+        "W": (100000, 0),
+        "X": (200000, 0),
+        "Y": (300000, 0),
+        "Z": (400000, 0)}
+# Helpers for making box from grid ref
+Y_START = {10000: 3, 1000: 4, 100: 5, 10: 6, 1: 7}
+Y_STOP = {10000: 4, 1000: 6, 100: 8, 10: 10, 1: 12}
 
 
 def _coords_to_bng(
@@ -54,7 +91,7 @@ def _bng_geom_bounding_box(
     resolution: int,
     pad: int,
     return_grid_coords: bool = False,
-) -> Sequence[str]:
+) -> Union[Sequence[str], Iterator[Tuple[str, Sequence[Union[int, float]]]]]:
     """Get bng references that cover a geometry's bounding box."""
     x1, y1, x2, y2 = geometry.bounds
     # Arbitrary pad to ensure bounding box not on vertex/edge
@@ -70,7 +107,7 @@ def _bng_geom_bounding_box(
     x2 = int(-1 * x2 // resolution * resolution * -1)
     y2 = int(-1 * y2 // resolution * resolution * -1)
 
-    # Check if upper bounds fall with the same grid as upper
+    # Check if upper bounds fall within the same grid as upper
     if x2 - x1 <= resolution:
         if y2 - y1 <= resolution:
             return [_coords_to_bng(x1, y1, resolution)]
@@ -80,7 +117,7 @@ def _bng_geom_bounding_box(
     northings_axis = range(y1, y2, resolution)
 
     # Use product to generate the collection of coordinates
-    grid_coordinates = product(eastings_axis, northings_axis)
+    grid_coordinates = list(product(eastings_axis, northings_axis))
 
     # Return bng strings
     bng = [
@@ -175,7 +212,9 @@ def _bng_geom_index(
     geometry: Union[LineString, Polygon],
     resolution: int,
     pad: int,
-) -> Sequence[str]:
+    return_boxes: bool = False,
+    prepared_geometry: PreparedGeometry = None,
+) -> Union[Sequence[str], Sequence[Tuple[str, box]]]:
     """Return BNG refs for intersecting boxes."""
     # Get coords
     coords = list(_bng_geom_bounding_box(geometry, resolution, pad, True))
@@ -184,12 +223,25 @@ def _bng_geom_index(
         box(eastings, northings, eastings + resolution, northings + resolution)
         for _, (eastings, northings) in coords
     ]
-    # Prepare geometry for fast intersections
-    prepared_geom = prep(geometry)
-    # Return bng ids of intersecting boxes
-    return [
-        coords[idx][0] for idx, box in enumerate(boxes) if prepared_geom.intersects(box)
-    ]
+
+    if not prepared_geometry:
+        # Prepare geometry for fast intersections
+        prepared_geometry = prep(geometry)
+
+    if return_boxes:
+        # Return BNG id and box
+        return [(coords[idx][0], box)
+                for idx, box in enumerate(boxes)
+                if prepared_geometry.intersects(box)
+                ]
+
+    else:
+        # Return bng ids of intersecting boxes
+        return [
+            coords[idx][0]
+            for idx, box in enumerate(boxes)
+            if prepared_geometry.intersects(box)
+        ]
 
 
 def _bng_multigeom_index(
@@ -209,7 +261,43 @@ def _bng_multigeom_index(
     )
 
 
-def apply_bng_index(
+def _bng_geom_marked(
+    geometry: Union[LineString, Polygon],
+    resolution: int,
+    pad: int,
+) -> Sequence[Tuple[str, bool]]:
+    """Return BNG refs and boolean showing whether box is fully inside the geometry."""
+    # Prepare geometry for fast intersections
+    prepared_geometry = prep(geometry)
+    # Get boxes
+    boxes = list(_bng_geom_index(geometry, resolution, pad, True, prepared_geometry))
+    # Return bng ids of intersecting boxes
+    return [
+        (bng, True)
+        if prepared_geometry.contains_properly(box)
+        else (bng, False)
+        for bng, box in boxes
+    ]
+
+
+def _bng_multigeom_marked(
+    geometry: Union[MultiLineString, MultiPolygon],
+    resolution: int,
+    pad: int,
+) -> Sequence[str]:
+    """Return BNG refs and boolean for intersecting boxes for multigeoms."""
+    return list(
+        set(
+            [
+                (bng, inside)
+                for geom in geometry.geoms
+                for bng, inside in _bng_geom_marked(geom, resolution, pad)
+            ]
+        )
+    )
+
+
+def calculate_bng_index(
     wkb: bytearray, resolution: int, how: str = None, pad: int = 1
 ) -> Sequence[str]:
     """Underdevelopment."""
@@ -223,12 +311,47 @@ def apply_bng_index(
     elif isinstance(geometry, MultiPoint):
         return _bng_multipoint(geometry, resolution, pad)
     elif isinstance(geometry, (LineString, Polygon)):
-        if (not how) or (how == "bounding box"):
-            return _bng_geom_bounding_box(geometry, resolution, pad)
-        elif how == "grid intersection":
+        if (not how) or (how == "intersects"):
             return _bng_geom_index(geometry, resolution, pad)
+        elif how == "bounding box":
+            return _bng_geom_bounding_box(geometry, resolution, pad)
+        elif how == "contains":
+            return _bng_geom_marked(geometry, resolution, pad)
+        else:
+            raise ValueError("'how' argument not recognised.")
     elif isinstance(geometry, (MultiLineString, MultiPolygon)):
-        if (not how) or (how == "bounding box"):
-            return _bng_multigeom_bounding_box(geometry, resolution, pad)
-        elif how == "grid intersection":
+        if (not how) or (how == "intersects"):
             return _bng_multigeom_index(geometry, resolution, pad)
+        elif how == "bounding box":
+            return _bng_multigeom_bounding_box(geometry, resolution, pad)
+        elif how == "contains":
+            return _bng_multigeom_marked(geometry, resolution, pad)
+        else:
+            raise ValueError("'how' argument not recognised.")
+
+
+def wkt_from_bng(bng_reference: str) -> str:
+    """Get WKT representation of bng reference."""
+    # Get resolution from bng reference
+    resolution = RESOLUTION_LENGTH.get(len(bng_reference))
+    if not resolution:
+        raise ValueError("Incorrect length bng_reference provided.")
+    # Get letter coordinates
+    grid_500 = G500.get(bng_reference[0])
+    grid_100 = G100.get(bng_reference[1])
+    # Calculate eastings and northings for lower left
+    ll_x = grid_500[0] + grid_100[0]
+    ll_y = grid_500[1] + grid_100[1]
+    if resolution < 100000:
+        y_index_start = Y_START.get(resolution)
+        y_index_stop = Y_STOP.get(resolution)
+        out_res = NUMBERS_LENGTH.get(resolution)
+        ll_x = ll_x + (int(bng_reference[2:y_index_start][:out_res]) * resolution)
+        ll_y = ll_y + (int(bng_reference[y_index_start:y_index_stop][:out_res])
+                       * resolution)
+
+    return f"""POLYGON(({ll_x} {ll_y},
+                        {ll_x + resolution} {ll_y},
+                        {ll_x + resolution} {ll_y+ resolution},
+                        {ll_x} {ll_y+ resolution},
+                        {ll_x} {ll_y}))"""
