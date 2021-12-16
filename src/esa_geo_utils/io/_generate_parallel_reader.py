@@ -1,12 +1,13 @@
 from itertools import compress
 from types import MappingProxyType
-from typing import Callable, Generator, Tuple
+from typing import Callable, Generator, Optional, Tuple, Union
 
 from osgeo.ogr import Feature, Layer, Open
 from pandas import DataFrame as PandasDataFrame
 from pandas import Series
 from pyspark.sql.types import DataType, StructType
 
+from esa_geo_utils.io._create_initial_df import _get_layer_name
 from esa_geo_utils.io._create_schema import _get_layer, _get_property_names
 
 
@@ -173,6 +174,73 @@ def _coerce_columns_to_schema(
             )
 
 
+def _pdf_from_vector_file(
+    path: str,
+    layer_identifier: Optional[Union[str, int]],
+    geom_field_name: str,
+    coerce_to_schema: bool,
+    schema: StructType,
+    spark_to_pandas_type_map: MappingProxyType,
+) -> PandasDataFrame:
+    """Given a file path and layer, returns a pandas DataFrame."""
+    data_source = Open(path)
+
+    if data_source is None:
+        return _null_data_frame_from_schema(
+            schema=schema,
+            spark_to_pandas_type_map=spark_to_pandas_type_map,
+        )
+
+    layer_name = _get_layer_name(
+        layer_identifier=layer_identifier,
+        data_source=data_source,
+    )
+
+    layer = _get_layer(
+        data_source=data_source,
+        layer_name=layer_name,
+        start=None,
+        stop=None,
+    )
+
+    if layer is None:
+        return _null_data_frame_from_schema(
+            schema=schema,
+            spark_to_pandas_type_map=spark_to_pandas_type_map,
+        )
+
+    features_generator = _get_features(layer=layer)
+    feature_names = _get_property_names(layer=layer) + (geom_field_name,)
+    pdf = PandasDataFrame(data=features_generator, columns=feature_names)
+
+    if pdf is None:
+        return _null_data_frame_from_schema(
+            schema=schema,
+            spark_to_pandas_type_map=spark_to_pandas_type_map,
+        )
+
+    if coerce_to_schema:
+        schema_field_details = _get_field_details(schema=schema)
+        coerced_pdf = _coerce_columns_to_schema(
+            pdf=pdf,
+            schema_field_details=schema_field_details,
+            spark_to_pandas_type_map=spark_to_pandas_type_map,
+        )
+        if coerced_pdf is None:
+            return _null_data_frame_from_schema(
+                schema=schema,
+                spark_to_pandas_type_map=spark_to_pandas_type_map,
+            )
+        else:
+            return _coerce_types_to_schema(
+                pdf=coerced_pdf,
+                schema_field_details=schema_field_details,
+                spark_to_pandas_type_map=spark_to_pandas_type_map,
+            )
+    else:
+        return pdf
+
+
 def _pdf_from_vector_file_chunk(
     path: str,
     start: int,
@@ -185,17 +253,20 @@ def _pdf_from_vector_file_chunk(
 ) -> PandasDataFrame:
     """Given a file path and layer, returns a pandas DataFrame."""
     data_source = Open(path)
+
     if data_source is None:
         return _null_data_frame_from_schema(
             schema=schema,
             spark_to_pandas_type_map=spark_to_pandas_type_map,
         )
+
     layer = _get_layer(
         data_source=data_source,
         layer_name=layer_name,
         start=start,
         stop=stop,
     )
+
     if layer is None:
         return _null_data_frame_from_schema(
             schema=schema,
@@ -231,7 +302,30 @@ def _pdf_from_vector_file_chunk(
         return pdf
 
 
-def _generate_parallel_reader(
+def _generate_parallel_reader_for_files(
+    layer_identifier: Optional[Union[str, int]],
+    geom_field_name: str,
+    coerce_to_schema: bool,
+    schema: StructType,
+    spark_to_pandas_type_map: MappingProxyType,
+) -> Callable:
+    """Adds arbitrary key word arguments to the wrapped function."""
+
+    def _(pdf: PandasDataFrame) -> PandasDataFrame:
+        """Returns a pandas_udf compatible version of _pdf_from_vector_file."""
+        return _pdf_from_vector_file(
+            path=str(pdf["path"][0]),
+            layer_identifier=layer_identifier,
+            geom_field_name=geom_field_name,
+            coerce_to_schema=coerce_to_schema,
+            schema=schema,
+            spark_to_pandas_type_map=spark_to_pandas_type_map,
+        )
+
+    return _
+
+
+def _generate_parallel_reader_for_chunks(
     geom_field_name: str,
     coerce_to_schema: bool,
     schema: StructType,

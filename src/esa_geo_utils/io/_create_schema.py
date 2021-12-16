@@ -1,8 +1,10 @@
 from types import MappingProxyType
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
-from osgeo.ogr import DataSource, GetFieldTypeName, Layer
+from osgeo.ogr import DataSource, GetFieldTypeName, Layer, Open
 from pyspark.sql.types import StructField, StructType
+
+from esa_geo_utils.io._create_initial_df import _get_layer_name
 
 
 def _get_layer(
@@ -62,8 +64,38 @@ def _get_feature_schema(
     return StructType(property_struct_fields + geometry_struct_field)
 
 
-def _create_schema(
-    data_source: DataSource,
+def _create_schema_for_files(
+    path: str,
+    layer_identifier: Optional[Union[str, int]],
+    geom_field_name: str,
+    geom_field_type: str,
+    ogr_to_spark_type_map: MappingProxyType,
+) -> StructType:
+    """Returns a schema for a given layer in the first file in a list of file paths."""
+    data_source = Open(path)
+
+    layer_name = _get_layer_name(
+        layer_identifier=layer_identifier,
+        data_source=data_source,
+    )
+
+    layer = _get_layer(
+        data_source=data_source,
+        layer_name=layer_name,
+        start=None,
+        stop=None,
+    )
+
+    return _get_feature_schema(
+        layer=layer,
+        ogr_to_spark_type_map=ogr_to_spark_type_map,
+        geom_field_name=geom_field_name,
+        geom_field_type=geom_field_type,
+    )
+
+
+def _create_schema_for_chunks(
+    data_source: Optional[DataSource],
     layer_name: str,
     geom_field_name: str,
     geom_field_type: str,

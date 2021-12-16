@@ -16,6 +16,8 @@ from pyspark.sql.types import (
     StructType,
 )
 
+from esa_geo_utils.io._types import Chunks
+
 
 def _get_paths(path: str, suffix: str) -> Tuple[str, ...]:
     """Returns full paths for all files in a path, with the given suffix."""
@@ -127,10 +129,6 @@ def _get_feature_counts(
     )
 
 
-Chunk = Union[Tuple[int, int], Tuple[None, None]]
-Chunks = Tuple[Chunk, ...]
-
-
 def _get_chunks(feature_count: int, ideal_chunk_size: int) -> Chunks:
     exclusive_range = range(0, feature_count, ideal_chunk_size)
     inclusive_range = tuple(exclusive_range) + (feature_count + 1,)
@@ -152,7 +150,23 @@ def _get_total_chunks(sequence_of_chunks: Tuple[Chunks, ...]) -> int:
     return sum(len(chunks) for chunks in sequence_of_chunks)
 
 
-def _create_initial_df(
+def _create_paths_df(
+    spark: SparkSession,
+    paths: Tuple[str, ...],
+) -> SparkDataFrame:
+    rows = tuple(Row(path=path) for path in paths)
+
+    return spark.createDataFrame(
+        data=rows,
+        schema=StructType(
+            [
+                StructField("path", StringType()),
+            ]
+        ),
+    )
+
+
+def _create_chunks_df(
     spark: SparkSession,
     paths: Tuple[str, ...],
     layer_names: Tuple[str, ...],
@@ -184,7 +198,7 @@ def _create_initial_df(
 
     return (
         sdf.withColumn("chunk", explode("chunks"))
-        .withColumn("chunk_id", monotonically_increasing_id())
+        .withColumn("id", monotonically_increasing_id())
         .withColumn("start", col("chunk")[0])
         .withColumn("stop", col("chunk")[1])
         .drop("chunk", "chunks")
