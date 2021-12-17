@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Tuple, Union
+from typing import Tuple
 
 
 class ConcurrencyStrategy(Enum):
@@ -9,5 +9,5 @@ class ConcurrencyStrategy(Enum):
     ROWS = "rows"
 
 
-Chunk = Union[Tuple[int, int], Tuple[None, None]]
+Chunk = Tuple[int, int]
 Chunks = Tuple[Chunk, ...]
