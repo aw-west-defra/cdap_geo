@@ -191,11 +191,18 @@ def _pdf_from_vector_file(
             spark_to_pandas_type_map=spark_to_pandas_type_map,
         )
 
-    layer_name = _get_layer_name(
-        # ! first argument to singledispatch function must be positional
-        layer_identifier,
-        data_source=data_source,
-    )
+    try:
+        layer_name = _get_layer_name(
+            # ! first argument to singledispatch function must be positional
+            layer_identifier,
+            data_source=data_source,
+        )
+    except ValueError as error:
+        print(f"Error for {path}: {error}")
+        return _null_data_frame_from_schema(
+            schema=schema,
+            spark_to_pandas_type_map=spark_to_pandas_type_map,
+        )
 
     layer = _get_layer(
         data_source=data_source,
