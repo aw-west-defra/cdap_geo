@@ -224,8 +224,8 @@ def read_vector_files(
             )
 
             return (
-                df.repartition(number_of_partitions, "id")
-                .groupby("id")
+                df.repartition(number_of_partitions, "path")
+                .groupby("path")
                 .applyInPandas(parallel_read, _schema)
             )
 
