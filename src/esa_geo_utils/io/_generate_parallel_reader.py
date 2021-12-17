@@ -103,12 +103,13 @@ def _add_missing_columns(
     spark_to_pandas_type_map: MappingProxyType,
 ) -> PandasDataFrame:
     """Adds missing fields to pandas DataFrame."""
-    to_add = compress(schema_field_names, missing_columns)
+    to_add = compress(schema_field_details, missing_columns)
     missing_column_series = tuple(
         Series(
             name=field_name,
+            dtype=spark_to_pandas_type_map[field_type],
         )
-        for field_name in to_add
+        for field_name, field_type in to_add
     )
     pdf_plus_missing_columns = pdf.append(missing_column_series)
     reindexed_pdf = pdf_plus_missing_columns.reindex(columns=schema_field_names)
