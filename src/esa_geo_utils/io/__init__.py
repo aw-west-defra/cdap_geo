@@ -11,8 +11,7 @@ from contextlib import contextmanager
 from types import MappingProxyType
 from typing import Optional, Union
 
-from numpy import float32, object0
-from pandas import Int32Dtype, Int64Dtype, StringDtype
+from numpy import float32, int32, int64, object0
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark.sql import SparkSession
 from pyspark.sql.types import (
@@ -79,9 +78,9 @@ SPARK_TO_PANDAS = MappingProxyType(
         ArrayType(StringType()): object0,
         BinaryType(): object0,
         FloatType(): float32,
-        IntegerType(): Int32Dtype(),
-        LongType(): Int64Dtype(),
-        StringType(): StringDtype(),
+        IntegerType(): int32,
+        LongType(): int64,
+        StringType(): object0,
     }
 )
 
