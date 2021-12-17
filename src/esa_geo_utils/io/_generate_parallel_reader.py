@@ -192,7 +192,8 @@ def _pdf_from_vector_file(
         )
 
     layer_name = _get_layer_name(
-        layer_identifier=layer_identifier,
+        # ! first argument to singledispatch function must be positional
+        layer_identifier,
         data_source=data_source,
     )
 
