@@ -198,8 +198,11 @@ def _pdf_from_vector_file(
             layer_identifier,
             data_source=data_source,
         )
-    except ValueError as error:
-        print(f"Error for {path}: {error}")
+    except ValueError:
+        return _null_data_frame_from_schema(
+            schema=schema,
+            spark_to_pandas_type_map=spark_to_pandas_type_map,
+        )
 
     layer = _get_layer(
         data_source=data_source,
