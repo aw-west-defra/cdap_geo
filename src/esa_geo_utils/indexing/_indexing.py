@@ -1,5 +1,6 @@
 from itertools import product
 from typing import Iterator, Sequence, Tuple, Union
+from warnings import warn
 
 from shapely.geometry import (
     LineString,
@@ -20,38 +21,42 @@ NUMBERS_LENGTH = {1: 5, 10: 4, 100: 3, 1_000: 2, 10_000: 1, 100_000: 0}
 RESOLUTION = (1, 10, 100, 1_000, 10_000, 100_000)
 RESOLUTION_LENGTH = {2: 100000, 4: 10000, 6: 1000, 8: 100, 10: 10, 12: 1}
 # First letter identifies the 500x500 km grid
-G500 = {"S": (0, 0),
-        "T": (500000, 0),
-        "N": (0, 500000),
-        "O": (500000, 500000),
-        "H": (0, 1000000),
-        "J": (500000, 1000000)}
+G500 = {
+    "S": (0, 0),
+    "T": (500000, 0),
+    "N": (0, 500000),
+    "O": (500000, 500000),
+    "H": (0, 1000000),
+    "J": (500000, 1000000),
+}
 # Second letter identifies the 100x100 km grid
-G100 = {"A": (0, 400000),
-        "B": (100000, 400000),
-        "C": (200000, 400000),
-        "D": (300000, 400000),
-        "E": (400000, 400000),
-        "F": (0, 300000),
-        "G": (100000, 300000),
-        "H": (200000, 300000),
-        "J": (300000, 300000),
-        "K": (400000, 300000),
-        "L": (0, 200000),
-        "M": (100000, 200000),
-        "N": (200000, 200000),
-        "O": (300000, 200000),
-        "P": (400000, 200000),
-        "Q": (0, 100000),
-        "R": (100000, 100000),
-        "S": (200000, 100000),
-        "T": (300000, 100000),
-        "U": (400000, 100000),
-        "V": (0, 0),
-        "W": (100000, 0),
-        "X": (200000, 0),
-        "Y": (300000, 0),
-        "Z": (400000, 0)}
+G100 = {
+    "A": (0, 400000),
+    "B": (100000, 400000),
+    "C": (200000, 400000),
+    "D": (300000, 400000),
+    "E": (400000, 400000),
+    "F": (0, 300000),
+    "G": (100000, 300000),
+    "H": (200000, 300000),
+    "J": (300000, 300000),
+    "K": (400000, 300000),
+    "L": (0, 200000),
+    "M": (100000, 200000),
+    "N": (200000, 200000),
+    "O": (300000, 200000),
+    "P": (400000, 200000),
+    "Q": (0, 100000),
+    "R": (100000, 100000),
+    "S": (200000, 100000),
+    "T": (300000, 100000),
+    "U": (400000, 100000),
+    "V": (0, 0),
+    "W": (100000, 0),
+    "X": (200000, 0),
+    "Y": (300000, 0),
+    "Z": (400000, 0),
+}
 # Helpers for making box from grid ref
 Y_START = {10000: 3, 1000: 4, 100: 5, 10: 6, 1: 7}
 Y_STOP = {10000: 4, 1000: 6, 100: 8, 10: 10, 1: 12}
@@ -230,10 +235,11 @@ def _bng_geom_index(
 
     if return_boxes:
         # Return BNG id and box
-        return [(coords[idx][0], box)
-                for idx, box in enumerate(boxes)
-                if prepared_geometry.intersects(box)
-                ]
+        return [
+            (coords[idx][0], box)
+            for idx, box in enumerate(boxes)
+            if prepared_geometry.intersects(box)
+        ]
 
     else:
         # Return bng ids of intersecting boxes
@@ -273,9 +279,7 @@ def _bng_geom_marked(
     boxes = list(_bng_geom_index(geometry, resolution, pad, True, prepared_geometry))
     # Return bng ids of intersecting boxes
     return [
-        (bng, True)
-        if prepared_geometry.contains_properly(box)
-        else (bng, False)
+        (bng, True) if prepared_geometry.contains_properly(box) else (bng, False)
         for bng, box in boxes
     ]
 
@@ -297,41 +301,83 @@ def _bng_multigeom_marked(
     )
 
 
+# Collect functions into dictionary
+METHODOLOGY = {
+    "Point": {"intersects": _bng_point},
+    "MultiPoint": {"intersects": _bng_multipoint},
+    "Linestring": {
+        "bounding box": _bng_geom_bounding_box,
+        "intersects": _bng_geom_index,
+    },
+    "MultiLinestring": {
+        "bounding box": _bng_multigeom_bounding_box,
+        "intersects": _bng_multigeom_index,
+    },
+    "Polygon": {
+        "bounding box": _bng_geom_bounding_box,
+        "intersects": _bng_geom_index,
+        "contains": _bng_geom_marked,
+    },
+    "MultiPolygon": {
+        "bounding box": _bng_multigeom_bounding_box,
+        "intersects": _bng_multigeom_index,
+        "contains": _bng_multigeom_marked,
+    },
+}
+
+
 def calculate_bng_index(
     wkb: bytearray, resolution: int, how: str = None, pad: int = 1
 ) -> Sequence[str]:
     """Underdevelopment."""
     if resolution not in RESOLUTION:
-        raise ValueError(f"resolution must be one of: {RESOLUTION}")
+        raise ValueError(f"'resolution' must be one of: {RESOLUTION}")
 
+    if not how:
+        # Set default for how to intersects
+        how = "intersects"
+        warn(
+            "'how' not set, defaulting to 'intersects'",
+        )
+
+    if how not in ["bounding box", "intersects", "contains"]:
+        raise ValueError(
+            "'how' must be one of 'bounding box', 'intersects' or 'contains'"
+        )
+
+    # Load geometry from wkb
     geometry = loads(bytes(wkb))
 
-    if isinstance(geometry, Point):
-        return _bng_point(geometry, resolution, pad)
-    elif isinstance(geometry, MultiPoint):
-        return _bng_multipoint(geometry, resolution, pad)
-    elif isinstance(geometry, (LineString, Polygon)):
-        if (not how) or (how == "intersects"):
-            return _bng_geom_index(geometry, resolution, pad)
-        elif how == "bounding box":
-            return _bng_geom_bounding_box(geometry, resolution, pad)
-        elif how == "contains":
-            return _bng_geom_marked(geometry, resolution, pad)
-        else:
-            raise ValueError("'how' argument not recognised.")
-    elif isinstance(geometry, (MultiLineString, MultiPolygon)):
-        if (not how) or (how == "intersects"):
-            return _bng_multigeom_index(geometry, resolution, pad)
-        elif how == "bounding box":
-            return _bng_multigeom_bounding_box(geometry, resolution, pad)
-        elif how == "contains":
-            return _bng_multigeom_marked(geometry, resolution, pad)
-        else:
-            raise ValueError("'how' argument not recognised.")
+    # Get appropriate function
+    method = (
+        METHODOLOGY.get(geometry.geom_type).get(how)
+        if METHODOLOGY.get(geometry.geom_type)
+        else None
+    )
+
+    if not method:
+        raise ValueError(
+            f"how = '{how}' not defined for {geometry.geom_type} geometry type."
+        )
+
+    return method(geometry, resolution, pad)
 
 
 def wkt_from_bng(bng_reference: str) -> str:
-    """Get WKT representation of bng reference."""
+    """Get WKT representation of bng reference.
+
+    Example:
+        >>> bng = wkt_from_bng("TQ3070")
+
+    Args:
+        bng_reference (str): British National Grid reference.
+
+    Returns:
+        str: Well-known text representation of British National Grid reference box.
+
+    Raises:
+        ValueError: If `bng_reference` is incorrect length to derive resolution.
+    """
     # Get resolution from bng reference
     resolution = RESOLUTION_LENGTH.get(len(bng_reference))
     if not resolution:
@@ -347,11 +393,12 @@ def wkt_from_bng(bng_reference: str) -> str:
         y_index_stop = Y_STOP.get(resolution)
         out_res = NUMBERS_LENGTH.get(resolution)
         ll_x = ll_x + (int(bng_reference[2:y_index_start][:out_res]) * resolution)
-        ll_y = ll_y + (int(bng_reference[y_index_start:y_index_stop][:out_res])
-                       * resolution)
+        ll_y = ll_y + (
+            int(bng_reference[y_index_start:y_index_stop][:out_res]) * resolution
+        )
 
     return f"""POLYGON(({ll_x} {ll_y},
                         {ll_x + resolution} {ll_y},
-                        {ll_x + resolution} {ll_y+ resolution},
-                        {ll_x} {ll_y+ resolution},
+                        {ll_x + resolution} {ll_y + resolution},
+                        {ll_x} {ll_y + resolution},
                         {ll_x} {ll_y}))"""
