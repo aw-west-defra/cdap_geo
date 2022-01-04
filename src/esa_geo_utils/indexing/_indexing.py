@@ -115,7 +115,9 @@ def _bng_geom_bounding_box(
     # Check if upper bounds fall within the same grid as upper
     if x2 - x1 <= resolution:
         if y2 - y1 <= resolution:
-            return [_coords_to_bng(x1, y1, resolution)]
+            if not return_grid_coords:
+                # Shortcut for bounding box calculations
+                return [_coords_to_bng(x1, y1, resolution)]
 
     # Use range to calculate the axes
     eastings_axis = range(x1, x2, resolution)
@@ -223,6 +225,10 @@ def _bng_geom_index(
     """Return BNG refs for intersecting boxes."""
     # Get coords
     coords = list(_bng_geom_bounding_box(geometry, resolution, pad, True))
+    # Shortcut for single box (must intersect geometry)
+    if len(coords) == 1 and not return_boxes:
+        return [coords[0][0]]
+
     # Make grid boxes
     boxes = [
         box(eastings, northings, eastings + resolution, northings + resolution)
