@@ -5,8 +5,9 @@ from typing import Tuple
 
 from _pytest.tmpdir import TempPathFactory
 from geopandas import GeoDataFrame
+from numpy import int64, object0
 from pandas import DataFrame as PandasDataFrame
-from pandas import Int64Dtype, Series, StringDtype
+from pandas import Series
 from pyspark.sql.types import (
     BinaryType,
     DataType,
@@ -33,7 +34,7 @@ def layer_column_names_missing_column(
     layer_column_names: Tuple[str, ...]
 ) -> Tuple[str, ...]:
     """Shared column names but missing `id` column."""
-    return tuple(name for name in layer_column_names if name != "id")
+    return tuple(name for name in layer_column_names if name != "category")
 
 
 @fixture
@@ -72,8 +73,8 @@ def first_layer_gdf(
         crs="EPSG:27700",
     ).astype(
         {
-            "id": Int64Dtype(),
-            "category": StringDtype(),
+            "id": int64,
+            "category": object0,
         },
     )
 
@@ -93,9 +94,9 @@ def first_layer_pdf(
 def first_layer_pdf_with_missing_column(
     first_layer_pdf: PandasDataFrame,
 ) -> PandasDataFrame:
-    """First layer pdf with missing 'id' column."""
+    """First layer pdf with missing 'category' column."""
     return first_layer_pdf.drop(
-        columns=["id"],
+        columns=["category"],
     )
 
 

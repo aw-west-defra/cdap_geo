@@ -7,7 +7,8 @@ from osgeo.ogr import Layer, Open
 from pyspark.sql.types import StructType
 
 from esa_geo_utils.io._create_schema import (
-    _create_schema,
+    _create_schema_for_chunks,
+    _create_schema_for_files,
     _get_feature_schema,
     _get_layer,
     _get_property_names,
@@ -89,7 +90,7 @@ def test__get_feature_schema(
     assert schema == fileGDB_schema
 
 
-def test__create_schema(
+def test__create_schema_for_chunks(
     fileGDB_path: str,
     fileGDB_schema: StructType,
     ogr_to_spark_mapping: MappingProxyType,
@@ -97,9 +98,25 @@ def test__create_schema(
     """Returns expected Spark schema regardless of `_get_layer` function used."""
     data_source = Open(fileGDB_path)
 
-    schema = _create_schema(
+    schema = _create_schema_for_chunks(
         data_source=data_source,
         layer_name="first",
+        geom_field_name="geometry",
+        geom_field_type="Binary",
+        ogr_to_spark_type_map=ogr_to_spark_mapping,
+    )
+    assert schema == fileGDB_schema
+
+
+def test__create_schema_for_files(
+    fileGDB_path: str,
+    fileGDB_schema: StructType,
+    ogr_to_spark_mapping: MappingProxyType,
+) -> None:
+    """Returns expected Spark schema regardless of `_get_layer` function used."""
+    schema = _create_schema_for_files(
+        path=fileGDB_path,
+        layer_identifier="first",
         geom_field_name="geometry",
         geom_field_type="Binary",
         ogr_to_spark_type_map=ogr_to_spark_mapping,

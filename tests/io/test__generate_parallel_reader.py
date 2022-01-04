@@ -92,7 +92,7 @@ def test__get_columns_names(
     ],
     argvalues=[
         ("layer_column_names", (False, False, False)),
-        ("layer_column_names_missing_column", (True, False, False)),
+        ("layer_column_names_missing_column", (False, True, False)),
     ],
     ids=[
         "Same column names",
