@@ -1,10 +1,17 @@
-"""Input / output functions."""
+"""Input / output functions.
 
+===========
+Basic usage
+===========
+
+
+
+"""
+from contextlib import contextmanager
 from types import MappingProxyType
-from typing import Optional, Union
+from typing import Iterator, Optional, Union
 
-from numpy import float32, object0
-from pandas import Int32Dtype, Int64Dtype, StringDtype
+from numpy import float32, int32, int64, object0
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark.sql import SparkSession
 from pyspark.sql.types import (
@@ -19,7 +26,8 @@ from pyspark.sql.types import (
 
 from esa_geo_utils.io._create_initial_df import (
     _add_vsi_prefix,
-    _create_initial_df,
+    _create_chunks_df,
+    _create_paths_df,
     _get_data_sources,
     _get_feature_counts,
     _get_layer_names,
@@ -27,8 +35,15 @@ from esa_geo_utils.io._create_initial_df import (
     _get_sequence_of_chunks,
     _get_total_chunks,
 )
-from esa_geo_utils.io._create_schema import _create_schema
-from esa_geo_utils.io._generate_parallel_reader import _generate_parallel_reader
+from esa_geo_utils.io._create_schema import (
+    _create_schema_for_chunks,
+    _create_schema_for_files,
+)
+from esa_geo_utils.io._generate_parallel_reader import (
+    _generate_parallel_reader_for_chunks,
+    _generate_parallel_reader_for_files,
+)
+from esa_geo_utils.io._types import ConcurrencyStrategy
 
 # See:
 # https://gdal.org/python/index.html
@@ -63,17 +78,32 @@ SPARK_TO_PANDAS = MappingProxyType(
         ArrayType(StringType()): object0,
         BinaryType(): object0,
         FloatType(): float32,
-        IntegerType(): Int32Dtype(),
-        LongType(): Int64Dtype(),
-        StringType(): StringDtype(),
+        IntegerType(): int32,
+        LongType(): int64,
+        StringType(): object0,
     }
 )
+
+
+@contextmanager
+def temporary_spark_context(
+    configuration_key: str,
+    new_configuration_value: str,
+    spark: SparkSession = None,
+) -> Iterator[SparkSession]:
+    """Changes then resets spark configuration."""
+    spark = spark if spark else SparkSession.getActiveSession()
+    old_configuration_value = spark.conf.get(configuration_key)
+    spark.conf.set(configuration_key, new_configuration_value)
+    try:
+        yield spark
+    finally:
+        spark.conf.set(configuration_key, old_configuration_value)
 
 
 def read_vector_files(
     path: str,
     ogr_to_spark_type_map: MappingProxyType = OGR_TO_SPARK,
-    spark: SparkSession = SparkSession._activeSession,
     suffix: str = "*",
     ideal_chunk_size: int = 3_000_000,
     geom_field_name: str = "geometry",
@@ -83,43 +113,51 @@ def read_vector_files(
     vsi_prefix: Optional[str] = None,
     schema: StructType = None,
     layer_identifier: Optional[Union[str, int]] = None,
+    concurrency_strategy: str = "files",
 ) -> SparkDataFrame:
-    """Given a folder of vector files, returns a Spark DataFrame.
+    """Read vector file(s) into a Spark DataFrame.
 
-    If a valid SQL statement is provided (and the vector file supports SQL
-    queries), the results will be returned as a layer:
-
-    Example:
-        >>> gdf = spark_df_from_vector_files(
-                path="/path/to/vector/files",
-                sql="SELECT * FROM layer_name LIMIT 100"
-            )
-
-    Else if a layer name or index is provided, that layer will be returned:
+    Read the first layer from a file or files into a single Spark DataFrame:
 
     Example:
-        >>> gdf = geodataframe_from_ogr(
-                path="/path/to/vector/files",
-                layer="layer_name"
-            )
-        >>> gdf = geodataframe_from_ogr(
-                path="/path/to/vector/files",
-                layer=1
-            )
+        >>> sdf = read_vector_files(
+            path="/path/to/files/",
+            suffix=".ext",
+        )
 
-    Else if neither is provided, the 0th layer will be returned:
+    Read a specific layer for a file or files, using layer name:
 
     Example:
-        >>> gdf = geodataframe_from_ogr(
-                path="/path/to/vector/files",
-            )
+        >>> sdf = read_vector_files(
+            path="/path/to/files/",
+            suffix=".ext",
+            layer_identifier="layer_name"
+        )
+
+    or layer index:
+
+    Example:
+        >>> sdf = read_vector_files(
+            path="/path/to/files/",
+            suffix=".ext",
+            layer_identifier=1
+        )
+
+    Read compressed files using GDAL Virtual File Systems:
+
+    Example:
+        >>> sdf = read_vector_files(
+            path="/path/to/files/",
+            suffix=".gz",
+            layer_identifier="layer_name",
+            vsi_prefix="/vsigzip/",
+        )
+
 
     Args:
         path (str): [description]
         ogr_to_spark_type_map (MappingProxyType): [description]. Defaults
             to OGR_TO_SPARK.
-        spark (SparkSession): [description]. Defaults to
-            SparkSession._activeSession.
         suffix (str): [description]. Defaults to "*".
         ideal_chunk_size (int): [description]. Defaults to 3_000_000.
         geom_field_name (str): [description]. Defaults to "geometry".
@@ -130,10 +168,13 @@ def read_vector_files(
         vsi_prefix (str, optional): [description]. Defaults to None.
         schema (StructType): [description]. Defaults to None.
         layer_identifier (str, optional): [description]. Defaults to None.
+        concurrency_strategy (str): [description]. Defaults to "files".
 
     Returns:
         SparkDataFrame: [description]
     """
+    _concurrency_strategy = ConcurrencyStrategy(concurrency_strategy)
+
     paths = _get_paths(
         path=path,
         suffix=suffix,
@@ -145,55 +186,99 @@ def read_vector_files(
             vsi_prefix=vsi_prefix,
         )
 
-    data_sources = _get_data_sources(paths)
+    if _concurrency_strategy == ConcurrencyStrategy.FILES:
 
-    layer_names = _get_layer_names(
-        data_sources=data_sources,
-        layer_identifier=layer_identifier,
-    )
+        number_of_partitions = len(paths)
 
-    feature_counts = _get_feature_counts(
-        data_sources=data_sources,
-        layer_names=layer_names,
-    )
+        with temporary_spark_context(
+            configuration_key="spark.sql.shuffle.partitions",
+            new_configuration_value=str(number_of_partitions),
+        ) as spark:
 
-    sequence_of_chunks = _get_sequence_of_chunks(
-        feature_counts=feature_counts,
-        ideal_chunk_size=ideal_chunk_size,
-    )
+            df = _create_paths_df(
+                spark=spark,
+                paths=paths,
+            )
 
-    total_chunks = _get_total_chunks(sequence_of_chunks)
+            _schema = (
+                schema
+                if schema
+                else _create_schema_for_files(
+                    path=paths[0],
+                    layer_identifier=layer_identifier,
+                    ogr_to_spark_type_map=ogr_to_spark_type_map,
+                    geom_field_name=geom_field_name,
+                    geom_field_type=geom_field_type,
+                )
+            )
 
-    df = _create_initial_df(
-        spark=spark,
-        paths=paths,
-        layer_names=layer_names,
-        sequence_of_chunks=sequence_of_chunks,
-    )
+            parallel_read = _generate_parallel_reader_for_files(
+                layer_identifier=layer_identifier,
+                geom_field_name=geom_field_name,
+                coerce_to_schema=coerce_to_schema,
+                spark_to_pandas_type_map=spark_to_pandas_type_map,
+                schema=_schema,
+            )
 
-    _schema = (
-        schema
-        if schema
-        else _create_schema(
-            data_source=data_sources[0],
-            layer_name=layer_names[0],
-            ogr_to_spark_type_map=ogr_to_spark_type_map,
-            geom_field_name=geom_field_name,
-            geom_field_type=geom_field_type,
+            return (
+                df.repartition(number_of_partitions, "path")
+                .groupby("path")
+                .applyInPandas(parallel_read, _schema)
+            )
+
+    else:
+        data_sources = _get_data_sources(paths)
+
+        layer_names = _get_layer_names(
+            data_sources=data_sources,
+            layer_identifier=layer_identifier,
         )
-    )
 
-    parallel_read = _generate_parallel_reader(
-        geom_field_name=geom_field_name,
-        coerce_to_schema=coerce_to_schema,
-        spark_to_pandas_type_map=spark_to_pandas_type_map,
-        schema=_schema,
-    )
+        feature_counts = _get_feature_counts(
+            data_sources=data_sources,
+            layer_names=layer_names,
+        )
 
-    spark.conf.set("spark.sql.shuffle.partitions", total_chunks)
+        sequence_of_chunks = _get_sequence_of_chunks(
+            feature_counts=feature_counts,
+            ideal_chunk_size=ideal_chunk_size,
+        )
 
-    return (
-        df.repartition(total_chunks, "chunk_id")
-        .groupby("chunk_id")
-        .applyInPandas(parallel_read, _schema)
-    )
+        number_of_partitions = _get_total_chunks(sequence_of_chunks)
+
+        with temporary_spark_context(
+            configuration_key="spark.sql.shuffle.partitions",
+            new_configuration_value=str(number_of_partitions),
+        ) as spark:
+
+            df = _create_chunks_df(
+                spark=spark,
+                paths=paths,
+                layer_names=layer_names,
+                sequence_of_chunks=sequence_of_chunks,
+            )
+
+            _schema = (
+                schema
+                if schema
+                else _create_schema_for_chunks(
+                    data_source=data_sources[0],
+                    layer_name=layer_names[0],
+                    ogr_to_spark_type_map=ogr_to_spark_type_map,
+                    geom_field_name=geom_field_name,
+                    geom_field_type=geom_field_type,
+                )
+            )
+
+            parallel_read = _generate_parallel_reader_for_chunks(
+                geom_field_name=geom_field_name,
+                coerce_to_schema=coerce_to_schema,
+                spark_to_pandas_type_map=spark_to_pandas_type_map,
+                schema=_schema,
+            )
+
+            return (
+                df.repartition(number_of_partitions, "id")
+                .groupby("id")
+                .applyInPandas(parallel_read, _schema)
+            )
