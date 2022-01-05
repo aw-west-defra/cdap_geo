@@ -682,11 +682,11 @@ certifi = "*"
 
 [[package]]
 name = "pyspark"
-version = "3.0.1"
+version = "3.1.2"
 description = "Apache Spark Python API"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3.6"
 
 [package.dependencies]
 py4j = "0.10.9"
@@ -694,7 +694,7 @@ py4j = "0.10.9"
 [package.extras]
 ml = ["numpy (>=1.7)"]
 mllib = ["numpy (>=1.7)"]
-sql = ["pandas (>=0.23.2)", "pyarrow (>=0.15.1)"]
+sql = ["pandas (>=0.23.2)", "pyarrow (>=1.0.0)"]
 
 [[package]]
 name = "pytest"
@@ -911,7 +911,7 @@ testing = ["coverage (>=4)", "coverage-enable-subprocess (>=1)", "flaky (>=3)", 
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "0e0ba6bbd859bee60a960ff8b30ebf6e97f17031273345701fbe056f88815369"
+content-hash = "4b52e30df46570f8d7912db5eec0d8a57e3ede5b5f18ac9b098f38dfed4f6621"
 
 [metadata.files]
 argcomplete = [
@@ -1280,7 +1280,7 @@ pyproj = [
     {file = "pyproj-3.3.0.tar.gz", hash = "sha256:ce8bfbc212729e9a643f5f5d77f7a93394e032eda1e2d8799ae902d08add747e"},
 ]
 pyspark = [
-    {file = "pyspark-3.0.1.tar.gz", hash = "sha256:38b485d3634a86c9a2923c39c8f08f003fdd0e0a3d7f07114b2fb4392ce60479"},
+    {file = "pyspark-3.1.2.tar.gz", hash = "sha256:5e25ebb18756e9715f4d26848cc7e558035025da74b4fc325a0ebc05ff538e65"},
 ]
 pytest = [
     {file = "pytest-6.2.5-py3-none-any.whl", hash = "sha256:7310f8d27bc79ced999e760ca304d69f6ba6c6649c0b60fb0e04a4a77cacc134"},
