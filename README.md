@@ -2,43 +2,39 @@
 
 ## Install
 
+### Within a Databricks notebook
+
+```{sh}
+%pip install git+https://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils
+```
+
+### From the command line
+
 ```{sh}
 python -m pip install git+https://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils
 ```
 
 ## Local development
 
-To ensure compatibility with [Databricks Runtime 7.3 LTS](https://docs.databricks.com/release-notes/runtime/7.3.html), this package uses `Python 3.7.5`, `GDAL 2.4.2`, and `spark 3.0.1`.
+To ensure compatibility with [Databricks Runtime 9.1 LTS](https://docs.databricks.com/release-notes/runtime/9.1.html), this package was developed on a Linux machine running the `Ubuntu 20.04 LTS` operating system using `Python 3.8.10`, `GDAL 3.4.0`, and `spark 3.1.2`.
 
-### Install Python 3.7.5 using [pyenv](https://github.com/pyenv/pyenv)
+### Install `Python 3.8.10` using [pyenv](https://github.com/pyenv/pyenv)
 
-Install `pyenv` using [`pyenv-installer`](https://github.com/pyenv/pyenv-installer):
+See the `pyenv-installer`'s [Installation / Update / Uninstallation](https://github.com/pyenv/pyenv-installer#installation--update--uninstallation) instructions.
 
-```{sh}
-curl https://pyenv.run | bash
-```
-
-Add the following lines to your `~/.bashrc`:
+Install Python 3.8.10 globally:
 
 ```{sh}
-export PATH="~/.pyenv/bin:$PATH"
-eval "$(pyenv init -)"
-eval "$(pyenv virtualenv-init -)"
+pyenv install 3.8.10
 ```
 
-Restart your shell so the path changes take effect:
+Then install it locally in the repository you're using:
 
 ```{sh}
-exec $SHELL
+pyenv local 3.8.10
 ```
 
-Install Python 3.7.5:
-
-```{sh}
-pyenv install 3.7.5
-```
-
-### Install GDAL 3.0.4
+### Install `GDAL 3.4.0`
 
 Add the [UbuntuGIS unstable Private Package Archive (PPA)](https://launchpad.net/~ubuntugis/+archive/ubuntu/ubuntugis-unstable)
 and update your package list:
@@ -48,25 +44,35 @@ sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
     && sudo apt-get update
 ```
 
-Install `gdal 3.0.4`, I found I also had to install python3-gdal (even though
+Install `gdal 3.4.0`, I found I also had to install python3-gdal (even though
 I'm going to use poetry to install it in a virtual environment later) to
 avoid version conflicts:
 
 ```{sh}
-sudo apt-get install -y gdal-bin=3.0.4+dfsg-1build3 \
-    libgdal-dev=3.0.4+dfsg-1build3 \
-    python3-gdal=3.0.4+dfsg-1build3 
+sudo apt-get install -y gdal-bin=3.4.0+dfsg-1~focal0 \
+    libgdal-dev=3.4.0+dfsg-1~focal0 \
+    python3-gdal=3.4.0+dfsg-1~focal0
 ```
-  
+
 Verify the installation:
 
 ```{sh}
 ogrinfo --version
-# GDAL 3.0.4, released 2020/01/28
+# GDAL 3.4.0, released 2021/11/04
 ```
 
-Add the Python bindings to your project:
+### Install `poetry 1.1.12`
+
+See poetry's [osx / linux / bashonwindows install instructions](https://python-poetry.org/docs/#osx--linux--bashonwindows-install-instructions)
+
+### Clone this repository
 
 ```{sh}
-poetry add GDAL==3.0.4
+git clone https://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils.git
+```
+
+### Install dependencies using `poetry`
+
+```{sh}
+poetry install
 ```
