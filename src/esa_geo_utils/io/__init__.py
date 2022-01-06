@@ -26,8 +26,8 @@ from pyspark.sql.types import (
 
 from esa_geo_utils.io._create_initial_df import (
     _add_vsi_prefix,
-    _create_chunks_df,
-    _create_paths_df,
+    _create_chunks_sdf,
+    _create_paths_sdf,
     _get_data_sources,
     _get_feature_counts,
     _get_layer_names,
@@ -195,7 +195,7 @@ def read_vector_files(
             new_configuration_value=str(number_of_partitions),
         ) as spark:
 
-            df = _create_paths_df(
+            df = _create_paths_sdf(
                 spark=spark,
                 paths=paths,
             )
@@ -251,7 +251,7 @@ def read_vector_files(
             new_configuration_value=str(number_of_partitions),
         ) as spark:
 
-            df = _create_chunks_df(
+            df = _create_chunks_sdf(
                 spark=spark,
                 paths=paths,
                 layer_names=layer_names,
