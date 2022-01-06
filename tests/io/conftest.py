@@ -6,11 +6,15 @@ from typing import Tuple
 from _pytest.tmpdir import TempPathFactory
 from geopandas import GeoDataFrame
 from numpy import int64, object0
+from osgeo.ogr import DataSource, Open
 from pandas import DataFrame as PandasDataFrame
 from pandas import Series
+from pyspark.sql import DataFrame as SparkDataFrame
+from pyspark.sql import Row, SparkSession
 from pyspark.sql.types import (
     BinaryType,
     DataType,
+    IntegerType,
     LongType,
     StringType,
     StructField,
@@ -21,6 +25,7 @@ from shapely.geometry import Point
 from shapely.geometry.base import BaseGeometry
 
 from esa_geo_utils.io import OGR_TO_SPARK
+from esa_geo_utils.io._types import Chunks
 
 
 @fixture
@@ -174,6 +179,14 @@ def fileGDB_path(
 
 
 @fixture
+def fileGDB_data_source(
+    fileGDB_path: str,
+) -> DataSource:
+    """DataSource for FileGDB."""  # noqa: D403
+    return Open(fileGDB_path)
+
+
+@fixture
 def fileGDB_schema() -> StructType:
     """Schema for dummy FileGDB."""
     return StructType(
@@ -199,3 +212,123 @@ def fileGDB_schema_field_details() -> Tuple[Tuple[str, DataType], ...]:
 def ogr_to_spark_mapping() -> MappingProxyType:
     """OGR to Spark data type mapping."""
     return OGR_TO_SPARK
+
+
+@fixture
+def expected_single_chunk() -> Chunks:
+    """FileGDB as single chunk."""  # noqa: D403
+    return ((0, 3),)
+
+
+@fixture
+def expected_sequence_containing_single_chunk(
+    expected_single_chunk: Chunks,
+) -> Tuple[Chunks, ...]:
+    """Sequence containing FileGDB as single chunk."""
+    return (expected_single_chunk,)
+
+
+@fixture
+def expected_multiple_chunks() -> Chunks:
+    """FileGDB as two chunks."""  # noqa: D403
+    return ((0, 1), (1, 3))
+
+
+@fixture
+def expected_sequence_containing_multiple_chunks(
+    expected_multiple_chunks: Chunks,
+) -> Tuple[Chunks, ...]:
+    """Sequence containing FileGDB as two chunks."""
+    return (expected_multiple_chunks,)
+
+
+@fixture
+def expected_sequence_of_chunks(
+    expected_single_chunk: Chunks,
+    expected_multiple_chunks: Chunks,
+) -> Tuple[Chunks, ...]:
+    """Sequence containing FileGDB as single chunk and FileGDB as two chunks."""
+    return (expected_single_chunk, expected_multiple_chunks)
+
+
+@fixture
+def spark_context() -> SparkSession:
+    """Local Spark context."""
+    return (
+        SparkSession.builder.master(
+            "local",
+        )
+        .appName(
+            "Test context",
+        )
+        .getOrCreate()
+    )
+
+
+@fixture
+def expected_paths_sdf(
+    spark_context: SparkSession,
+    fileGDB_path: str,
+) -> SparkDataFrame:
+    """Spark DataFrame of FileGDB path."""
+    return spark_context.createDataFrame(
+        data=((fileGDB_path,),),
+        schema="path: string",
+    )
+
+
+@fixture
+def expected_single_chunk_sdf(
+    spark_context: SparkSession,
+    fileGDB_path: str,
+) -> SparkDataFrame:
+    """Spark DataFrame of FileGDB as single chunk."""
+    return spark_context.createDataFrame(
+        data=(((fileGDB_path, "first", 0, 0, 3),)),
+        schema=StructType(
+            [
+                StructField("path", StringType()),
+                StructField("layer_name", StringType()),
+                StructField("id", LongType(), False),
+                StructField("start", IntegerType()),
+                StructField("stop", IntegerType()),
+            ],
+        ),
+    )
+
+
+@fixture
+def expected_multiple_chunks_sdf(
+    spark_context: SparkSession,
+    fileGDB_path: str,
+) -> SparkDataFrame:
+    """Spark DataFrame of FileGDB as two chunks."""
+    return spark_context.createDataFrame(
+        data=(
+            (
+                Row(
+                    path=fileGDB_path,
+                    layer_name="first",
+                    id=0,
+                    start=0,
+                    stop=1,
+                ),
+                Row(
+                    path=fileGDB_path,
+                    layer_name="first",
+                    id=1,
+                    start=1,
+                    stop=3,
+                ),
+            )
+        ),
+        schema=StructType(
+            [
+                StructField("path", StringType()),
+                StructField("layer_name", StringType()),
+                StructField("id", LongType(), False),
+                StructField("start", IntegerType()),
+                StructField("stop", IntegerType()),
+            ],
+        ),
+    )
