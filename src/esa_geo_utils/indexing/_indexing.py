@@ -335,7 +335,70 @@ METHODOLOGY = {
 def calculate_bng_index(
     wkb: bytearray, resolution: int, how: str = None, pad: int = 1
 ) -> Sequence[str]:
-    """Underdevelopment."""
+    """Calculate a British National Grid index at a given resolution.
+
+    For a well-known binary representation of a point, linestring, polygon,
+    multipoint, multilinestring or multipolygon the British National Grid (BNG)
+    reference(s) is provided for that geometry at a given resolution.
+    Possible resolutions are 1m, 10m, 100m, 1km, 10km, 100km.
+
+    For points/multipoints a single 'how' method of 'intersects' is available, this
+    references the BNG reference of the grid cell the point falls in, the 2 grid
+    references straddled if the point lies on the line dividing two grid cells, or
+    the 4 grid references straddled if the point lies on a corner vertex shared by
+    four grid cells.
+
+    For linestrings/multilinestrings 'how' methods of 'bounding box' and 'intersects'
+    are available. The 'bounding box' method returns all grid cells covering the
+    bounding box of the geometry; the 'intersects' method is preferred by default
+    as this returns only the subset of grid cells that the line intersects.
+
+    For polygons/multipolygons 'how' methods of 'bounding box', 'intersects' and
+    'contains' are available. The 'bounding box' method returns all grid cells
+    covering the bounding box of the geometry; the 'intersects' method is the
+    default returning the grid cells that the polygon intersects; the 'contains'
+    methods additionally returns a boolean for each grid cell that the polygon
+    intersects with indicating whether that grid cell is contained by the polygon
+    (True) or intersects but is not contained (False).
+
+    The function can be applied over pandas/geopandas dataframe columns where that
+    column contains a wellknown binary (wkb) representation of a geometry. However,
+    it is primarily intended to be wrapped in a pyspark user defined function (udf)
+    and applied to a spark dataframe column which has wellknown binary format
+    geometry data.
+
+    Example:
+        # Create UDF
+        from esa_geo_utils.indexing import calculate_bng_index
+        from pyspark.sql.functions import udf
+        from pyspark.sql.types import StringType, ArrayType
+        from typing import Sequence
+
+        @udf(returnType=ArrayType(StringType()))
+        def apply_index(wkb: bytearray) -> Sequence[str]:
+            # Single argument function for udf
+            return calculate_bng_index(wkb, resolution=100, how = 'intersects')
+
+        # Apply to spark dataframe
+        df = df.withColumn("bng_index", apply_index('geometry'))
+
+    Args:
+        wkb (bytearray): Well-known binary representation of a geometry.
+        resolution (int): Resolution of British National Grid cell(s) to return.
+        Available resolutions are 1, 10, 100, 1000, 10000, 100000 (metres).
+        how (str): Indexing method of: bounding box, intersects (default), contains.
+        pad (int): As grid references must be integers, pad is a tolerance
+        that defaults to 1 and is unlikely to require adjustment.
+
+    Returns:
+        list[str] or list[tuple[str, bool]]: List of British National Grid References
+        or List of Tuples of BNG references and boolean 'contains' relationships.
+
+    Raises:
+        ValueError: If supported method for 'how' not given, or given method not
+        available for geometry type.
+
+    """
     if resolution not in RESOLUTION:
         raise ValueError(f"'resolution' must be one of: {RESOLUTION}")
 
