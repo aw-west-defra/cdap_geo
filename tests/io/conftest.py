@@ -4,7 +4,7 @@ from types import MappingProxyType
 from typing import Tuple
 
 from _pytest.tmpdir import TempPathFactory
-from geopandas import GeoDataFrame
+from geopandas import GeoDataFrame, GeoSeries
 from numpy import int64, object0
 from osgeo.ogr import DataSource, Open
 from pandas import DataFrame as PandasDataFrame
@@ -96,22 +96,30 @@ def first_layer_pdf(
 
 
 @fixture
-def first_layer_pdf_with_missing_column(
-    first_layer_pdf: PandasDataFrame,
-) -> PandasDataFrame:
-    """First layer pdf with missing 'category' column."""
-    return first_layer_pdf.drop(
-        columns=["category"],
-    )
-
-
-@fixture
 def first_layer_pdf_with_additional_column(
     first_layer_pdf: PandasDataFrame,
 ) -> PandasDataFrame:
     """First layer pdf with additional 'id' column."""
     return first_layer_pdf.assign(
         additional=Series(),
+    )
+
+
+@fixture
+def first_layer_pdf_with_wrong_types(
+    first_layer_pdf: PandasDataFrame,
+) -> PandasDataFrame:
+    """First layer pdf but all types are object."""
+    return first_layer_pdf.astype(object0)
+
+
+@fixture
+def first_layer_pdf_with_missing_column(
+    first_layer_pdf: PandasDataFrame,
+) -> PandasDataFrame:
+    """First layer pdf with missing 'category' column."""
+    return first_layer_pdf.drop(
+        columns=["category"],
     )
 
 
@@ -153,6 +161,12 @@ def directory_path(
 
 
 @fixture
+def erroneous_file_path() -> str:
+    """."""
+    return "/erroneous/file/path"
+
+
+@fixture
 def fileGDB_path(
     directory_path: Path,
     first_layer_gdf: GeoDataFrame,
@@ -162,6 +176,38 @@ def fileGDB_path(
     path = directory_path / "data_source.gdb"
 
     path_as_string = str(path)
+
+    first_layer_gdf.to_file(
+        filename=path_as_string,
+        index=False,
+        layer="first",
+    )
+
+    second_layer_gdf.to_file(
+        filename=path_as_string,
+        index=False,
+        layer="second",
+    )
+
+    return path_as_string
+
+
+@fixture
+def fileGDB_wrong_types_path(
+    directory_path: Path,
+    first_layer_pdf_with_wrong_types: PandasDataFrame,
+    second_layer_gdf: GeoDataFrame,
+) -> str:
+    """Writes dummy layers to FileGDB and returns path as string."""
+    path = directory_path / "data_source_wrong_types.gdb"
+
+    path_as_string = str(path)
+
+    first_layer_gdf = GeoDataFrame(
+        data=first_layer_pdf_with_wrong_types,
+        geometry=GeoSeries.from_wkb(first_layer_pdf_with_wrong_types["geometry"]),
+        crs="EPSG:27700",
+    )
 
     first_layer_gdf.to_file(
         filename=path_as_string,
@@ -331,4 +377,18 @@ def expected_multiple_chunks_sdf(
                 StructField("stop", IntegerType()),
             ],
         ),
+    )
+
+
+@fixture
+def expected_null_data_frame(
+    layer_column_names: Tuple[str, ...],
+) -> PandasDataFrame:
+    """Empty PDF with correct column names and dtypes."""
+    return PandasDataFrame(columns=layer_column_names).astype(
+        {
+            "id": int64,
+            "category": object0,
+            "geometry": object0,
+        },
     )

@@ -14,6 +14,7 @@ from esa_geo_utils.io import SPARK_TO_PANDAS
 from esa_geo_utils.io._generate_parallel_reader import (
     _add_missing_columns,
     _coerce_columns_to_schema,
+    _coerce_types_to_schema,
     _drop_additional_columns,
     _get_columns_names,
     _get_features,
@@ -23,7 +24,25 @@ from esa_geo_utils.io._generate_parallel_reader import (
     _get_properties,
     _identify_additional_columns,
     _identify_missing_columns,
+    _null_data_frame_from_schema,
+    _pdf_from_vector_file,
+    _pdf_from_vector_file_chunk,
 )
+
+
+def test__null_data_frame_from_schema(
+    fileGDB_schema: StructType,
+    expected_null_data_frame: PandasDataFrame,
+) -> None:
+    """Returns an empty PDF with the expect column names and dtypes."""
+    null_data_frame = _null_data_frame_from_schema(
+        schema=fileGDB_schema,
+        spark_to_pandas_type_map=SPARK_TO_PANDAS,
+    )
+    assert_frame_equal(
+        left=null_data_frame,
+        right=expected_null_data_frame,
+    )
 
 
 def test__get_properties(fileGDB_path: str) -> None:
@@ -141,6 +160,40 @@ def test__identify_additional_columns(
     assert additional_columns == expected_mask
 
 
+def test__drop_additional_columns(
+    first_layer_pdf_with_additional_column: PandasDataFrame,
+    layer_column_names_additional_column: Tuple[bool, ...],
+    first_layer_pdf: PandasDataFrame,
+) -> None:
+    """Additional column is removed."""
+    pdf = _drop_additional_columns(
+        pdf=first_layer_pdf_with_additional_column,
+        column_names=layer_column_names_additional_column,
+        additional_columns=(False, False, False, True),
+    )
+    assert_frame_equal(
+        left=pdf,
+        right=first_layer_pdf,
+    )
+
+
+def test__coerce_types_to_schema(
+    fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
+    first_layer_pdf_with_wrong_types: PandasDataFrame,
+    first_layer_pdf: PandasDataFrame,
+) -> None:
+    """Returns a PDF with the expected dtypes."""
+    coerced_pdf = _coerce_types_to_schema(
+        pdf=first_layer_pdf_with_wrong_types,
+        schema_field_details=fileGDB_schema_field_details,
+        spark_to_pandas_type_map=SPARK_TO_PANDAS,
+    )
+    assert_frame_equal(
+        left=coerced_pdf,
+        right=first_layer_pdf,
+    )
+
+
 def test__add_missing_columns(
     first_layer_pdf_with_missing_column: PandasDataFrame,
     fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
@@ -159,23 +212,6 @@ def test__add_missing_columns(
     assert_series_equal(
         left=pdf.dtypes,
         right=first_layer_pdf.dtypes,
-    )
-
-
-def test__drop_additional_columns(
-    first_layer_pdf_with_additional_column: PandasDataFrame,
-    layer_column_names_additional_column: Tuple[bool, ...],
-    first_layer_pdf: PandasDataFrame,
-) -> None:
-    """Additional column is removed."""
-    pdf = _drop_additional_columns(
-        pdf=first_layer_pdf_with_additional_column,
-        column_names=layer_column_names_additional_column,
-        additional_columns=(False, False, False, True),
-    )
-    assert_frame_equal(
-        left=pdf,
-        right=first_layer_pdf,
     )
 
 
@@ -216,3 +252,115 @@ def test__coerce_columns_to_schema(
             left=coerced_pdf,
             right=first_layer_pdf,
         )
+
+
+@pytest.mark.parametrize(
+    argnames=[
+        "path",
+        "layer_identifier",
+        "coerce_to_schema",
+        "expected_pdf_name",
+    ],
+    argvalues=[
+        ("erroneous_file_path", "first", False, "expected_null_data_frame"),
+        (
+            "fileGDB_path",
+            "erroneous layer identifier",
+            False,
+            "expected_null_data_frame",
+        ),
+        ("fileGDB_wrong_types_path", "first", True, "first_layer_pdf"),
+        ("fileGDB_path", "first", False, "first_layer_pdf"),
+    ],
+    ids=[
+        "Path doesn't exist",
+        "Layer doesn't exist",
+        "Needs to be coerced",
+        "Doesn't need to be coerced",
+    ],
+)
+def test__pdf_from_vector_file(
+    request: FixtureRequest,
+    path: str,
+    layer_identifier: str,
+    coerce_to_schema: bool,
+    fileGDB_schema: StructType,
+    expected_pdf_name: str,
+) -> None:
+    """Returns the expected df or a null df if path or layer don't exist."""
+    pdf = _pdf_from_vector_file(
+        path=request.getfixturevalue(path),
+        layer_identifier=layer_identifier,
+        geom_field_name="geometry",
+        coerce_to_schema=coerce_to_schema,
+        schema=fileGDB_schema,
+        spark_to_pandas_type_map=SPARK_TO_PANDAS,
+    )
+    pdf["geometry"] = pdf["geometry"].apply(lambda row: loads(bytes(row)))
+
+    expected_pdf: PandasDataFrame = request.getfixturevalue(expected_pdf_name)
+    expected_pdf["geometry"] = expected_pdf["geometry"].apply(
+        lambda row: loads(bytes(row))
+    )
+
+    assert_frame_equal(
+        left=pdf,
+        right=expected_pdf,
+    )
+
+
+@pytest.mark.parametrize(
+    argnames=[
+        "path",
+        "layer_name",
+        "coerce_to_schema",
+        "expected_pdf_name",
+    ],
+    argvalues=[
+        ("erroneous_file_path", "first", False, "expected_null_data_frame"),
+        (
+            "fileGDB_path",
+            "erroneous layer name",
+            False,
+            "expected_null_data_frame",
+        ),
+        ("fileGDB_wrong_types_path", "first", True, "first_layer_pdf"),
+        ("fileGDB_path", "first", False, "first_layer_pdf"),
+    ],
+    ids=[
+        "Path doesn't exist",
+        "Layer doesn't exist",
+        "Needs to be coerced",
+        "Doesn't need to be coerced",
+    ],
+)
+def test__pdf_from_vector_file_chunk(
+    request: FixtureRequest,
+    path: str,
+    layer_name: str,
+    coerce_to_schema: bool,
+    fileGDB_schema: StructType,
+    expected_pdf_name: str,
+) -> None:
+    """Returns the expected df or a null df if path or layer don't exist."""
+    pdf = _pdf_from_vector_file_chunk(
+        path=request.getfixturevalue(path),
+        layer_name=layer_name,
+        start=0,
+        stop=3,
+        geom_field_name="geometry",
+        coerce_to_schema=coerce_to_schema,
+        schema=fileGDB_schema,
+        spark_to_pandas_type_map=SPARK_TO_PANDAS,
+    )
+    pdf["geometry"] = pdf["geometry"].apply(lambda row: loads(bytes(row)))
+
+    expected_pdf: PandasDataFrame = request.getfixturevalue(expected_pdf_name)
+    expected_pdf["geometry"] = expected_pdf["geometry"].apply(
+        lambda row: loads(bytes(row))
+    )
+
+    assert_frame_equal(
+        left=pdf,
+        right=expected_pdf,
+    )
