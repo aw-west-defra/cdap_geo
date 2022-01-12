@@ -368,22 +368,22 @@ def calculate_bng_index(
     geometry data.
 
     Example:
-        # Create UDF
-        from esa_geo_utils.indexing import calculate_bng_index
-        from pyspark.sql.functions import udf
-        from pyspark.sql.types import StringType, ArrayType
-        from typing import Sequence
+        >>> # Create UDF
+            from esa_geo_utils.indexing import calculate_bng_index
+            from pyspark.sql.functions import udf
+            from pyspark.sql.types import StringType, ArrayType
+            from typing import Sequence
 
-        @udf(returnType=ArrayType(StringType()))
-        def apply_index(wkb: bytearray) -> Sequence[str]:
-            # Single argument function for udf
-            return calculate_bng_index(wkb, resolution=100, how = 'intersects')
+            @udf(returnType=ArrayType(StringType()))
+            def apply_index(wkb: bytearray) -> Sequence[str]:
+                # Single argument function for udf
+                return calculate_bng_index(wkb, resolution=100, how = 'intersects')
 
-        # Apply to spark dataframe
-        df = df.withColumn("bng_index", apply_index('geometry'))
+            # Apply to spark dataframe
+            df = df.withColumn("bng_index", apply_index('geometry'))
 
     Args:
-        wkb (bytearray): Well-known binary representation of a geometry.
+        wkb (bytearray): Well-known binary representation of a geometry. # noqa DAR003
         resolution (int): Resolution of British National Grid cell(s) to return.
         Available resolutions are 1, 10, 100, 1000, 10000, 100000 (metres).
         how (str): Indexing method of: bounding box, intersects (default), contains.
