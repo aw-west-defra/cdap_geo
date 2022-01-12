@@ -261,9 +261,9 @@ def _pdf_from_vector_file(
 
 def _pdf_from_vector_file_chunk(
     path: str,
+    layer_name: str,
     start: int,
     stop: int,
-    layer_name: str,
     geom_field_name: str,
     coerce_to_schema: bool,
     schema: StructType,
