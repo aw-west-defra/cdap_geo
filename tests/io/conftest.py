@@ -96,6 +96,14 @@ def first_layer_pdf(
 
 
 @fixture
+def first_layer_pdf_first_row(
+    first_layer_pdf: PandasDataFrame,
+) -> PandasDataFrame:
+    """Just the first row of the first layer PDF."""
+    return first_layer_pdf.iloc[[0]]
+
+
+@fixture
 def first_layer_pdf_with_additional_column(
     first_layer_pdf: PandasDataFrame,
 ) -> PandasDataFrame:
