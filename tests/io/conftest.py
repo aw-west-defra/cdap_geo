@@ -1,7 +1,7 @@
 """Module level fixtures."""
 from pathlib import Path
 from types import MappingProxyType
-from typing import Tuple
+from typing import List, Tuple
 
 from _pytest.tmpdir import TempPathFactory
 from geopandas import GeoDataFrame, GeoSeries
@@ -24,7 +24,7 @@ from pytest import fixture
 from shapely.geometry import Point
 from shapely.geometry.base import BaseGeometry
 
-from esa_geo_utils.io import OGR_TO_SPARK
+from esa_geo_utils.io import OGR_TO_SPARK, SPARK_TO_PANDAS
 from esa_geo_utils.io._types import Chunks
 
 
@@ -100,7 +100,7 @@ def first_layer_pdf_first_row(
     first_layer_pdf: PandasDataFrame,
 ) -> PandasDataFrame:
     """Just the first row of the first layer PDF."""
-    return first_layer_pdf.iloc[[0]]
+    return first_layer_pdf.loc[[0]]
 
 
 @fixture
@@ -269,6 +269,12 @@ def ogr_to_spark_mapping() -> MappingProxyType:
 
 
 @fixture
+def spark_to_pandas_mapping() -> MappingProxyType:
+    """Spark to Pandas data type mapping."""
+    return SPARK_TO_PANDAS
+
+
+@fixture
 def expected_single_chunk() -> Chunks:
     """FileGDB as single chunk."""  # noqa: D403
     return ((0, 3),)
@@ -399,4 +405,46 @@ def expected_null_data_frame(
             "category": object0,
             "geometry": object0,
         },
+    )
+
+
+@fixture
+def expected_parallel_reader_for_files() -> Tuple[List[str], int]:
+    """Expected source code for _generate_parallel_reader_for_files."""
+    return (
+        [
+            "    def _(pdf: PandasDataFrame) -> PandasDataFrame:\n",
+            '        """Returns a pandas_udf compatible version of _pdf_from_vector_file."""\n',  # noqa: B950
+            "        return _pdf_from_vector_file(\n",
+            '            path=str(pdf["path"][0]),\n',
+            "            layer_identifier=layer_identifier,\n",
+            "            geom_field_name=geom_field_name,\n",
+            "            coerce_to_schema=coerce_to_schema,\n",
+            "            schema=schema,\n",
+            "            spark_to_pandas_type_map=spark_to_pandas_type_map,\n",
+            "        )\n",
+        ],
+        318,
+    )
+
+
+@fixture
+def expected_parallel_reader_for_chunks() -> Tuple[List[str], int]:
+    """Expected source code for _generate_parallel_reader_for_chunks."""
+    return (
+        [
+            "    def _(pdf: PandasDataFrame) -> PandasDataFrame:\n",
+            '        """Returns a pandas_udf compatible version of _pdf_from_vector_file_chunk."""\n',  # noqa: B950
+            "        return _pdf_from_vector_file_chunk(\n",
+            '            path=str(pdf["path"][0]),\n',
+            '            layer_name=str(pdf["layer_name"][0]),\n',
+            '            start=int(pdf["start"][0]),\n',
+            '            stop=int(pdf["stop"][0]),\n',
+            "            geom_field_name=geom_field_name,\n",
+            "            coerce_to_schema=coerce_to_schema,\n",
+            "            schema=schema,\n",
+            "            spark_to_pandas_type_map=spark_to_pandas_type_map,\n",
+            "        )\n",
+        ],
+        340,
     )

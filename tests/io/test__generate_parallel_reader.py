@@ -1,5 +1,7 @@
 """Tests for _pyspark module."""
-from typing import Tuple
+from inspect import getsourcelines
+from types import MappingProxyType
+from typing import List, Tuple
 
 import pytest
 from osgeo.ogr import Open
@@ -10,12 +12,13 @@ from pytest import FixtureRequest
 from shapely.geometry import Point
 from shapely.wkb import loads
 
-from esa_geo_utils.io import SPARK_TO_PANDAS
 from esa_geo_utils.io._generate_parallel_reader import (
     _add_missing_columns,
     _coerce_columns_to_schema,
     _coerce_types_to_schema,
     _drop_additional_columns,
+    _generate_parallel_reader_for_chunks,
+    _generate_parallel_reader_for_files,
     _get_columns_names,
     _get_features,
     _get_field_details,
@@ -32,12 +35,13 @@ from esa_geo_utils.io._generate_parallel_reader import (
 
 def test__null_data_frame_from_schema(
     fileGDB_schema: StructType,
+    spark_to_pandas_mapping: MappingProxyType,
     expected_null_data_frame: PandasDataFrame,
 ) -> None:
     """Returns an empty PDF with the expect column names and dtypes."""
     null_data_frame = _null_data_frame_from_schema(
         schema=fileGDB_schema,
-        spark_to_pandas_type_map=SPARK_TO_PANDAS,
+        spark_to_pandas_type_map=spark_to_pandas_mapping,
     )
     assert_frame_equal(
         left=null_data_frame,
@@ -179,6 +183,7 @@ def test__drop_additional_columns(
 
 def test__coerce_types_to_schema(
     fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
+    spark_to_pandas_mapping: MappingProxyType,
     first_layer_pdf_with_wrong_types: PandasDataFrame,
     first_layer_pdf: PandasDataFrame,
 ) -> None:
@@ -186,7 +191,7 @@ def test__coerce_types_to_schema(
     coerced_pdf = _coerce_types_to_schema(
         pdf=first_layer_pdf_with_wrong_types,
         schema_field_details=fileGDB_schema_field_details,
-        spark_to_pandas_type_map=SPARK_TO_PANDAS,
+        spark_to_pandas_type_map=spark_to_pandas_mapping,
     )
     assert_frame_equal(
         left=coerced_pdf,
@@ -197,6 +202,7 @@ def test__coerce_types_to_schema(
 def test__add_missing_columns(
     first_layer_pdf_with_missing_column: PandasDataFrame,
     fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
+    spark_to_pandas_mapping: MappingProxyType,
     layer_column_names: Tuple[str, ...],
     layer_column_names_missing_column: Tuple[bool, ...],
     first_layer_pdf: PandasDataFrame,
@@ -206,7 +212,7 @@ def test__add_missing_columns(
         pdf=first_layer_pdf_with_missing_column,
         schema_field_details=fileGDB_schema_field_details,
         missing_columns=layer_column_names_missing_column,
-        spark_to_pandas_type_map=SPARK_TO_PANDAS,
+        spark_to_pandas_type_map=spark_to_pandas_mapping,
         schema_field_names=layer_column_names,
     )
     assert_series_equal(
@@ -234,13 +240,14 @@ def test__coerce_columns_to_schema(
     request: FixtureRequest,
     pdf: str,
     fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
+    spark_to_pandas_mapping: MappingProxyType,
     first_layer_pdf: PandasDataFrame,
 ) -> None:
     """Missing columns are added and additional columns removed."""
     coerced_pdf = _coerce_columns_to_schema(
         pdf=request.getfixturevalue(pdf),
         schema_field_details=fileGDB_schema_field_details,
-        spark_to_pandas_type_map=SPARK_TO_PANDAS,
+        spark_to_pandas_type_map=spark_to_pandas_mapping,
     )
     if pdf == "first_layer_pdf_with_missing_column":
         assert_series_equal(
@@ -285,6 +292,7 @@ def test__pdf_from_vector_file(
     layer_identifier: str,
     coerce_to_schema: bool,
     fileGDB_schema: StructType,
+    spark_to_pandas_mapping: MappingProxyType,
     expected_pdf_name: str,
 ) -> None:
     """Returns the expected df or a null df if path or layer don't exist."""
@@ -294,7 +302,7 @@ def test__pdf_from_vector_file(
         geom_field_name="geometry",
         coerce_to_schema=coerce_to_schema,
         schema=fileGDB_schema,
-        spark_to_pandas_type_map=SPARK_TO_PANDAS,
+        spark_to_pandas_type_map=spark_to_pandas_mapping,
     )
     pdf["geometry"] = pdf["geometry"].apply(lambda row: loads(bytes(row)))
 
@@ -348,6 +356,7 @@ def test__pdf_from_vector_file_chunk(
     stop: int,
     coerce_to_schema: bool,
     fileGDB_schema: StructType,
+    spark_to_pandas_mapping: MappingProxyType,
     expected_pdf_name: str,
 ) -> None:
     """Returns the expected df or a null df if path or layer don't exist."""
@@ -359,7 +368,7 @@ def test__pdf_from_vector_file_chunk(
         geom_field_name="geometry",
         coerce_to_schema=coerce_to_schema,
         schema=fileGDB_schema,
-        spark_to_pandas_type_map=SPARK_TO_PANDAS,
+        spark_to_pandas_type_map=spark_to_pandas_mapping,
     )
     pdf["geometry"] = pdf["geometry"].apply(lambda row: loads(bytes(row)))
 
@@ -372,3 +381,36 @@ def test__pdf_from_vector_file_chunk(
         left=pdf,
         right=expected_pdf,
     )
+
+
+def test__generate_parallel_reader_for_files(
+    fileGDB_schema: StructType,
+    spark_to_pandas_mapping: MappingProxyType,
+    expected_parallel_reader_for_files: Tuple[List[str], int],
+) -> None:
+    """Returns the expected source code."""
+    parallel_reader = _generate_parallel_reader_for_files(
+        layer_identifier="first",
+        geom_field_name="geometry",
+        coerce_to_schema=True,
+        schema=fileGDB_schema,
+        spark_to_pandas_type_map=spark_to_pandas_mapping,
+    )
+
+    assert getsourcelines(parallel_reader) == expected_parallel_reader_for_files
+
+
+def test__generate_parallel_reader_for_chunks(
+    fileGDB_schema: StructType,
+    spark_to_pandas_mapping: MappingProxyType,
+    expected_parallel_reader_for_chunks: Tuple[List[str], int],
+) -> None:
+    """Returns the expected source code."""
+    parallel_reader = _generate_parallel_reader_for_chunks(
+        geom_field_name="geometry",
+        coerce_to_schema=True,
+        schema=fileGDB_schema,
+        spark_to_pandas_type_map=spark_to_pandas_mapping,
+    )
+
+    assert getsourcelines(parallel_reader) == expected_parallel_reader_for_chunks
