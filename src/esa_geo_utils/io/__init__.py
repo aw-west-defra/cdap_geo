@@ -9,7 +9,7 @@ Basic usage
 """
 from contextlib import contextmanager
 from types import MappingProxyType
-from typing import Optional, Union
+from typing import Iterator, Optional, Union
 
 from numpy import float32, int32, int64, object0
 from pyspark.sql import DataFrame as SparkDataFrame
@@ -26,8 +26,8 @@ from pyspark.sql.types import (
 
 from esa_geo_utils.io._create_initial_df import (
     _add_vsi_prefix,
-    _create_chunks_df,
-    _create_paths_df,
+    _create_chunks_sdf,
+    _create_paths_sdf,
     _get_data_sources,
     _get_feature_counts,
     _get_layer_names,
@@ -88,10 +88,11 @@ SPARK_TO_PANDAS = MappingProxyType(
 @contextmanager
 def temporary_spark_context(
     configuration_key: str,
-    new_configuration_value: Union[str, int],
-    spark: SparkSession = SparkSession._activeSession,
-) -> SparkSession:
+    new_configuration_value: str,
+    spark: SparkSession = None,
+) -> Iterator[SparkSession]:
     """Changes then resets spark configuration."""
+    spark = spark if spark else SparkSession.getActiveSession()
     old_configuration_value = spark.conf.get(configuration_key)
     spark.conf.set(configuration_key, new_configuration_value)
     try:
@@ -103,7 +104,6 @@ def temporary_spark_context(
 def read_vector_files(
     path: str,
     ogr_to_spark_type_map: MappingProxyType = OGR_TO_SPARK,
-    spark: SparkSession = SparkSession._activeSession,
     suffix: str = "*",
     ideal_chunk_size: int = 3_000_000,
     geom_field_name: str = "geometry",
@@ -158,8 +158,6 @@ def read_vector_files(
         path (str): [description]
         ogr_to_spark_type_map (MappingProxyType): [description]. Defaults
             to OGR_TO_SPARK.
-        spark (SparkSession): [description]. Defaults to
-            SparkSession._activeSession.
         suffix (str): [description]. Defaults to "*".
         ideal_chunk_size (int): [description]. Defaults to 3_000_000.
         geom_field_name (str): [description]. Defaults to "geometry".
@@ -194,10 +192,10 @@ def read_vector_files(
 
         with temporary_spark_context(
             configuration_key="spark.sql.shuffle.partitions",
-            new_configuration_value=number_of_partitions,
+            new_configuration_value=str(number_of_partitions),
         ) as spark:
 
-            df = _create_paths_df(
+            df = _create_paths_sdf(
                 spark=spark,
                 paths=paths,
             )
@@ -250,10 +248,10 @@ def read_vector_files(
 
         with temporary_spark_context(
             configuration_key="spark.sql.shuffle.partitions",
-            new_configuration_value=number_of_partitions,
+            new_configuration_value=str(number_of_partitions),
         ) as spark:
 
-            df = _create_chunks_df(
+            df = _create_chunks_sdf(
                 spark=spark,
                 paths=paths,
                 layer_names=layer_names,

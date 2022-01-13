@@ -146,3 +146,5 @@ setenv.sh
 
 # dev notebooks
 dev.ipynb
+
+tests/gdf.gdb/*
