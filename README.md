@@ -4,13 +4,13 @@
 
 ### Within a Databricks notebook
 
-```{sh}
+```sh
 %pip install git+https://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils
 ```
 
 ### From the command line
 
-```{sh}
+```sh
 python -m pip install git+https://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils
 ```
 
@@ -24,13 +24,13 @@ See the `pyenv-installer`'s [Installation / Update / Uninstallation](https://git
 
 Install Python 3.8.10 globally:
 
-```{sh}
+```sh
 pyenv install 3.8.10
 ```
 
 Then install it locally in the repository you're using:
 
-```{sh}
+```sh
 pyenv local 3.8.10
 ```
 
@@ -39,7 +39,7 @@ pyenv local 3.8.10
 Add the [UbuntuGIS unstable Private Package Archive (PPA)](https://launchpad.net/~ubuntugis/+archive/ubuntu/ubuntugis-unstable)
 and update your package list:
 
-```{sh}
+```sh
 sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
     && sudo apt-get update
 ```
@@ -48,7 +48,7 @@ Install `gdal 3.4.0`, I found I also had to install python3-gdal (even though
 I'm going to use poetry to install it in a virtual environment later) to
 avoid version conflicts:
 
-```{sh}
+```sh
 sudo apt-get install -y gdal-bin=3.4.0+dfsg-1~focal0 \
     libgdal-dev=3.4.0+dfsg-1~focal0 \
     python3-gdal=3.4.0+dfsg-1~focal0
@@ -56,7 +56,7 @@ sudo apt-get install -y gdal-bin=3.4.0+dfsg-1~focal0 \
 
 Verify the installation:
 
-```{sh}
+```sh
 ogrinfo --version
 # GDAL 3.4.0, released 2021/11/04
 ```
@@ -67,12 +67,12 @@ See poetry's [osx / linux / bashonwindows install instructions](https://python-p
 
 ### Clone this repository
 
-```{sh}
+```sh
 git clone https://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils.git
 ```
 
 ### Install dependencies using `poetry`
 
-```{sh}
+```sh
 poetry install
 ```

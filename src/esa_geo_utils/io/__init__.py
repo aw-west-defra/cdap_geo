@@ -1,6 +1,5 @@
 """Input / output functions.
 
-===========
 Basic usage
 ===========
 
