@@ -1,9 +1,112 @@
-"""Input / output functions.
+"""Read various spatial vector formats into a Spark DataFrame.
 
 Basic usage
 ===========
 
+Read the first layer from a file or files into a single Spark DataFrame:
 
+Example:
+    >>> sdf = read_vector_files(
+        path="/path/to/files/",
+        suffix=".ext",
+    )
+
+Reading layers
+==============
+
+Read a specific layer for a file or files, using layer name:
+
+Example:
+    >>> sdf = read_vector_files(
+        path="/path/to/files/",
+        suffix=".ext",
+        layer_identifier="layer_name"
+    )
+
+or layer index:
+
+Example:
+    >>> sdf = read_vector_files(
+        path="/path/to/files/",
+        suffix=".ext",
+        layer_identifier=1
+    )
+
+GDAL Virtual File Systems
+=========================
+
+Read compressed files using GDAL Virtual File Systems:
+
+Example:
+    >>> sdf = read_vector_files(
+        path="/path/to/files/",
+        suffix=".gz",
+        layer_identifier="layer_name",
+        vsi_prefix="/vsigzip/",
+    )
+
+User-defined Schema
+===================
+
+By default, a schema will be generated from the first file in the folder. For a
+single tabular dataset that has been partitioned across several files, this will
+work fine.
+
+However, it won't work for a list format like GML, as not every file will contain
+the same fields. In this case, you can define a schema yourself. You will also need
+to set the coerce_to_schema flag to True.
+
+Example:
+    >>> schema = StructType(
+        [
+            StructField("id", LongType()),
+            StructField("category", StringType()),
+            StructField("geometry", BinaryType()),
+        ]
+    )
+
+    >>> sdf = read_vector_files(
+        path="/path/to/files/",
+        suffix=".ext",
+        layer_identifier="layer_name",
+        schema=schema,
+        coerce_to_schema=True,
+    )
+
+Concurrency Strategy
+====================
+
+By default, the function will parallelise across files.
+
+This should work well for single dataset that has been partitioned across several
+files. Especially if it has been partition so that those individual files can be
+comfortably read into memory on a single machine.
+
+However, the function also provides a way of parallelising across chunks of rows
+within a file or files.
+
+Example:
+    >>> sdf = read_vector_files(
+        path="/path/to/files/",
+        suffix=".ext",
+        concurrency_strategy="rows",
+    )
+
+By default, a chunk will consist of 3 million rows but you cab change this using the
+ideal_chunk_size parameter.
+
+Example:
+    >>> sdf = read_vector_files(
+        path="/path/to/files/",
+        suffix=".ext",
+        concurrency_strategy="rows",
+        ideal_chunk_size=5_000_000,
+    )
+
+.. warning::
+    Reading chunks adds a substantial overhead as files have to be opened to get a row
+    count. The "rows" strategy should only be used for a single large file or a small
+    number of large files.
 
 """
 from contextlib import contextmanager
@@ -115,43 +218,6 @@ def read_vector_files(
     concurrency_strategy: str = "files",
 ) -> SparkDataFrame:
     """Read vector file(s) into a Spark DataFrame.
-
-    Read the first layer from a file or files into a single Spark DataFrame:
-
-    Example:
-        >>> sdf = read_vector_files(
-            path="/path/to/files/",
-            suffix=".ext",
-        )
-
-    Read a specific layer for a file or files, using layer name:
-
-    Example:
-        >>> sdf = read_vector_files(
-            path="/path/to/files/",
-            suffix=".ext",
-            layer_identifier="layer_name"
-        )
-
-    or layer index:
-
-    Example:
-        >>> sdf = read_vector_files(
-            path="/path/to/files/",
-            suffix=".ext",
-            layer_identifier=1
-        )
-
-    Read compressed files using GDAL Virtual File Systems:
-
-    Example:
-        >>> sdf = read_vector_files(
-            path="/path/to/files/",
-            suffix=".gz",
-            layer_identifier="layer_name",
-            vsi_prefix="/vsigzip/",
-        )
-
 
     Args:
         path (str): [description]
