@@ -36,13 +36,9 @@
 <h1>API Reference<a class="headerlink" href="#api-reference" title="Permalink to this headline">¶</a></h1>
 <section id="module-esa_geo_utils.io">
 <span id="io"></span><h2>IO<a class="headerlink" href="#module-esa_geo_utils.io" title="Permalink to this headline">¶</a></h2>
-<p>Input / output functions.</p>
+<p>Read various spatial vector formats into a Spark DataFrame.</p>
 <section id="basic-usage">
 <h3>Basic usage<a class="headerlink" href="#basic-usage" title="Permalink to this headline">¶</a></h3>
-<dl class="py function">
-<dt class="sig sig-object py" id="esa_geo_utils.io.read_vector_files">
-<span class="sig-prename descclassname"><span class="pre">esa_geo_utils.io.</span></span><span class="sig-name descname"><span class="pre">read_vector_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ogr_to_spark_type_map:</span> <span class="pre">mappingproxy</span> <span class="pre">=</span> <span class="pre">mappingproxy({'Binary':</span> <span class="pre">BinaryType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'Date':</span> <span class="pre">StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'DateTime':</span> <span class="pre">StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'Integer':</span> <span class="pre">IntegerType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'IntegerList':</span> <span class="pre">ArrayType(IntegerType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'Integer64':</span> <span class="pre">LongType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'Integer64List':</span> <span class="pre">ArrayType(LongType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'Real':</span> <span class="pre">FloatType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'RealList':</span> <span class="pre">ArrayType(FloatType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'String':</span> <span class="pre">StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'StringList':</span> <span class="pre">ArrayType(StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'Time':</span> <span class="pre">StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'WideString':</span> <span class="pre">StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'WideStringList':</span> <span class="pre">ArrayType(StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true)})</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'*'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ideal_chunk_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">3000000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">geom_field_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'geometry'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">geom_field_type:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'Binary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coerce_to_schema:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spark_to_pandas_type_map:</span> <span class="pre">mappingproxy</span> <span class="pre">=</span> <span class="pre">mappingproxy({ArrayType(FloatType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true):</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.object_'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ArrayType(IntegerType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true):</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.object_'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ArrayType(LongType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true):</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.object_'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ArrayType(StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true):</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.object_'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">BinaryType:</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.object_'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">FloatType:</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">IntegerType:</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.int32'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">LongType:</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.int64'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">StringType:</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.object_'&gt;})</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vsi_prefix:</span> <span class="pre">typing.Optional[str]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schema:</span> <span class="pre">typing.Optional[pyspark.sql.types.StructType]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_identifier:</span> <span class="pre">typing.Optional[typing.Union[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">int]]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concurrency_strategy:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'files'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pyspark.sql.dataframe.DataFrame</span></span></span><a class="headerlink" href="#esa_geo_utils.io.read_vector_files" title="Permalink to this definition">¶</a></dt>
-<dd><p>Read vector file(s) into a Spark DataFrame.</p>
 <p>Read the first layer from a file or files into a single Spark DataFrame:</p>
 <p class="rubric">Example</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sdf</span> <span class="o">=</span> <span class="n">read_vector_files</span><span class="p">(</span>
@@ -51,6 +47,9 @@
 <span class="go">)</span>
 </pre></div>
 </div>
+</section>
+<section id="reading-layers">
+<h3>Reading layers<a class="headerlink" href="#reading-layers" title="Permalink to this headline">¶</a></h3>
 <p>Read a specific layer for a file or files, using layer name:</p>
 <p class="rubric">Example</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sdf</span> <span class="o">=</span> <span class="n">read_vector_files</span><span class="p">(</span>
@@ -69,6 +68,9 @@
 <span class="go">)</span>
 </pre></div>
 </div>
+</section>
+<section id="gdal-virtual-file-systems">
+<h3>GDAL Virtual File Systems<a class="headerlink" href="#gdal-virtual-file-systems" title="Permalink to this headline">¶</a></h3>
 <p>Read compressed files using GDAL Virtual File Systems:</p>
 <p class="rubric">Example</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sdf</span> <span class="o">=</span> <span class="n">read_vector_files</span><span class="p">(</span>
@@ -79,6 +81,72 @@
 <span class="go">)</span>
 </pre></div>
 </div>
+</section>
+<section id="user-defined-schema">
+<h3>User-defined Schema<a class="headerlink" href="#user-defined-schema" title="Permalink to this headline">¶</a></h3>
+<p>By default, a schema will be generated from the first file in the folder. For a
+single tabular dataset that has been partitioned across several files, this will
+work fine.</p>
+<p>However, it won’t work for a list format like GML, as not every file will contain
+the same fields. In this case, you can define a schema yourself. You will also need
+to set the coerce_to_schema flag to True.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">schema</span> <span class="o">=</span> <span class="n">StructType</span><span class="p">(</span>
+<span class="go">    [</span>
+<span class="go">        StructField(&quot;id&quot;, LongType()),</span>
+<span class="go">        StructField(&quot;category&quot;, StringType()),</span>
+<span class="go">        StructField(&quot;geometry&quot;, BinaryType()),</span>
+<span class="go">    ]</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sdf</span> <span class="o">=</span> <span class="n">read_vector_files</span><span class="p">(</span>
+<span class="go">    path=&quot;/path/to/files/&quot;,</span>
+<span class="go">    suffix=&quot;.ext&quot;,</span>
+<span class="go">    layer_identifier=&quot;layer_name&quot;,</span>
+<span class="go">    schema=schema,</span>
+<span class="go">    coerce_to_schema=True,</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</section>
+<section id="concurrency-strategy">
+<h3>Concurrency Strategy<a class="headerlink" href="#concurrency-strategy" title="Permalink to this headline">¶</a></h3>
+<p>By default, the function will parallelise across files.</p>
+<p>This should work well for single dataset that has been partitioned across several
+files. Especially if it has been partition so that those individual files can be
+comfortably read into memory on a single machine.</p>
+<p>However, the function also provides a way of parallelising across chunks of rows
+within a file or files.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sdf</span> <span class="o">=</span> <span class="n">read_vector_files</span><span class="p">(</span>
+<span class="go">    path=&quot;/path/to/files/&quot;,</span>
+<span class="go">    suffix=&quot;.ext&quot;,</span>
+<span class="go">    concurrency_strategy=&quot;rows&quot;,</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+<p>By default, a chunk will consist of 3 million rows but you cab change this using the
+ideal_chunk_size parameter.</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sdf</span> <span class="o">=</span> <span class="n">read_vector_files</span><span class="p">(</span>
+<span class="go">    path=&quot;/path/to/files/&quot;,</span>
+<span class="go">    suffix=&quot;.ext&quot;,</span>
+<span class="go">    concurrency_strategy=&quot;rows&quot;,</span>
+<span class="go">    ideal_chunk_size=5_000_000,</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Reading chunks adds a substantial overhead as files have to be opened to get a row
+count. The “rows” strategy should only be used for a single large file or a small
+number of large files.</p>
+</div>
+<dl class="py function">
+<dt class="sig sig-object py" id="esa_geo_utils.io.read_vector_files">
+<span class="sig-prename descclassname"><span class="pre">esa_geo_utils.io.</span></span><span class="sig-name descname"><span class="pre">read_vector_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path:</span> <span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ogr_to_spark_type_map:</span> <span class="pre">mappingproxy</span> <span class="pre">=</span> <span class="pre">mappingproxy({'Binary':</span> <span class="pre">BinaryType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'Date':</span> <span class="pre">StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'DateTime':</span> <span class="pre">StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'Integer':</span> <span class="pre">IntegerType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'IntegerList':</span> <span class="pre">ArrayType(IntegerType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'Integer64':</span> <span class="pre">LongType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'Integer64List':</span> <span class="pre">ArrayType(LongType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'Real':</span> <span class="pre">FloatType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'RealList':</span> <span class="pre">ArrayType(FloatType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'String':</span> <span class="pre">StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'StringList':</span> <span class="pre">ArrayType(StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'Time':</span> <span class="pre">StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'WideString':</span> <span class="pre">StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">'WideStringList':</span> <span class="pre">ArrayType(StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true)})</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'*'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ideal_chunk_size:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">3000000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">geom_field_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'geometry'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">geom_field_type:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'Binary'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coerce_to_schema:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spark_to_pandas_type_map:</span> <span class="pre">mappingproxy</span> <span class="pre">=</span> <span class="pre">mappingproxy({ArrayType(FloatType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true):</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.object_'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ArrayType(IntegerType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true):</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.object_'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ArrayType(LongType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true):</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.object_'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ArrayType(StringType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">true):</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.object_'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">BinaryType:</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.object_'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">FloatType:</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.float32'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">IntegerType:</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.int32'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">LongType:</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.int64'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">StringType:</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.object_'&gt;})</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vsi_prefix:</span> <span class="pre">typing.Optional[str]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schema:</span> <span class="pre">typing.Optional[pyspark.sql.types.StructType]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">layer_identifier:</span> <span class="pre">typing.Optional[typing.Union[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">int]]</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concurrency_strategy:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'files'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pyspark.sql.dataframe.DataFrame</span></span></span><a class="headerlink" href="#esa_geo_utils.io.read_vector_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read vector file(s) into a Spark DataFrame.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -140,10 +208,16 @@ to SPARK_TO_PANDAS.</p></li>
 <h3>Navigation</h3>
 <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="readme.html">README</a></li>
 <li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#module-esa_geo_utils.io">IO</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-esa_geo_utils.io">IO</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#basic-usage">Basic usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#reading-layers">Reading layers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gdal-virtual-file-systems">GDAL Virtual File Systems</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#user-defined-schema">User-defined Schema</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#concurrency-strategy">Concurrency Strategy</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#module-esa_geo_utils.indexing">Indexing</a></li>
 </ul>
 </li>
