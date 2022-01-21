@@ -8,7 +8,7 @@ from geopandas import GeoDataFrame, GeoSeries
 from numpy import int64, object0
 from osgeo.ogr import DataSource, Open
 from pandas import DataFrame as PandasDataFrame
-from pandas import Series
+from pandas import Series, concat
 from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark.sql import Row, SparkSession
 from pyspark.sql.types import (
@@ -63,7 +63,7 @@ def first_layer_second_row() -> Tuple[int, str, BaseGeometry]:
 
 
 @fixture
-def first_layer_gdf(
+def first_file_first_layer_gdf(
     layer_column_names: Tuple[str, ...],
     first_layer_first_row: Tuple[int, str, BaseGeometry],
     first_layer_second_row: Tuple[int, str, BaseGeometry],
@@ -85,48 +85,50 @@ def first_layer_gdf(
 
 
 @fixture
-def first_layer_pdf(
-    first_layer_gdf: GeoDataFrame,
+def first_file_first_layer_pdf(
+    first_file_first_layer_gdf: GeoDataFrame,
 ) -> PandasDataFrame:
     """First dummy layer as pdf with wkb geometry column."""
-    first_layer_gdf["geometry"] = first_layer_gdf["geometry"].to_wkb()
+    first_file_first_layer_gdf["geometry"] = first_file_first_layer_gdf[
+        "geometry"
+    ].to_wkb()
     return PandasDataFrame(
-        first_layer_gdf,
+        first_file_first_layer_gdf,
     )
 
 
 @fixture
-def first_layer_pdf_first_row(
-    first_layer_pdf: PandasDataFrame,
+def first_file_first_layer_pdf_first_row(
+    first_file_first_layer_pdf: PandasDataFrame,
 ) -> PandasDataFrame:
     """Just the first row of the first layer PDF."""
-    return first_layer_pdf.loc[[0]]
+    return first_file_first_layer_pdf.loc[[0]]
 
 
 @fixture
-def first_layer_pdf_with_additional_column(
-    first_layer_pdf: PandasDataFrame,
+def first_file_first_layer_pdf_with_additional_column(
+    first_file_first_layer_pdf: PandasDataFrame,
 ) -> PandasDataFrame:
     """First layer pdf with additional 'id' column."""
-    return first_layer_pdf.assign(
+    return first_file_first_layer_pdf.assign(
         additional=Series(),
     )
 
 
 @fixture
-def first_layer_pdf_with_wrong_types(
-    first_layer_pdf: PandasDataFrame,
+def first_file_first_layer_pdf_with_wrong_types(
+    first_file_first_layer_pdf: PandasDataFrame,
 ) -> PandasDataFrame:
     """First layer pdf but all types are object."""
-    return first_layer_pdf.astype(object0)
+    return first_file_first_layer_pdf.astype(object0)
 
 
 @fixture
-def first_layer_pdf_with_missing_column(
-    first_layer_pdf: PandasDataFrame,
+def first_file_first_layer_pdf_with_missing_column(
+    first_file_first_layer_pdf: PandasDataFrame,
 ) -> PandasDataFrame:
     """First layer pdf with missing 'category' column."""
-    return first_layer_pdf.drop(
+    return first_file_first_layer_pdf.drop(
         columns=["category"],
     )
 
@@ -144,7 +146,7 @@ def second_layer_second_row() -> Tuple[int, str, BaseGeometry]:
 
 
 @fixture
-def second_layer_gdf(
+def first_file_second_layer_gdf(
     layer_column_names: Tuple[str, ...],
     second_layer_first_row: Tuple[int, str, BaseGeometry],
     second_layer_second_row: Tuple[int, str, BaseGeometry],
@@ -161,11 +163,65 @@ def second_layer_gdf(
 
 
 @fixture
+def first_file_second_layer_pdf(
+    first_file_second_layer_gdf: GeoDataFrame,
+) -> PandasDataFrame:
+    """Second dummy layer as pdf with wkb geometry column."""
+    first_file_second_layer_gdf["geometry"] = first_file_second_layer_gdf[
+        "geometry"
+    ].to_wkb()
+    return PandasDataFrame(
+        first_file_second_layer_gdf,
+    )
+
+
+@fixture
+def second_file_first_layer_gdf(
+    layer_column_names: Tuple[str, ...],
+) -> GeoDataFrame:
+    """Second dummy layer."""
+    return GeoDataFrame(
+        data=(
+            (4, "E", Point(1, 1)),
+            (5, "F", Point(1, 2)),
+        ),
+        columns=layer_column_names,
+        crs="EPSG:27700",
+    )
+
+
+@fixture
+def second_file_second_layer_gdf(
+    layer_column_names: Tuple[str, ...],
+) -> GeoDataFrame:
+    """Second dummy layer."""
+    return GeoDataFrame(
+        data=(
+            (6, "G", Point(2, 2)),
+            (7, "H", Point(2, 1)),
+        ),
+        columns=layer_column_names,
+        crs="EPSG:27700",
+    )
+
+
+@fixture
 def directory_path(
     tmp_path_factory: TempPathFactory,
 ) -> Path:
     """Pytest temporary directory as Path object."""
     return tmp_path_factory.getbasetemp()
+
+
+@fixture
+def fileGDB_directory_path(
+    directory_path: Path,
+) -> Path:
+    """Folder for FileGDB."""
+    fileGDB_directory_path = directory_path / "fileGDB"
+    if not fileGDB_directory_path.is_dir():
+        fileGDB_directory_path.mkdir()
+    return fileGDB_directory_path
 
 
 @fixture
@@ -175,23 +231,23 @@ def erroneous_file_path() -> str:
 
 
 @fixture
-def fileGDB_path(
-    directory_path: Path,
-    first_layer_gdf: GeoDataFrame,
-    second_layer_gdf: GeoDataFrame,
+def first_fileGDB_path(
+    fileGDB_directory_path: Path,
+    first_file_first_layer_gdf: GeoDataFrame,
+    first_file_second_layer_gdf: GeoDataFrame,
 ) -> str:
     """Writes dummy layers to FileGDB and returns path as string."""
-    path = directory_path / "data_source.gdb"
+    path = fileGDB_directory_path / "first.gdb"
 
     path_as_string = str(path)
 
-    first_layer_gdf.to_file(
+    first_file_first_layer_gdf.to_file(
         filename=path_as_string,
         index=False,
         layer="first",
     )
 
-    second_layer_gdf.to_file(
+    first_file_second_layer_gdf.to_file(
         filename=path_as_string,
         index=False,
         layer="second",
@@ -201,29 +257,92 @@ def fileGDB_path(
 
 
 @fixture
-def fileGDB_wrong_types_path(
-    directory_path: Path,
-    first_layer_pdf_with_wrong_types: PandasDataFrame,
-    second_layer_gdf: GeoDataFrame,
+def second_fileGDB_path(
+    fileGDB_directory_path: Path,
+    second_file_first_layer_gdf: GeoDataFrame,
+    second_file_second_layer_gdf: GeoDataFrame,
 ) -> str:
-    """Writes dummy layers to FileGDB and returns path as string."""
-    path = directory_path / "data_source_wrong_types.gdb"
+    """Writes dummy layers to FileGDB."""
+    path = fileGDB_directory_path / "second.gdb"
 
     path_as_string = str(path)
 
-    first_layer_gdf = GeoDataFrame(
-        data=first_layer_pdf_with_wrong_types,
-        geometry=GeoSeries.from_wkb(first_layer_pdf_with_wrong_types["geometry"]),
-        crs="EPSG:27700",
-    )
-
-    first_layer_gdf.to_file(
+    second_file_first_layer_gdf.to_file(
         filename=path_as_string,
         index=False,
         layer="first",
     )
 
-    second_layer_gdf.to_file(
+    second_file_second_layer_gdf.to_file(
+        filename=path_as_string,
+        index=False,
+        layer="second",
+    )
+
+    return path_as_string
+
+
+@fixture
+def shapefiles_path(
+    directory_path: Path,
+    first_file_first_layer_gdf: GeoDataFrame,
+    first_file_second_layer_gdf: GeoDataFrame,
+) -> str:
+    """Writes dummy layers to FileGDB and returns path as string."""
+    first_path = directory_path / "first.shp"
+
+    first_path_as_string = str(first_path)
+
+    first_file_first_layer_gdf.to_file(
+        filename=first_path_as_string,
+        index=False,
+        layer="first",
+    )
+
+    second_path = directory_path / "second.shp"
+
+    second_path_as_string = str(second_path)
+
+    first_file_second_layer_gdf.to_file(
+        filename=second_path_as_string,
+        index=False,
+        layer="second",
+    )
+
+    return str(directory_path)
+
+
+@fixture
+def fileGDB_wrong_types_path(
+    directory_path: Path,
+    first_file_first_layer_pdf_with_wrong_types: PandasDataFrame,
+    first_file_second_layer_gdf: GeoDataFrame,
+) -> str:
+    """Writes dummy layers to FileGDB and returns path as string."""
+    directory_path = directory_path / "wrong"
+
+    if not directory_path.is_dir():
+        directory_path.mkdir()
+
+    path = directory_path / "data_source_wrong_types.gdb"
+
+    path_as_string = str(path)
+
+    first_file_first_layer_gdf = GeoDataFrame(
+        data=first_file_first_layer_pdf_with_wrong_types,
+        geometry=GeoSeries.from_wkb(
+            first_file_first_layer_pdf_with_wrong_types["geometry"]
+        ),
+        crs="EPSG:27700",
+    )
+
+    first_file_first_layer_gdf.to_file(
+        filename=path_as_string,
+        index=False,
+        layer="first",
+    )
+
+    first_file_second_layer_gdf.to_file(
         filename=path_as_string,
         index=False,
         layer="second",
@@ -234,10 +353,10 @@ def fileGDB_wrong_types_path(
 
 @fixture
 def fileGDB_data_source(
-    fileGDB_path: str,
+    first_fileGDB_path: str,
 ) -> DataSource:
     """DataSource for FileGDB."""  # noqa: D403
-    return Open(fileGDB_path)
+    return Open(first_fileGDB_path)
 
 
 @fixture
@@ -328,11 +447,11 @@ def spark_context() -> SparkSession:
 @fixture
 def expected_paths_sdf(
     spark_context: SparkSession,
-    fileGDB_path: str,
+    first_fileGDB_path: str,
 ) -> SparkDataFrame:
     """Spark DataFrame of FileGDB path."""
     return spark_context.createDataFrame(
-        data=((fileGDB_path,),),
+        data=((first_fileGDB_path,),),
         schema="path: string",
     )
 
@@ -340,11 +459,11 @@ def expected_paths_sdf(
 @fixture
 def expected_single_chunk_sdf(
     spark_context: SparkSession,
-    fileGDB_path: str,
+    first_fileGDB_path: str,
 ) -> SparkDataFrame:
     """Spark DataFrame of FileGDB as single chunk."""
     return spark_context.createDataFrame(
-        data=(((fileGDB_path, "first", 0, 0, 3),)),
+        data=(((first_fileGDB_path, "first", 0, 0, 3),)),
         schema=StructType(
             [
                 StructField("path", StringType()),
@@ -360,21 +479,21 @@ def expected_single_chunk_sdf(
 @fixture
 def expected_multiple_chunks_sdf(
     spark_context: SparkSession,
-    fileGDB_path: str,
+    first_fileGDB_path: str,
 ) -> SparkDataFrame:
     """Spark DataFrame of FileGDB as two chunks."""
     return spark_context.createDataFrame(
         data=(
             (
                 Row(
-                    path=fileGDB_path,
+                    path=first_fileGDB_path,
                     layer_name="first",
                     id=0,
                     start=0,
                     stop=1,
                 ),
                 Row(
-                    path=fileGDB_path,
+                    path=first_fileGDB_path,
                     layer_name="first",
                     id=1,
                     start=1,
@@ -405,6 +524,36 @@ def expected_null_data_frame(
             "category": object0,
             "geometry": object0,
         },
+    )
+
+
+@fixture
+def expected_shapefiles_gdf(
+    first_file_first_layer_gdf: GeoDataFrame,
+    first_file_second_layer_gdf: GeoDataFrame,
+) -> GeoDataFrame:
+    """Expected concatenation of shapefile gdfs."""
+    return concat(
+        objs=[
+            first_file_first_layer_gdf,
+            first_file_second_layer_gdf,
+        ],
+        ignore_index=True,
+    )
+
+
+@fixture
+def expected_gdb_gdf(
+    first_file_first_layer_gdf: GeoDataFrame,
+    second_file_first_layer_gdf: GeoDataFrame,
+) -> GeoDataFrame:
+    """Expected concatenation of gdb first layer gdfs."""
+    return concat(
+        objs=[
+            first_file_first_layer_gdf,
+            second_file_first_layer_gdf,
+        ],
+        ignore_index=True,
     )
 
 
@@ -448,3 +597,21 @@ def expected_parallel_reader_for_chunks() -> Tuple[List[str], int]:
         ],
         340,
     )
+
+
+@fixture
+def configuration_key() -> str:
+    """Spark configuration key."""
+    return "spark.sql.shuffle.partitions"
+
+
+@fixture
+def default_partitions() -> str:
+    """Spark configuration key default value."""
+    return "200"
+
+
+@fixture
+def expected_temporary_partitions() -> str:
+    """Spark configuration key temporary value."""
+    return "100"

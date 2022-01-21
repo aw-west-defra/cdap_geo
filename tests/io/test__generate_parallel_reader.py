@@ -49,18 +49,18 @@ def test__null_data_frame_from_schema(
     )
 
 
-def test__get_properties(fileGDB_path: str) -> None:
+def test__get_properties(first_fileGDB_path: str) -> None:
     """Properties from 0th row from 0th layer."""
-    data_source = Open(fileGDB_path)
+    data_source = Open(first_fileGDB_path)
     layer = data_source.GetLayer()
     feature = layer.GetFeature(0)
     properties = _get_properties(feature)
     assert properties == (0, "C")
 
 
-def test__get_geometry(fileGDB_path: str) -> None:
+def test__get_geometry(first_fileGDB_path: str) -> None:
     """Geometry from 0th row from 0th layer."""
-    data_source = Open(fileGDB_path)
+    data_source = Open(first_fileGDB_path)
     layer = data_source.GetLayer()
     feature = layer.GetFeature(0)
     geometry = _get_geometry(feature)
@@ -68,9 +68,9 @@ def test__get_geometry(fileGDB_path: str) -> None:
     assert shapely_object == Point(1, 1)
 
 
-def test__get_features(fileGDB_path: str) -> None:
+def test__get_features(first_fileGDB_path: str) -> None:
     """All fields from the 0th row of the 0th layer."""
-    data_source = Open(fileGDB_path)
+    data_source = Open(first_fileGDB_path)
     layer = data_source.GetLayer()
     features_generator = _get_features(layer)
     *properties, geometry = next(features_generator)
@@ -98,12 +98,12 @@ def test__get_field_names(
 
 
 def test__get_columns_names(
-    first_layer_pdf: PandasDataFrame,
+    first_file_first_layer_pdf: PandasDataFrame,
     layer_column_names: Tuple[str, ...],
 ) -> None:
     """Column names from pandas version of dummy first layer."""
     column_names = _get_columns_names(
-        pdf=first_layer_pdf,
+        pdf=first_file_first_layer_pdf,
     )
     assert column_names == layer_column_names
 
@@ -165,51 +165,51 @@ def test__identify_additional_columns(
 
 
 def test__drop_additional_columns(
-    first_layer_pdf_with_additional_column: PandasDataFrame,
+    first_file_first_layer_pdf_with_additional_column: PandasDataFrame,
     layer_column_names_additional_column: Tuple[bool, ...],
-    first_layer_pdf: PandasDataFrame,
+    first_file_first_layer_pdf: PandasDataFrame,
 ) -> None:
     """Additional column is removed."""
     pdf = _drop_additional_columns(
-        pdf=first_layer_pdf_with_additional_column,
+        pdf=first_file_first_layer_pdf_with_additional_column,
         column_names=layer_column_names_additional_column,
         additional_columns=(False, False, False, True),
     )
     assert_frame_equal(
         left=pdf,
-        right=first_layer_pdf,
+        right=first_file_first_layer_pdf,
     )
 
 
 def test__coerce_types_to_schema(
     fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
     spark_to_pandas_mapping: MappingProxyType,
-    first_layer_pdf_with_wrong_types: PandasDataFrame,
-    first_layer_pdf: PandasDataFrame,
+    first_file_first_layer_pdf_with_wrong_types: PandasDataFrame,
+    first_file_first_layer_pdf: PandasDataFrame,
 ) -> None:
     """Returns a PDF with the expected dtypes."""
     coerced_pdf = _coerce_types_to_schema(
-        pdf=first_layer_pdf_with_wrong_types,
+        pdf=first_file_first_layer_pdf_with_wrong_types,
         schema_field_details=fileGDB_schema_field_details,
         spark_to_pandas_type_map=spark_to_pandas_mapping,
     )
     assert_frame_equal(
         left=coerced_pdf,
-        right=first_layer_pdf,
+        right=first_file_first_layer_pdf,
     )
 
 
 def test__add_missing_columns(
-    first_layer_pdf_with_missing_column: PandasDataFrame,
+    first_file_first_layer_pdf_with_missing_column: PandasDataFrame,
     fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
     spark_to_pandas_mapping: MappingProxyType,
     layer_column_names: Tuple[str, ...],
     layer_column_names_missing_column: Tuple[bool, ...],
-    first_layer_pdf: PandasDataFrame,
+    first_file_first_layer_pdf: PandasDataFrame,
 ) -> None:
     """The same columns, with the same data types, in the same order."""
     pdf = _add_missing_columns(
-        pdf=first_layer_pdf_with_missing_column,
+        pdf=first_file_first_layer_pdf_with_missing_column,
         schema_field_details=fileGDB_schema_field_details,
         missing_columns=layer_column_names_missing_column,
         spark_to_pandas_type_map=spark_to_pandas_mapping,
@@ -217,7 +217,7 @@ def test__add_missing_columns(
     )
     assert_series_equal(
         left=pdf.dtypes,
-        right=first_layer_pdf.dtypes,
+        right=first_file_first_layer_pdf.dtypes,
     )
 
 
@@ -226,9 +226,9 @@ def test__add_missing_columns(
         "pdf",
     ],
     argvalues=[
-        ("first_layer_pdf",),
-        ("first_layer_pdf_with_missing_column",),
-        ("first_layer_pdf_with_additional_column",),
+        ("first_file_first_layer_pdf",),
+        ("first_file_first_layer_pdf_with_missing_column",),
+        ("first_file_first_layer_pdf_with_additional_column",),
     ],
     ids=[
         "Same PDF",
@@ -241,7 +241,7 @@ def test__coerce_columns_to_schema(
     pdf: str,
     fileGDB_schema_field_details: Tuple[Tuple[str, DataType], ...],
     spark_to_pandas_mapping: MappingProxyType,
-    first_layer_pdf: PandasDataFrame,
+    first_file_first_layer_pdf: PandasDataFrame,
 ) -> None:
     """Missing columns are added and additional columns removed."""
     coerced_pdf = _coerce_columns_to_schema(
@@ -249,15 +249,15 @@ def test__coerce_columns_to_schema(
         schema_field_details=fileGDB_schema_field_details,
         spark_to_pandas_type_map=spark_to_pandas_mapping,
     )
-    if pdf == "first_layer_pdf_with_missing_column":
+    if pdf == "first_file_first_layer_pdf_with_missing_column":
         assert_series_equal(
             left=coerced_pdf.dtypes,
-            right=first_layer_pdf.dtypes,
+            right=first_file_first_layer_pdf.dtypes,
         )
     else:
         assert_frame_equal(
             left=coerced_pdf,
-            right=first_layer_pdf,
+            right=first_file_first_layer_pdf,
         )
 
 
@@ -271,13 +271,13 @@ def test__coerce_columns_to_schema(
     argvalues=[
         ("erroneous_file_path", "first", False, "expected_null_data_frame"),
         (
-            "fileGDB_path",
+            "first_fileGDB_path",
             "erroneous layer identifier",
             False,
             "expected_null_data_frame",
         ),
-        ("fileGDB_wrong_types_path", "first", True, "first_layer_pdf"),
-        ("fileGDB_path", "first", False, "first_layer_pdf"),
+        ("fileGDB_wrong_types_path", "first", True, "first_file_first_layer_pdf"),
+        ("first_fileGDB_path", "first", False, "first_file_first_layer_pdf"),
     ],
     ids=[
         "Path doesn't exist",
@@ -329,16 +329,23 @@ def test__pdf_from_vector_file(
     argvalues=[
         ("erroneous_file_path", "first", None, None, False, "expected_null_data_frame"),
         (
-            "fileGDB_path",
+            "first_fileGDB_path",
             "erroneous layer name",
             None,
             None,
             False,
             "expected_null_data_frame",
         ),
-        ("fileGDB_wrong_types_path", "first", 0, 2, True, "first_layer_pdf"),
-        ("fileGDB_path", "first", 0, 2, False, "first_layer_pdf"),
-        ("fileGDB_path", "first", 0, 1, False, "first_layer_pdf_first_row"),
+        ("fileGDB_wrong_types_path", "first", 0, 2, True, "first_file_first_layer_pdf"),
+        ("first_fileGDB_path", "first", 0, 2, False, "first_file_first_layer_pdf"),
+        (
+            "first_fileGDB_path",
+            "first",
+            0,
+            1,
+            False,
+            "first_file_first_layer_pdf_first_row",
+        ),
     ],
     ids=[
         "Path doesn't exist",

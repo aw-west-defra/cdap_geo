@@ -29,10 +29,14 @@ from esa_geo_utils.io._create_initial_df import (
 from esa_geo_utils.io._types import Chunks
 
 
-def test__get_paths(directory_path: Path, fileGDB_path: str) -> None:
+def test__get_paths(
+    fileGDB_directory_path: Path,
+    first_fileGDB_path: str,
+    second_fileGDB_path: str,
+) -> None:
     """Returns collection of FileGDB file paths."""
-    paths = _get_paths(path=str(directory_path), suffix="gdb")
-    assert paths == (fileGDB_path,)
+    paths = _get_paths(path=str(fileGDB_directory_path), suffix="gdb")
+    assert paths == (first_fileGDB_path, second_fileGDB_path)
 
 
 @pytest.mark.parametrize(
@@ -52,26 +56,33 @@ def test__get_paths(directory_path: Path, fileGDB_path: str) -> None:
         "Postfixed with slash",
     ],
 )
-def test__add_vsi_prefix(fileGDB_path: str, vsi_prefix: str) -> None:
+def test__add_vsi_prefix(
+    first_fileGDB_path: str,
+    second_fileGDB_path: str,
+    vsi_prefix: str,
+) -> None:
     """VSI prefix is prepended to paths."""
-    _paths = (fileGDB_path,)
+    _paths = (first_fileGDB_path, second_fileGDB_path)
     prefixed_paths = _add_vsi_prefix(paths=_paths, vsi_prefix=vsi_prefix)
-    assert prefixed_paths == ("/" + vsi_prefix.strip("/") + "/" + fileGDB_path,)
+    assert prefixed_paths == (
+        "/" + vsi_prefix.strip("/") + "/" + first_fileGDB_path,
+        "/" + vsi_prefix.strip("/") + "/" + second_fileGDB_path,
+    )
 
 
 def test__get_data_sources(
-    fileGDB_path: str,
+    first_fileGDB_path: str,
 ) -> None:
     """Returns a tuple of DataSources."""
     data_sources = _get_data_sources(
-        paths=(fileGDB_path,),
+        paths=(first_fileGDB_path,),
     )
     assert all(isinstance(data_source, DataSource) for data_source in data_sources)
 
 
-def test__get_data_source_layer_names(fileGDB_path: str) -> None:
+def test__get_data_source_layer_names(first_fileGDB_path: str) -> None:
     """Returns layer names from dummy FileGDB."""
-    data_source = Open(fileGDB_path)
+    data_source = Open(first_fileGDB_path)
     layer_names = _get_data_source_layer_names(
         data_source=data_source,
     )
@@ -100,13 +111,13 @@ def test__get_data_source_layer_names(fileGDB_path: str) -> None:
     ],
 )
 def test__get_layer_name(
-    fileGDB_path: str,
+    first_fileGDB_path: str,
     layer_identifier: Optional[Union[str, int]],
     expected_layer_name: Optional[str],
     expected_exception: ContextManager,
 ) -> None:
     """Returns given layer."""
-    data_source = Open(fileGDB_path)
+    data_source = Open(first_fileGDB_path)
     with expected_exception:
         layer_name = _get_layer_name(
             layer_identifier,
@@ -243,13 +254,13 @@ def test___get_total_chunks(
 
 def test__create_paths_sdf(
     spark_context: SparkSession,
-    fileGDB_path: str,
+    first_fileGDB_path: str,
     expected_paths_sdf: SparkDataFrame,
 ) -> None:
     """Returns the expected SparkDataFrame of paths."""
     paths_sdf = _create_paths_sdf(
         spark=spark_context,
-        paths=(fileGDB_path,),
+        paths=(first_fileGDB_path,),
     )
     assert_df_equality(paths_sdf, expected_paths_sdf)
 
@@ -273,7 +284,7 @@ def test__create_paths_sdf(
 )
 def test__create_chunks_sdf(
     spark_context: SparkSession,
-    fileGDB_path: str,
+    first_fileGDB_path: str,
     request: FixtureRequest,
     expected_sequence_of_chunks: str,
     expected_chunks_sdf: str,
@@ -281,7 +292,7 @@ def test__create_chunks_sdf(
     """Returns the expected SparkDataFrame of Chunks."""
     chunks_sdf = _create_chunks_sdf(
         spark=spark_context,
-        paths=(fileGDB_path,),
+        paths=(first_fileGDB_path,),
         layer_names=("first",),
         sequence_of_chunks=request.getfixturevalue(expected_sequence_of_chunks),
     )
