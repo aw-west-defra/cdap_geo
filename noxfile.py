@@ -124,6 +124,7 @@ def tests(session: Session) -> None:
         "pytest-cov",
         "geopandas",
         "chispa",
+        "pyarrow",
     )
     session.run("pytest", *args)
 
