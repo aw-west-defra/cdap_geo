@@ -55,7 +55,7 @@ def test__get_properties(first_fileGDB_path: str) -> None:
     layer = data_source.GetLayer()
     feature = layer.GetFeature(0)
     properties = _get_properties(feature)
-    assert properties == (0, "C")
+    assert properties == (2, "C")
 
 
 def test__get_geometry(first_fileGDB_path: str) -> None:
@@ -75,7 +75,7 @@ def test__get_features(first_fileGDB_path: str) -> None:
     features_generator = _get_features(layer)
     *properties, geometry = next(features_generator)
     shapely_object = loads(bytes(geometry))
-    assert tuple(properties) == (0, "C")
+    assert tuple(properties) == (2, "C")
     assert shapely_object == Point(1, 1)
 
 
