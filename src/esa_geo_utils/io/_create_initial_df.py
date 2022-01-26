@@ -150,7 +150,7 @@ def _get_total_chunks(sequence_of_chunks: Tuple[Chunks, ...]) -> int:
     return sum(len(chunks) for chunks in sequence_of_chunks)
 
 
-def _create_paths_df(
+def _create_paths_sdf(
     spark: SparkSession,
     paths: Tuple[str, ...],
 ) -> SparkDataFrame:
@@ -166,7 +166,7 @@ def _create_paths_df(
     )
 
 
-def _create_chunks_df(
+def _create_chunks_sdf(
     spark: SparkSession,
     paths: Tuple[str, ...],
     layer_names: Tuple[str, ...],

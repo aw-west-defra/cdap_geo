@@ -1,15 +1,117 @@
-"""Input / output functions.
+"""Read various spatial vector formats into a Spark DataFrame.
 
-===========
 Basic usage
 ===========
 
+Read the first layer from a file or files into a single Spark DataFrame:
 
+Example:
+    >>> sdf = read_vector_files(
+        path="/path/to/files/",
+        suffix=".ext",
+    )
+
+Reading layers
+==============
+
+Read a specific layer for a file or files, using layer name:
+
+Example:
+    >>> sdf = read_vector_files(
+        path="/path/to/files/",
+        suffix=".ext",
+        layer_identifier="layer_name"
+    )
+
+or layer index:
+
+Example:
+    >>> sdf = read_vector_files(
+        path="/path/to/files/",
+        suffix=".ext",
+        layer_identifier=1
+    )
+
+GDAL Virtual File Systems
+=========================
+
+Read compressed files using GDAL Virtual File Systems:
+
+Example:
+    >>> sdf = read_vector_files(
+        path="/path/to/files/",
+        suffix=".gz",
+        layer_identifier="layer_name",
+        vsi_prefix="/vsigzip/",
+    )
+
+User-defined Schema
+===================
+
+By default, a schema will be generated from the first file in the folder. For a
+single tabular dataset that has been partitioned across several files, this will
+work fine.
+
+However, it won't work for a list format like GML, as not every file will contain
+the same fields. In this case, you can define a schema yourself. You will also need
+to set the coerce_to_schema flag to True.
+
+Example:
+    >>> schema = StructType(
+        [
+            StructField("id", LongType()),
+            StructField("category", StringType()),
+            StructField("geometry", BinaryType()),
+        ]
+    )
+
+    >>> sdf = read_vector_files(
+        path="/path/to/files/",
+        suffix=".ext",
+        layer_identifier="layer_name",
+        schema=schema,
+        coerce_to_schema=True,
+    )
+
+Concurrency Strategy
+====================
+
+By default, the function will parallelise across files.
+
+This should work well for single dataset that has been partitioned across several
+files. Especially if it has been partition so that those individual files can be
+comfortably read into memory on a single machine.
+
+However, the function also provides a way of parallelising across chunks of rows
+within a file or files.
+
+Example:
+    >>> sdf = read_vector_files(
+        path="/path/to/files/",
+        suffix=".ext",
+        concurrency_strategy="rows",
+    )
+
+By default, a chunk will consist of 3 million rows but you cab change this using the
+ideal_chunk_size parameter.
+
+Example:
+    >>> sdf = read_vector_files(
+        path="/path/to/files/",
+        suffix=".ext",
+        concurrency_strategy="rows",
+        ideal_chunk_size=5_000_000,
+    )
+
+.. warning::
+    Reading chunks adds a substantial overhead as files have to be opened to get a row
+    count. The "rows" strategy should only be used for a single large file or a small
+    number of large files.
 
 """
 from contextlib import contextmanager
 from types import MappingProxyType
-from typing import Optional, Union
+from typing import Iterator, Optional, Union
 
 from numpy import float32, int32, int64, object0
 from pyspark.sql import DataFrame as SparkDataFrame
@@ -26,8 +128,8 @@ from pyspark.sql.types import (
 
 from esa_geo_utils.io._create_initial_df import (
     _add_vsi_prefix,
-    _create_chunks_df,
-    _create_paths_df,
+    _create_chunks_sdf,
+    _create_paths_sdf,
     _get_data_sources,
     _get_feature_counts,
     _get_layer_names,
@@ -88,10 +190,11 @@ SPARK_TO_PANDAS = MappingProxyType(
 @contextmanager
 def temporary_spark_context(
     configuration_key: str,
-    new_configuration_value: Union[str, int],
-    spark: SparkSession = SparkSession._activeSession,
-) -> SparkSession:
+    new_configuration_value: str,
+    spark: SparkSession = None,
+) -> Iterator[SparkSession]:
     """Changes then resets spark configuration."""
+    spark = spark if spark else SparkSession.getActiveSession()
     old_configuration_value = spark.conf.get(configuration_key)
     spark.conf.set(configuration_key, new_configuration_value)
     try:
@@ -103,7 +206,6 @@ def temporary_spark_context(
 def read_vector_files(
     path: str,
     ogr_to_spark_type_map: MappingProxyType = OGR_TO_SPARK,
-    spark: SparkSession = SparkSession._activeSession,
     suffix: str = "*",
     ideal_chunk_size: int = 3_000_000,
     geom_field_name: str = "geometry",
@@ -117,49 +219,10 @@ def read_vector_files(
 ) -> SparkDataFrame:
     """Read vector file(s) into a Spark DataFrame.
 
-    Read the first layer from a file or files into a single Spark DataFrame:
-
-    Example:
-        >>> sdf = read_vector_files(
-            path="/path/to/files/",
-            suffix=".ext",
-        )
-
-    Read a specific layer for a file or files, using layer name:
-
-    Example:
-        >>> sdf = read_vector_files(
-            path="/path/to/files/",
-            suffix=".ext",
-            layer_identifier="layer_name"
-        )
-
-    or layer index:
-
-    Example:
-        >>> sdf = read_vector_files(
-            path="/path/to/files/",
-            suffix=".ext",
-            layer_identifier=1
-        )
-
-    Read compressed files using GDAL Virtual File Systems:
-
-    Example:
-        >>> sdf = read_vector_files(
-            path="/path/to/files/",
-            suffix=".gz",
-            layer_identifier="layer_name",
-            vsi_prefix="/vsigzip/",
-        )
-
-
     Args:
         path (str): [description]
         ogr_to_spark_type_map (MappingProxyType): [description]. Defaults
             to OGR_TO_SPARK.
-        spark (SparkSession): [description]. Defaults to
-            SparkSession._activeSession.
         suffix (str): [description]. Defaults to "*".
         ideal_chunk_size (int): [description]. Defaults to 3_000_000.
         geom_field_name (str): [description]. Defaults to "geometry".
@@ -194,10 +257,10 @@ def read_vector_files(
 
         with temporary_spark_context(
             configuration_key="spark.sql.shuffle.partitions",
-            new_configuration_value=number_of_partitions,
+            new_configuration_value=str(number_of_partitions),
         ) as spark:
 
-            df = _create_paths_df(
+            df = _create_paths_sdf(
                 spark=spark,
                 paths=paths,
             )
@@ -250,10 +313,10 @@ def read_vector_files(
 
         with temporary_spark_context(
             configuration_key="spark.sql.shuffle.partitions",
-            new_configuration_value=number_of_partitions,
+            new_configuration_value=str(number_of_partitions),
         ) as spark:
 
-            df = _create_chunks_df(
+            df = _create_chunks_sdf(
                 spark=spark,
                 paths=paths,
                 layer_names=layer_names,

@@ -137,42 +137,75 @@ def _coerce_columns_to_schema(
 
     if column_names == schema_field_names:
         return pdf
+
+    missing_columns = _identify_missing_columns(
+        schema_field_names=schema_field_names,
+        column_names=column_names,
+    )
+
+    additional_columns = _identify_additional_columns(
+        schema_field_names=schema_field_names,
+        column_names=column_names,
+    )
+
+    if any(missing_columns) and any(additional_columns):
+        pdf_minus_additional_columns = _drop_additional_columns(
+            pdf=pdf,
+            column_names=column_names,
+            additional_columns=additional_columns,
+        )
+        return _add_missing_columns(
+            pdf=pdf_minus_additional_columns,
+            schema_field_details=schema_field_details,
+            missing_columns=missing_columns,
+            spark_to_pandas_type_map=spark_to_pandas_type_map,
+            schema_field_names=schema_field_names,
+        )
+
+    elif any(missing_columns):
+        return _add_missing_columns(
+            pdf=pdf,
+            schema_field_details=schema_field_details,
+            missing_columns=missing_columns,
+            spark_to_pandas_type_map=spark_to_pandas_type_map,
+            schema_field_names=schema_field_names,
+        )
+
     else:
-        missing_columns = _identify_missing_columns(
-            schema_field_names=schema_field_names,
+        return _drop_additional_columns(
+            pdf=pdf,
             column_names=column_names,
+            additional_columns=additional_columns,
         )
-        additional_columns = _identify_additional_columns(
-            schema_field_names=schema_field_names,
-            column_names=column_names,
-        )
-        if any(missing_columns) and any(additional_columns):
-            pdf_minus_additional_columns = _drop_additional_columns(
-                pdf=pdf,
-                column_names=column_names,
-                additional_columns=additional_columns,
-            )
-            return _add_missing_columns(
-                pdf=pdf_minus_additional_columns,
-                schema_field_details=schema_field_details,
-                missing_columns=missing_columns,
-                spark_to_pandas_type_map=spark_to_pandas_type_map,
-                schema_field_names=schema_field_names,
-            )
-        elif any(missing_columns):
-            return _add_missing_columns(
-                pdf=pdf,
-                schema_field_details=schema_field_details,
-                missing_columns=missing_columns,
-                spark_to_pandas_type_map=spark_to_pandas_type_map,
-                schema_field_names=schema_field_names,
-            )
-        else:
-            return _drop_additional_columns(
-                pdf=pdf,
-                column_names=column_names,
-                additional_columns=additional_columns,
-            )
+
+
+def _coerce_pdf_to_schema(
+    pdf: PandasDataFrame,
+    schema: StructType,
+    spark_to_pandas_type_map: MappingProxyType,
+) -> PandasDataFrame:
+    schema_field_details = _get_field_details(schema=schema)
+
+    coerced_columns_pdf = _coerce_columns_to_schema(
+        pdf=pdf,
+        schema_field_details=schema_field_details,
+        spark_to_pandas_type_map=spark_to_pandas_type_map,
+    )
+
+    return _coerce_types_to_schema(
+        pdf=coerced_columns_pdf,
+        schema_field_details=schema_field_details,
+        spark_to_pandas_type_map=spark_to_pandas_type_map,
+    )
+
+
+def _pdf_from_layer(
+    layer: Layer,
+    geom_field_name: str,
+) -> PandasDataFrame:
+    features_generator = _get_features(layer=layer)
+    feature_names = _get_property_names(layer=layer) + (geom_field_name,)
+    return PandasDataFrame(data=features_generator, columns=feature_names)
 
 
 def _pdf_from_vector_file(
@@ -211,49 +244,26 @@ def _pdf_from_vector_file(
         stop=None,
     )
 
-    if layer is None:
-        return _null_data_frame_from_schema(
-            schema=schema,
-            spark_to_pandas_type_map=spark_to_pandas_type_map,
-        )
-
-    features_generator = _get_features(layer=layer)
-    feature_names = _get_property_names(layer=layer) + (geom_field_name,)
-    pdf = PandasDataFrame(data=features_generator, columns=feature_names)
-
-    if pdf is None:
-        return _null_data_frame_from_schema(
-            schema=schema,
-            spark_to_pandas_type_map=spark_to_pandas_type_map,
-        )
+    pdf = _pdf_from_layer(
+        layer=layer,
+        geom_field_name=geom_field_name,
+    )
 
     if coerce_to_schema:
-        schema_field_details = _get_field_details(schema=schema)
-        coerced_pdf = _coerce_columns_to_schema(
+        return _coerce_pdf_to_schema(
             pdf=pdf,
-            schema_field_details=schema_field_details,
+            schema=schema,
             spark_to_pandas_type_map=spark_to_pandas_type_map,
         )
-        if coerced_pdf is None:
-            return _null_data_frame_from_schema(
-                schema=schema,
-                spark_to_pandas_type_map=spark_to_pandas_type_map,
-            )
-        else:
-            return _coerce_types_to_schema(
-                pdf=coerced_pdf,
-                schema_field_details=schema_field_details,
-                spark_to_pandas_type_map=spark_to_pandas_type_map,
-            )
-    else:
-        return pdf
+
+    return pdf
 
 
 def _pdf_from_vector_file_chunk(
     path: str,
+    layer_name: str,
     start: int,
     stop: int,
-    layer_name: str,
     geom_field_name: str,
     coerce_to_schema: bool,
     schema: StructType,
@@ -280,34 +290,20 @@ def _pdf_from_vector_file_chunk(
             schema=schema,
             spark_to_pandas_type_map=spark_to_pandas_type_map,
         )
-    features_generator = _get_features(layer=layer)
-    feature_names = _get_property_names(layer=layer) + (geom_field_name,)
-    pdf = PandasDataFrame(data=features_generator, columns=feature_names)
-    if pdf is None:
-        return _null_data_frame_from_schema(
+
+    pdf = _pdf_from_layer(
+        layer=layer,
+        geom_field_name=geom_field_name,
+    )
+
+    if coerce_to_schema:
+        return _coerce_pdf_to_schema(
+            pdf=pdf,
             schema=schema,
             spark_to_pandas_type_map=spark_to_pandas_type_map,
         )
-    if coerce_to_schema:
-        schema_field_details = _get_field_details(schema=schema)
-        coerced_pdf = _coerce_columns_to_schema(
-            pdf=pdf,
-            schema_field_details=schema_field_details,
-            spark_to_pandas_type_map=spark_to_pandas_type_map,
-        )
-        if coerced_pdf is None:
-            return _null_data_frame_from_schema(
-                schema=schema,
-                spark_to_pandas_type_map=spark_to_pandas_type_map,
-            )
-        else:
-            return _coerce_types_to_schema(
-                pdf=coerced_pdf,
-                schema_field_details=schema_field_details,
-                spark_to_pandas_type_map=spark_to_pandas_type_map,
-            )
-    else:
-        return pdf
+
+    return pdf
 
 
 def _generate_parallel_reader_for_files(

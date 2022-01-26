@@ -33,14 +33,14 @@ from esa_geo_utils.io._create_schema import (
     ],
 )
 def test__get_layer(
-    fileGDB_path: str,
+    first_fileGDB_path: str,
     layer_name: str,
     start: int,
     stop: int,
     expected_feature_count: int,
 ) -> None:
     """Returns expected layer name and feature count for each method."""
-    data_source = Open(fileGDB_path)
+    data_source = Open(first_fileGDB_path)
 
     _layer: Layer = _get_layer(
         data_source=data_source,
@@ -55,31 +55,31 @@ def test__get_layer(
 
 
 def test__get_property_names(
-    fileGDB_path: str,
+    first_fileGDB_path: str,
     layer_column_names: Tuple[str, ...],
 ) -> None:
     """Returns expected non-geometry field names."""
-    data_source = Open(fileGDB_path)
+    data_source = Open(first_fileGDB_path)
     layer = data_source.GetLayer()
     property_names = _get_property_names(layer=layer)
     assert property_names == layer_column_names[:2]
 
 
-def test__get_property_types(fileGDB_path: str) -> None:
+def test__get_property_types(first_fileGDB_path: str) -> None:
     """Returns expected non-geometry field types."""
-    data_source = Open(fileGDB_path)
+    data_source = Open(first_fileGDB_path)
     layer = data_source.GetLayer()
     property_types = _get_property_types(layer=layer)
     assert property_types == ("Integer64", "String")
 
 
 def test__get_feature_schema(
-    fileGDB_path: str,
+    first_fileGDB_path: str,
     fileGDB_schema: StructType,
     ogr_to_spark_mapping: MappingProxyType,
 ) -> None:
     """Returns expected Spark schema."""
-    data_source = Open(fileGDB_path)
+    data_source = Open(first_fileGDB_path)
     layer = data_source.GetLayer()
     schema = _get_feature_schema(
         layer=layer,
@@ -91,12 +91,12 @@ def test__get_feature_schema(
 
 
 def test__create_schema_for_chunks(
-    fileGDB_path: str,
+    first_fileGDB_path: str,
     fileGDB_schema: StructType,
     ogr_to_spark_mapping: MappingProxyType,
 ) -> None:
     """Returns expected Spark schema regardless of `_get_layer` function used."""
-    data_source = Open(fileGDB_path)
+    data_source = Open(first_fileGDB_path)
 
     schema = _create_schema_for_chunks(
         data_source=data_source,
@@ -109,13 +109,13 @@ def test__create_schema_for_chunks(
 
 
 def test__create_schema_for_files(
-    fileGDB_path: str,
+    first_fileGDB_path: str,
     fileGDB_schema: StructType,
     ogr_to_spark_mapping: MappingProxyType,
 ) -> None:
     """Returns expected Spark schema regardless of `_get_layer` function used."""
     schema = _create_schema_for_files(
-        path=fileGDB_path,
+        path=first_fileGDB_path,
         layer_identifier="first",
         geom_field_name="geometry",
         geom_field_type="Binary",
