@@ -5,11 +5,20 @@ description = "A python library for the Environment Science and Analysis divisio
 authors = ["Ed Fawcett-Taylor <ed.fawcett-taylor@defra.gov.uk>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = ">= 3.7, <= 3.8"
 more-itertools = "^8.12.0"
-pandas = "^1.0.1"
-GDAL = "^3.0.4"
-pyspark = "^3.0.1"
+pandas = [
+    {version = "^1.0.1", python = "3.7"},
+    {version = "^1.2.4", python = "3.8"}
+]
+GDAL = [
+    {version = "2.2.3", python = "3.7"},
+    {version = "3.4.0", python = "3.8"}
+]
+pyspark = [
+    {version = "3.0.1", python = "3.7"},
+    {version = "3.1.2", python = "3.8"}
+]
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
