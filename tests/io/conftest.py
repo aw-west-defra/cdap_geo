@@ -1,5 +1,6 @@
 """Module level fixtures."""
 from pathlib import Path
+from tarfile import open as open_tarfile
 from types import MappingProxyType
 from typing import List, Tuple
 
@@ -136,13 +137,13 @@ def first_file_first_layer_pdf_with_missing_column(
 @fixture
 def second_layer_first_row() -> Tuple[int, str, BaseGeometry]:
     """First row of second dummy layers."""
-    return (0, "C", Point(1, 1))
+    return (2, "C", Point(1, 1))
 
 
 @fixture
 def second_layer_second_row() -> Tuple[int, str, BaseGeometry]:
     """Second row of second dummy layers."""
-    return (1, "D", Point(0, 1))
+    return (3, "D", Point(0, 1))
 
 
 @fixture
@@ -308,6 +309,32 @@ def shapefiles_path(
         index=False,
         layer="second",
     )
+
+    return str(directory_path)
+
+
+@fixture
+def gzipped_shapefiles_path(
+    directory_path: Path,
+) -> str:
+    """Writes dummy layers to FileGDB and returns path as string."""
+    first_tar_path = directory_path / "first.tar.gz"
+
+    if not first_tar_path.exists():
+        first_shapefile_parts = directory_path.glob("first.*")
+
+        with open_tarfile(first_tar_path, "x:gz") as tar:
+            for file in first_shapefile_parts:
+                tar.add(file, arcname=file.name)
+
+    second_tar_path = directory_path / "second.tar.gz"
+
+    if not second_tar_path.exists():
+        second_shapefile_parts = directory_path.glob("second.*")
+
+        with open_tarfile(second_tar_path, "x:gz") as tar:
+            for file in second_shapefile_parts:
+                tar.add(file, arcname=file.name)
 
     return str(directory_path)
 
@@ -544,14 +571,14 @@ def expected_shapefiles_gdf(
 
 @fixture
 def expected_gdb_gdf(
-    first_file_first_layer_gdf: GeoDataFrame,
-    second_file_first_layer_gdf: GeoDataFrame,
+    first_file_second_layer_gdf: GeoDataFrame,
+    second_file_second_layer_gdf: GeoDataFrame,
 ) -> GeoDataFrame:
     """Expected concatenation of gdb first layer gdfs."""
     return concat(
         objs=[
-            first_file_first_layer_gdf,
-            second_file_first_layer_gdf,
+            first_file_second_layer_gdf,
+            second_file_second_layer_gdf,
         ],
         ignore_index=True,
     )
