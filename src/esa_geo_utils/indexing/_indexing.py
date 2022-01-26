@@ -185,7 +185,7 @@ def _bng_point(geometry: Point, resolution: int, pad: int) -> Sequence[str]:
                 for adjust_x in [pad, -1 * pad]
                 for adjust_y in [pad, -1 * pad]
             ]
-        elif geometry.x % resolution == 0:
+        elif int(geometry.x) % resolution == 0:
             # Vertical edge
             return [
                 _coords_to_bng(geometry.x + adjust, geometry.y, resolution)
