@@ -148,7 +148,158 @@ number of large files.</p>
 </section>
 <section id="indexing">
 <h2>Indexing<a class="headerlink" href="#indexing" title="Permalink to this headline">¶</a></h2>
-<p>Spatial indexing functions.</p>
+<p>Create grid-based spatial indexes.</p>
+<section id="id1">
+<h3>Basic Usage<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>Calculate the grid index or indices for a geometry provided in
+well-known binary format at a given resolution:</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">Point</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">pnt</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="mi">555000</span><span class="p">,</span> <span class="mi">185000</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bng_pnt</span> <span class="o">=</span> <span class="n">calculate_bng_index</span><span class="p">(</span>
+<span class="go">    wkb = pnt.wkb,</span>
+<span class="go">    resolution = 100,</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</section>
+<section id="changing-resolution">
+<h3>Changing Resolution<a class="headerlink" href="#changing-resolution" title="Permalink to this headline">¶</a></h3>
+<p>Indices can be calculated for cell sizes of 1m, 10m, 100m, 1000m, 10000m and 100000m:</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">LineString</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">line</span> <span class="o">=</span> <span class="n">LineString</span><span class="p">([(</span><span class="mi">450750</span><span class="p">,</span> <span class="mi">175000</span><span class="p">),</span> <span class="p">(</span><span class="mi">535000</span><span class="p">,</span> <span class="mi">195250</span><span class="p">)])</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bng_line</span> <span class="o">=</span> <span class="n">calculate_bng_index</span><span class="p">(</span>
+<span class="go">    wkb = line.wkb,</span>
+<span class="go">    resolution = 1000,</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</section>
+<section id="index-creation-options">
+<h3>Index Creation Options<a class="headerlink" href="#index-creation-options" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">how</span></code> argument can be used to change the kind of indices created.</p>
+<section id="points-and-multi-points">
+<h4>Points and Multi-Points<a class="headerlink" href="#points-and-multi-points" title="Permalink to this headline">¶</a></h4>
+<p>The default and only option for <code class="docutils literal notranslate"><span class="pre">how</span></code> is ‘intersects’. This returns the
+British National Grid index that the point falls within. If the point lies
+on an edge or corner of the grid cell then 2 or 4 grid cells indices are
+returned as appropriate.</p>
+</section>
+<section id="linestrings-and-multilinestrings">
+<h4>LineStrings and MultiLineStrings<a class="headerlink" href="#linestrings-and-multilinestrings" title="Permalink to this headline">¶</a></h4>
+<p>The default options for <code class="docutils literal notranslate"><span class="pre">how</span></code> is ‘intersects’. This returns all indices for
+the British National Grid cells that the line geometry intersects. An alternative
+option is ‘bounding box’, which returns all indices that intersect with the
+bounding box of the line geometry:</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bng_line</span> <span class="o">=</span> <span class="n">calculate_bng_index</span><span class="p">(</span>
+<span class="go">    wkb = line.wkb,</span>
+<span class="go">    resolution = 100,</span>
+<span class="go">    how = &#39;bounding box&#39;</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+<p>Although bounding boxes are fast to compute, in most cases ‘intersects’ will be
+preferable as bounding box indexing, particularly at higher resolutions, will lead
+to considerable redundancy.</p>
+</section>
+<section id="polygons-and-multipolygons">
+<h4>Polygons and MultiPolygons<a class="headerlink" href="#polygons-and-multipolygons" title="Permalink to this headline">¶</a></h4>
+<p>The default option for <code class="docutils literal notranslate"><span class="pre">how</span></code> is ‘intersects’, but alternative options of
+‘bounding box’ and ‘contains’ are also available. The ‘bounding box’ returns
+the British National Grid indices which intersect the Polygon bounding box.
+The ‘contains’ option returns one or more tuples containing the indices that
+intersect the Polygon and a boolean, where <code class="docutils literal notranslate"><span class="pre">true</span></code> indicates that the grid
+cell is contained within the Polygon and <code class="docutils literal notranslate"><span class="pre">false</span></code> that the grid cell intersects
+the Polygon, but doesn’t lie within it (e.g. the cell crosses the Polygon boundary).</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">Polygon</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">poly</span> <span class="o">=</span> <span class="n">Polygon</span><span class="p">([(</span><span class="mi">535000</span><span class="p">,</span> <span class="mi">175000</span><span class="p">),</span>
+<span class="go">                    (555250, 185000),</span>
+<span class="go">                    (556000, 162500),</span>
+<span class="go">                    (527500, 160333),</span>
+<span class="go">                    (535000, 175000)])</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bng_poly</span> <span class="o">=</span> <span class="n">calculate_bng_index</span><span class="p">(</span>
+<span class="go">    wkb = poly.wkb,</span>
+<span class="go">    resolution = 100,</span>
+<span class="go">    how = &#39;contains&#39;</span>
+<span class="go">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="intended-usage">
+<h3>Intended Usage<a class="headerlink" href="#intended-usage" title="Permalink to this headline">¶</a></h3>
+<p>The top-level <code class="docutils literal notranslate"><span class="pre">calculate_bng_index()</span></code> function is intended to be applied
+over a column of geometries. The approach will support mixes of geometry types
+in a single column. Although it is primarily intended for use in Spark, we
+first present an example using <code class="docutils literal notranslate"><span class="pre">geopandas</span></code> which may be more familiar:</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">geopandas</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gdf</span> <span class="o">=</span> <span class="n">geopandas</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="s1">&#39;some file of interest&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bng</span> <span class="o">=</span> <span class="n">gdf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">calculate_bng_index</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">wkb</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span>
+<span class="go">                    index = 1)</span>
+</pre></div>
+</div>
+<p>When using the function in spark, the same approach applies, however you first
+need to create a user-defined function (udf).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyspark.sql.functions</span> <span class="kn">import</span> <span class="n">udf</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyspark.sql.types</span> <span class="kn">import</span> <span class="n">StringType</span><span class="p">,</span> <span class="n">ArrayType</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nd">@udf</span><span class="p">(</span><span class="n">returnType</span><span class="o">=</span><span class="n">ArrayType</span><span class="p">(</span><span class="n">StringType</span><span class="p">()))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">def</span> <span class="nf">apply_index</span><span class="p">(</span><span class="n">wkb</span><span class="p">:</span> <span class="nb">bytearray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="go">        return calculate_bng_index(wkb, resolution=100, how=&#39;intersects&#39;)</span>
+</pre></div>
+</div>
+<p>This user defined function can then be applied to a spark dataframe, assuming it stores
+the geometry in well-known binary format:</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">sdf</span> <span class="o">=</span> <span class="n">spark</span><span class="o">.</span><span class="n">read</span><span class="o">.</span><span class="n">parquet</span><span class="p">(</span><span class="s1">&#39;some parquet file of interest&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sdf</span> <span class="o">=</span> <span class="n">sdf</span><span class="o">.</span><span class="n">withColumn</span><span class="p">(</span><span class="s1">&#39;bng&#39;</span><span class="p">,</span> <span class="n">apply_index</span><span class="p">(</span><span class="s1">&#39;geometry&#39;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>The intent of the indexing is that it can then be used to benefit geospatial
+filtering and joining operations.</p>
+</section>
+<section id="get-british-national-grid-cell-geometries">
+<h3>Get British National Grid Cell Geometries<a class="headerlink" href="#get-british-national-grid-cell-geometries" title="Permalink to this headline">¶</a></h3>
+<p>A top-level helper function is provided for simple translation of British National
+Grid references into well-known text that can be plotted. The resolution is inferred
+from each reference:</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">geopandas</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">shapely.wkt</span> <span class="kn">import</span> <span class="n">loads</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">box</span> <span class="o">=</span> <span class="n">wkt_from_bng</span><span class="p">(</span><span class="s2">&quot;TQ3415&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gdf</span> <span class="o">=</span> <span class="n">geopandas</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">geometry</span> <span class="o">=</span> <span class="p">[</span><span class="n">box</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gdf</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The <code class="docutils literal notranslate"><span class="pre">wkt_from_bng()</span></code> function is also designed to be applied to collections of
+references:</p>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">geopandas</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">shapely.wkt</span> <span class="kn">import</span> <span class="n">loads</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">boxes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">wkt_from_bng</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;TQ3415&quot;</span><span class="p">,</span> <span class="s2">&quot;SP4087&quot;</span><span class="p">,</span> <span class="s2">&quot;SS9015&quot;</span><span class="p">]))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gdf</span> <span class="o">=</span> <span class="n">geopandas</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">geometry</span> <span class="o">=</span> <span class="n">boxes</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">gdf</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
 </section>
 </section>
 
@@ -180,7 +331,19 @@ number of large files.</p>
 <li class="toctree-l3"><a class="reference internal" href="#concurrency-strategy">Concurrency Strategy</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#indexing">Indexing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#indexing">Indexing</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Basic Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#changing-resolution">Changing Resolution</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#index-creation-options">Index Creation Options</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#points-and-multi-points">Points and Multi-Points</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#linestrings-and-multilinestrings">LineStrings and MultiLineStrings</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#polygons-and-multipolygons">Polygons and MultiPolygons</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#intended-usage">Intended Usage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#get-british-national-grid-cell-geometries">Get British National Grid Cell Geometries</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="api.html">API Reference</a></li>
@@ -221,7 +384,7 @@ number of large files.</p>
       &copy;2022, Ed Fawcett-Taylor, Dan Lewis.
 
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.4.0</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.3.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
 
       |
