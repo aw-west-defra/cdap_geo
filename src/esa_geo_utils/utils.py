@@ -4,9 +4,6 @@ from shapely import wkb as wkb_io
 from pyspark import SparkDataFrame
 from pyspark.serializers import AutoBatchedSerializer, PickleSerializer
 
-libary = 'esa'
-version = '0.1.0'
-
 
 # Get the Variable Name
 def get_var_name(var):
