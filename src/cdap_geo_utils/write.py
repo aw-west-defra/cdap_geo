@@ -3,7 +3,7 @@ from pyspark.sql import functions as F, types as T
 from cdap_geo_utils import __version__
 from cdap_geo_utils.utils import wkb, sdf_memsize
 from geopandas.io.arrow import _encode_metadata
-import pyarrow.parquet as parquet
+from pyarrow import parquet
 # Typing
 from typing import Union
 from pyspark.sql.dataframe import DataFrame as SparkDataFrame
