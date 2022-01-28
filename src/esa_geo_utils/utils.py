@@ -47,7 +47,6 @@ def get_size(path: str) -> int:
 def sdf_force_execute(df: SparkDataFrame):
   df.write.format('noop').mode('overwrite').save()
   return df
-SparkDataFrame.execute = sdf_force_execute
 
 
 # SparkDataFrame Statistics
@@ -55,10 +54,8 @@ def sdf_memsize(sdf: SparkDataFrame) -> int:
   rdd = sdf.rdd._reserialize(AutoBatchedSerializer(PickleSerializer()))
   JavaObj = rdd.ctx._jvm.org.apache.spark.mllib.api.python.SerDe.pythonToJava(rdd._jrdd, True)
   return spark._jvm.org.apache.spark.util.SizeEstimator.estimate(JavaObj)
-SparkDataFrame.memsize = sdf_memsize
 
 def sdf_print_stats(sdf: SparkDataFrame):
-  stats = (get_var_name(sdf), sdf.count(), sdf.memsize(), sdf.rdd.getNumPartitions())
+  stats = (get_var_name(sdf), sdf.count(), sdf_memsize(sdf), sdf.rdd.getNumPartitions())
   print('{}:  Count:{},  Size:{},  Partitions:{}'.format(*stats))
   return sdf
-SparkDataFrame.stats = sdf_print_stats
