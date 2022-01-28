@@ -8,5 +8,6 @@ authors = ["Andrew West <andrew.west@defra.gov.uk>"]
 python = ">=3.7"
 GDAL = ">=3"
 pyspark = ">=3"
-shapely
+shapely = {git = "ssh://git@github.com/shapely/shapely.git", branch = "main"}
 geopandas = ">=0.8"
+esa_geo_utils = {git = "ssh://git@github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils.git", branch = "develop"}
