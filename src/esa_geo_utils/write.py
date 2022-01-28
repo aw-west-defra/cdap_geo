@@ -1,7 +1,7 @@
 sc
 from pyspark.sql import functions as F, types as T
 from esa_geo_utils import __version__
-from esa_geo_utils.utils import wkb
+from esa_geo_utils.utils import wkb, sdf_memsize
 from geopandas.io.arrow import _encode_metadata
 import pyarrow.parquet as parquet
 # Typing
@@ -81,7 +81,7 @@ def sdf_autopartition(sdf: SparkDataFrame, column: str = 'geometry', inplace: bo
   jobs_cap = 100_000
   numPartitions = (
     round(sdf.count() / 1e6),
-    round(sdf.memsize() / 1024**2),
+    round(sdf_memsize(sdf) / 1024**2),
     sc.defaultParallelism * 1.5,
   )
   numPartitions = [min(r, jobs_cap) for r in numPartitions]
@@ -92,7 +92,6 @@ def sdf_autopartition(sdf: SparkDataFrame, column: str = 'geometry', inplace: bo
   if inplace:
     sdf = sdf_repartitioned
   return sdf_repartitioned
-SparkDataFrame.autopartition = sdf_autopartition
 
 
 # Write GeoParquet
@@ -112,7 +111,6 @@ def sdf_write_geoparquet(
   encoding: str = 'WKB',
 ) -> None:
   if autopartition:
-    sdf.autopartition(geometry_column, inplace)
+    sdf_autopartition(sdf, geometry_column, inplace)
   sdf.write.parquet(path, mode, partitionBy, compression)
   geoparquetify(path, geometry_column, crs, encoding)
-SparkDataFrame.write_geoparquet = sdf_write_geoparquet
