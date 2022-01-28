@@ -1,4 +1,4 @@
-from os import scandir, path
+import os
 from inspect import currentframe
 from shapely import wkb as wkb_io
 from pyspark import SparkDataFrame
@@ -22,7 +22,7 @@ def wkb(data):
 def get_tree_size(path: str) -> int:
   '''Return sum of sizes of files within folder and subfolders (tree) in bytes.  From PEP 471'''
   total = 0
-  for entry in scandir(path):
+  for entry in os.scandir(path):
     if entry.is_dir(follow_symlinks=False):
       total += get_tree_size(entry.path)
     else:
@@ -31,9 +31,9 @@ def get_tree_size(path: str) -> int:
 
 def _get_size(path: str) -> int:
   '''Return file or tree size in bytes'''
-  if path.isfile(path):
-    return path.getsize(path)
-  elif path.isdir(path):
+  if os.path.isfile(path):
+    return os.path.getsize(path)
+  elif os.path.isdir(path):
     return get_tree_size(path)
 
 def get_size(path: str) -> int:

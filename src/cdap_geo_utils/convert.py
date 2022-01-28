@@ -1,9 +1,8 @@
-from cdap_geo_utils.utils import wkb
 from pyspark.sql import functions as F, types as T
 # Typing
 from typing import Union
 from pyspark.sql.dataframe import DataFrame as SparkDataFrame
-from pandas import DataFrame as PandasDataFrame
+from pandas import DataFrame as PandasDataFrame, Series
 from geopandas import GeoDataFrame, GeoSeries
 from shapely.geometry.base import BaseGeometry
 DataFrame = Union[SparkDataFrame, PandasDataFrame, GeoDataFrame]
@@ -37,9 +36,9 @@ def GeoDataFrame_to_SparkDataFrame(gdf: GeoDataFrame):
 
 def GeoSeries_to_GeoDataFrame(ds: GeoSeries, crs: Union[int, str] = None):
   if hasattr(ds, 'crs'):
-    if crs==None:
+    if crs is None:
       crs = ds.crs
-    elif crs!=ds.crs:
+    elif crs != ds.crs:
       print(f'\tChanging CRS, provided: {crs} != {ds.crs} :GeoSeries')
   return GeoDataFrame({'geometry':ds}, crs=crs)
 
