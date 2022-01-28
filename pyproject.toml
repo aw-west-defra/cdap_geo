@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "esa_geo_utils"
+name = "cdap_geo_utils"
 version = "0.1.0"
 description = "A python library for the Environment Science and Analysis division's geospatial utilities."
 authors = ["Ed Fawcett-Taylor <ed.fawcett-taylor@defra.gov.uk>"]
@@ -50,8 +50,8 @@ source = ["src", "*/site-packages"]
 
 [tool.coverage.run]
 branch = true
-omit = ["src/esa_geo_utils/core.py"]
-source = ["esa_geo_utils"]
+omit = ["src/cdap_geo_utils/core.py"]
+source = ["cdap_geo_utils"]
 
 [tool.isort]
 profile = "black"

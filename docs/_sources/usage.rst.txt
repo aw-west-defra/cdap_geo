@@ -4,12 +4,12 @@ Usage
 IO
 --
 
-.. automodule:: esa_geo_utils.io
+.. automodule:: cdap_geo_utils.io
     :noindex:
 
 
 Indexing
 --------
 
-.. automodule:: esa_geo_utils.indexing
+.. automodule:: cdap_geo_utils.indexing
     :noindex:

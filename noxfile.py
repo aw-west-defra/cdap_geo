@@ -5,7 +5,7 @@ from typing import Any
 import nox
 from nox.sessions import Session
 
-package = "esa_geo_utils"
+package = "cdap_geo_utils"
 nox.options.sessions = "isort", "lint", "safety", "mypy", "tests"
 locations = "src", "tests", "noxfile.py"
 # locations = "src", "tests", "noxfile.py", "docs/source/conf.py"

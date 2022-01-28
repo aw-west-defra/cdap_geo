@@ -4,7 +4,7 @@ from typing import Optional, Tuple, Union
 from osgeo.ogr import DataSource, GetFieldTypeName, Layer, Open
 from pyspark.sql.types import StructField, StructType
 
-from esa_geo_utils.io._create_initial_df import _get_layer_name
+from cdap_geo_utils.io._create_initial_df import _get_layer_name
 
 
 def _get_layer(

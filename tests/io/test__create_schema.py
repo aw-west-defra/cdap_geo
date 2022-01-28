@@ -6,7 +6,7 @@ import pytest
 from osgeo.ogr import Layer, Open
 from pyspark.sql.types import StructType
 
-from esa_geo_utils.io._create_schema import (
+from cdap_geo_utils.io._create_schema import (
     _create_schema_for_chunks,
     _create_schema_for_files,
     _get_feature_schema,

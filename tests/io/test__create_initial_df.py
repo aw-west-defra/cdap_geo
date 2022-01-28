@@ -11,7 +11,7 @@ from pyspark.sql import DataFrame as SparkDataFrame
 from pyspark.sql import SparkSession
 from pytest import raises
 
-from esa_geo_utils.io._create_initial_df import (
+from cdap_geo_utils.io._create_initial_df import (
     _add_vsi_prefix,
     _create_chunks_sdf,
     _create_paths_sdf,
@@ -26,7 +26,7 @@ from esa_geo_utils.io._create_initial_df import (
     _get_sequence_of_chunks,
     _get_total_chunks,
 )
-from esa_geo_utils.io._types import Chunks
+from cdap_geo_utils.io._types import Chunks
 
 
 def test__get_paths(

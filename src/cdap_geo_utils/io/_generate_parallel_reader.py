@@ -7,8 +7,8 @@ from pandas import DataFrame as PandasDataFrame
 from pandas import Series
 from pyspark.sql.types import DataType, StructType
 
-from esa_geo_utils.io._create_initial_df import _get_layer_name
-from esa_geo_utils.io._create_schema import _get_layer, _get_property_names
+from cdap_geo_utils.io._create_initial_df import _get_layer_name
+from cdap_geo_utils.io._create_schema import _get_layer, _get_property_names
 
 
 def _null_data_frame_from_schema(

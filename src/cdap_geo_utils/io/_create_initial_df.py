@@ -16,7 +16,7 @@ from pyspark.sql.types import (
     StructType,
 )
 
-from esa_geo_utils.io._types import Chunks
+from cdap_geo_utils.io._types import Chunks
 
 
 def _get_paths(path: str, suffix: str) -> Tuple[str, ...]:

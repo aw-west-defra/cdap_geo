@@ -5,13 +5,13 @@
 ### Within a Databricks notebook
 
 ```sh
-%pip install git+https://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils
+%pip install git+https://github.com/Defra-Data-Science-Centre-of-Excellence/cdap_geo_utils
 ```
 
 ### From the command line
 
 ```sh
-python -m pip install git+https://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils
+python -m pip install git+https://github.com/Defra-Data-Science-Centre-of-Excellence/cdap_geo_utils
 ```
 
 ## Local development
@@ -68,7 +68,7 @@ See poetry's [osx / linux / bashonwindows install instructions](https://python-p
 ### Clone this repository
 
 ```sh
-git clone https://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils.git
+git clone https://github.com/Defra-Data-Science-Centre-of-Excellence/cdap_geo_utils.git
 ```
 
 ### Install dependencies using `poetry`

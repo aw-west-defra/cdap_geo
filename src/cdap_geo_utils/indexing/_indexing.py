@@ -369,7 +369,7 @@ def calculate_bng_index(
 
     Example:
         >>> # Create UDF
-            from esa_geo_utils.indexing import calculate_bng_index
+            from cdap_geo_utils.indexing import calculate_bng_index
             from pyspark.sql.functions import udf
             from pyspark.sql.types import StringType, ArrayType
             from typing import Sequence

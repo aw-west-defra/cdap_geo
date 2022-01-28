@@ -1,4 +1,4 @@
-from esa_geo_utils.utils import wkb
+from cdap_geo_utils.utils import wkb
 from pyspark.sql import functions as F, types as T
 # Typing
 from typing import Union

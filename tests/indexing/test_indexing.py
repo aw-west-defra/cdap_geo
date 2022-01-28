@@ -13,7 +13,7 @@ from shapely.geometry import (
     Polygon,
 )
 
-from esa_geo_utils.indexing._indexing import (
+from cdap_geo_utils.indexing._indexing import (
     _bng_geom_bounding_box,
     _bng_geom_index,
     _bng_geom_marked,

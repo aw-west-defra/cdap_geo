@@ -126,7 +126,7 @@ from pyspark.sql.types import (
     StructType,
 )
 
-from esa_geo_utils.io._create_initial_df import (
+from cdap_geo_utils.io._create_initial_df import (
     _add_vsi_prefix,
     _create_chunks_sdf,
     _create_paths_sdf,
@@ -137,15 +137,15 @@ from esa_geo_utils.io._create_initial_df import (
     _get_sequence_of_chunks,
     _get_total_chunks,
 )
-from esa_geo_utils.io._create_schema import (
+from cdap_geo_utils.io._create_schema import (
     _create_schema_for_chunks,
     _create_schema_for_files,
 )
-from esa_geo_utils.io._generate_parallel_reader import (
+from cdap_geo_utils.io._generate_parallel_reader import (
     _generate_parallel_reader_for_chunks,
     _generate_parallel_reader_for_files,
 )
-from esa_geo_utils.io._types import ConcurrencyStrategy
+from cdap_geo_utils.io._types import ConcurrencyStrategy
 
 # See:
 # https://gdal.org/python/index.html

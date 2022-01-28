@@ -25,8 +25,8 @@ from pytest import fixture
 from shapely.geometry import Point
 from shapely.geometry.base import BaseGeometry
 
-from esa_geo_utils.io import OGR_TO_SPARK, SPARK_TO_PANDAS
-from esa_geo_utils.io._types import Chunks
+from cdap_geo_utils.io import OGR_TO_SPARK, SPARK_TO_PANDAS
+from cdap_geo_utils.io._types import Chunks
 
 
 @fixture

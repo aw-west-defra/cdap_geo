@@ -1,7 +1,7 @@
 # Local
 spark
-from esa_geo_utils.utils import wkb
-from esa_geo_utils.indexing import calculate_bng_index
+from cdap_geo_utils.utils import wkb
+from cdap_geo_utils.indexing import calculate_bng_index
 # Imports
 from pyspark.sql import functions as F, types as T
 # Typing

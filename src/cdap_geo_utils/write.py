@@ -1,7 +1,7 @@
 sc
 from pyspark.sql import functions as F, types as T
-from esa_geo_utils import __version__
-from esa_geo_utils.utils import wkb, sdf_memsize
+from cdap_geo_utils import __version__
+from cdap_geo_utils.utils import wkb, sdf_memsize
 from geopandas.io.arrow import _encode_metadata
 import pyarrow.parquet as parquet
 # Typing
@@ -60,7 +60,7 @@ def geoparquetify(
       'bbox': bbox,
     }},
     'schema_version': '0.1.0',
-    'creator': {'library': 'esa_geo_utils', 'version': __version__},
+    'creator': {'library': 'cdap_geo_utils', 'version': __version__},
   }
   
   # 0th part of the parquet file.

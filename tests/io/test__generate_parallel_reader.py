@@ -12,7 +12,7 @@ from pytest import FixtureRequest
 from shapely.geometry import Point
 from shapely.wkb import loads
 
-from esa_geo_utils.io._generate_parallel_reader import (
+from cdap_geo_utils.io._generate_parallel_reader import (
     _add_missing_columns,
     _coerce_columns_to_schema,
     _coerce_types_to_schema,

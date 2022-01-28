@@ -9,7 +9,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.types import StructType
 from pytest import FixtureRequest
 
-from esa_geo_utils.io import read_vector_files, temporary_spark_context
+from cdap_geo_utils.io import read_vector_files, temporary_spark_context
 
 
 def to_gdf(
