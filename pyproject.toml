@@ -1,63 +1,12 @@
 [tool.poetry]
 name = "cdap_geo_utils"
 version = "0.1.0"
-description = "A python library for the Environment Science and Analysis division's geospatial utilities."
-authors = ["Ed Fawcett-Taylor <ed.fawcett-taylor@defra.gov.uk>"]
+description = "An attempt at using Shapely and Geopandas with Spark."
+authors = ["Andrew West <andrew.west@defra.gov.uk>"]
 
 [tool.poetry.dependencies]
-python = ">= 3.7, < 3.9"
-more-itertools = "^8.12.0"
-pandas = [
-    {version = "1.0.1", python = "3.7"},
-    {version = "1.2.4", python = "3.8"}
-]
-GDAL = [
-    {version = "3.0.4", python = "3.7"},
-    {version = "3.4.0", python = "3.8"}
-]
-pyspark = [
-    {version = "3.0.1", python = "3.7"},
-    {version = "3.1.2", python = "3.8"}
-]
-
-[tool.poetry.dev-dependencies]
-pytest = "^6.2.5"
-coverage = {extras = ["toml"], version = "^5.5"}
-pytest-cov = "^2.12.1"
-nox = "^2021.6.12"
-black = "^21.9b0"
-mypy = "^0.910"
-flake8-black = "^0.2.3"
-flake8-isort = "^4.0.0"
-flake8-bugbear = "^21.9.1"
-flake8-annotations = "^2.6.2"
-flake8-docstrings = "^1.6.0"
-darglint = "^1.8.0"
-isort = "^5.9.3"
-safety = "^1.10.3"
-pre-commit = "^2.15.0"
-flake8 = "^4.0.1"
-flake8-bandit = "^2.1.2"
-chispa = "^0.8.2"
-Sphinx = "^4.0.0"
-myst-parser = "^0.16.1"
-pyarrow = "^6.0.1"
-ipykernel = "^6.7.0"
-geopandas = "^0.10.2"
-
-[tool.coverage.paths]
-source = ["src", "*/site-packages"]
-
-[tool.coverage.run]
-branch = true
-omit = ["src/cdap_geo_utils/core.py"]
-source = ["cdap_geo_utils"]
-
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-src_paths = ["src", "test"]
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+python = ">=3.7"
+GDAL = ">=3"
+pyspark = ">=3"
+git+https://github.com/shapely/shapely.git = ">=2"
+geopandas = ">=0.8"
