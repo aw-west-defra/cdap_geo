@@ -105,21 +105,21 @@ def mypy(session: Session) -> None:
     session.run("mypy", *args, "--ignore-missing-imports")
 
 
-# @nox.session(python="3.8")
-# def tests(session: Session) -> None:
-#     """Run the test suite."""
-#     args = session.posargs or ["--cov", "-vv"]
-#     session.run("poetry", "install", "--no-dev", external=True)
-#     install_with_constraints(
-#         session,
-#         "coverage[toml]",
-#         "pytest",
-#         "pytest-cov",
-#         "geopandas",
-#         "chispa",
-#         "pyarrow",
-#     )
-#     session.run("pytest", *args)
+@nox.session(python="3.8")
+def tests(session: Session) -> None:
+    """Run the test suite."""
+    args = session.posargs or ["--cov", "-vv"]
+    session.run("poetry", "install", "--no-dev", external=True)
+    install_with_constraints(
+        session,
+        "coverage[toml]",
+        "pytest",
+        "pytest-cov",
+        "geopandas",
+        "chispa",
+        "pyarrow",
+    )
+    session.run("pytest", *args)
 
 
 # @nox.session(python="3.8")
