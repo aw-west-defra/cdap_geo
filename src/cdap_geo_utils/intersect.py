@@ -7,7 +7,7 @@ from pyspark.sql import functions as F, types as T
 # Typing
 from typing import Union
 from pyspark.sql.dataframe import DataFrame as SparkDataFrame
-from pandas import DataFrame as PandasDataFrame
+from pandas import DataFrame as PandasDataFrame, Series
 from geopandas import GeoDataFrame, GeoSeries
 from shapely.geometry.base import BaseGeometry
 DataFrame = Union[SparkDataFrame, PandasDataFrame, GeoDataFrame]
@@ -50,13 +50,13 @@ def sedona_intersection(df0, df1):
   return df2.drop('geometry').withColumnRenamed('geometry_2', 'geometry')
 
 
-# Indexed Intersecting UDF
-def index_apply(data: bytearray, resolution: int):
+# Geometry UDFs
+def index_apply(column: bytearray, resolution: int):
   # currying resolution
   @F.udf(returnType=T.ArrayType(T.StringType()))
   def _index_apply(data: bytearray):
     return calculate_bng_index(data, resolution=resolution, how='intersects')
-  return _index_apply(data)
+  return _index_apply(column)
 
 @F.udf(returnType=T.BooleanType())
 def index_intersects_udf(left, right):
@@ -70,6 +70,14 @@ def index_intersection_udf(left, right):
 def index_unary_union(data):
   return sum(wkb(data) for geom in geoms).wkb
 
+def buffer(column, resolution):
+  @F.udf(returnType=T.BinaryType())
+  def _buffer(data):
+    return wkb(data).buffer(resolution).wkb
+  return _buffer(column)
+
+
+# Index
 def index_collect(col: set, union: bool):
   if union and col == 'geometry':
     row = index_unary_union(F.collect_list(col))
