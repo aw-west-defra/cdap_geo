@@ -3,6 +3,8 @@ from inspect import currentframe
 from shapely import wkb as wkb_io
 from pyspark import SparkDataFrame
 from pyspark.serializers import AutoBatchedSerializer, PickleSerializer
+from pyspark.sql import SparkSession
+spark = SparkSession.getActiveSession()
 
 
 # Get the Variable Name
