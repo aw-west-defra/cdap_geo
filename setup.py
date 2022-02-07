@@ -1,4 +1,4 @@
-from src import __version__
+from cdap_geo import __version__
 from setuptools import setup, find_packages
 
 setup(
@@ -10,7 +10,7 @@ setup(
   url = 'https://github.com/aw-west-defra/cdap_geo',
   license = 'Crown copywrite',
   python_requires = '>=3',
-  packages = find_packages(where='src'),
+  packages = find_packages(),
   install_requires = [
     'GDAL >=3',
     'pyspark >=3',
