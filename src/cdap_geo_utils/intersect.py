@@ -1,8 +1,8 @@
 # Local
-spark
 from cdap_geo_utils.utils import wkb
 from esa_geo_utils.indexing import calculate_bng_index
 # Imports
+from pyspark.sql import SparkSession
 from pyspark.sql import functions as F, types as T
 # Typing
 from typing import Union
@@ -12,6 +12,7 @@ from geopandas import GeoDataFrame, GeoSeries
 from shapely.geometry.base import BaseGeometry
 DataFrame = Union[SparkDataFrame, PandasDataFrame, GeoDataFrame]
 Geometry = Union[GeoDataFrame, GeoSeries, BaseGeometry]
+spark = SparkSession.getActiveSession()
 
 
 # GeoDataFrame Intersecting, returns GeoDataFrame not GeoSeries
