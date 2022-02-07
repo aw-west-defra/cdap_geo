@@ -1,4 +1,4 @@
-from .src import __version__
+from src import __version__
 from setuptools import setup
 
 setup(
