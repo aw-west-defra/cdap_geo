@@ -1,4 +1,4 @@
-sc
+from pyspark.sql import SparkSession
 from pyspark.sql import functions as F, types as T
 from cdap_geo_utils import __version__
 from cdap_geo_utils.utils import wkb, sdf_memsize
@@ -12,7 +12,8 @@ from geopandas import GeoDataFrame, GeoSeries
 from shapely.geometry.base import BaseGeometry
 DataFrame = Union[SparkDataFrame, PandasDataFrame, GeoDataFrame]
 Geometry = Union[GeoDataFrame, GeoSeries, BaseGeometry]
-
+spark = SparkSession.getActiveSession()
+sc = spark.sparkContext
 
 # GeoParquet-ify
 def geoparquetify(
