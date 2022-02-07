@@ -10,7 +10,7 @@ setup(
   url = 'https://github.com/aw-west-defra/cdap_geo',
   license = 'Crown copywrite',
   python_requires = '>=3',
-  package_dir = {'': 'src'},
+  package_dir = {'': 'cdap_geo'},
   install_requires = [
     'GDAL >=3',
     'pyspark >=3',
