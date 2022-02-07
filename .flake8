@@ -1,8 +1,0 @@
-[flake8]
-select = ANN,B,B9,BLK,C,D,DAR,E,F,I,S,W
-ignore = E203,E501,W503,E111,E114,D300,E128,E121,B950,D103,B950
-max-line-length = 80
-max-complexity = 10
-application-import-names = cdap_geo_utils
-import-order-style = google
-docstring-convention = google
