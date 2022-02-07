@@ -5,7 +5,7 @@ setup(
   name = 'cdap_geo',
   version = __version__,
   description = 'Geospatial functions for CDAP.',
-  long_description = open('README').read(),
+  long_description = open('README.md').read(),
   author = 'Andrew West',
   url = 'https://github.com/aw-west-defra/cdap_geo',
   license = 'Crown copywrite',
