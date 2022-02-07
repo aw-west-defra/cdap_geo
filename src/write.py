@@ -1,6 +1,6 @@
-from cdap_geo_utils import __version__
-from cdap_geo_utils.utils import spark, sc, wkb, sdf_memsize
-from cdap_geo_utils.typing import *
+from . import __version__
+from .typing import *
+from .utils import spark, sc, wkb, sdf_memsize
 from geopandas.io.arrow import _encode_metadata
 from pyspark.sql import functions as F, types as T
 from pyarrow import parquet

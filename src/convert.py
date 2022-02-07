@@ -1,5 +1,5 @@
-from cdap_geo_utils.utils import spark
-from cdap_geo_utils.typing import *
+from .typing import *
+from .utils import spark
 from pyspark.sql import functions as F, types as T
 
 

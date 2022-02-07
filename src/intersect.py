@@ -1,5 +1,5 @@
-from cdap_geo_utils.utils import spark, wkb
-from cdap_geo_utils.typing import *
+from .typing import *
+from .utils import spark, wkb
 from esa_geo_utils.indexing import calculate_bng_index
 from pyspark.sql import functions as F, types as T
 

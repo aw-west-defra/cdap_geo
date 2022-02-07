@@ -1,4 +1,4 @@
-from cdap_geo_utils.typing import *
+from .typing import *
 import os
 from inspect import currentframe
 from shapely import wkb as wkb_io
