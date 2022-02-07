@@ -13,9 +13,9 @@ setup(
     'python >=3.7',
     'GDAL >=3',
     'pyspark >=3',
-    'shapely @ git+ssh://github.com/shapely/shapely.git@main',
+    'shapely @ git+ssh://github.com/shapely/shapely@main',
     'geopandas >=0.8',
-    'esa_geo_utils @ git+ssh://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils.git@develop',
+    'esa_geo_utils @ git+ssh://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils@develop',
   ],
   extras_require = {
     'sedona': ['sedona >=1'],
