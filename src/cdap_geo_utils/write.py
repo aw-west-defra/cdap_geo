@@ -1,19 +1,10 @@
-from pyspark.sql import SparkSession
-from pyspark.sql import functions as F, types as T
 from cdap_geo_utils import __version__
-from cdap_geo_utils.utils import wkb, sdf_memsize
+from cdap_geo_utils.utils import spark, sc, wkb, sdf_memsize
+from cdap_geo_utils.typing import *
 from geopandas.io.arrow import _encode_metadata
+from pyspark.sql import functions as F, types as T
 from pyarrow import parquet
-# Typing
-from typing import Union
-from pyspark.sql.dataframe import DataFrame as SparkDataFrame
-from pandas import DataFrame as PandasDataFrame, Series
-from geopandas import GeoDataFrame, GeoSeries
-from shapely.geometry.base import BaseGeometry
-DataFrame = Union[SparkDataFrame, PandasDataFrame, GeoDataFrame]
-Geometry = Union[GeoDataFrame, GeoSeries, BaseGeometry]
-spark = SparkSession.getActiveSession()
-sc = spark.sparkContext
+
 
 # GeoParquet-ify
 def geoparquetify(

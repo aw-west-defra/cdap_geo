@@ -4,6 +4,9 @@ from shapely import wkb as wkb_io
 from pyspark import SparkDataFrame
 from pyspark.serializers import AutoBatchedSerializer, PickleSerializer
 from pyspark.sql import SparkSession
+
+
+# Define SparkSession and SparkContext
 spark = SparkSession.getActiveSession()
 sc = spark.sparkContext
 

@@ -1,14 +1,6 @@
-from pyspark.sql import SparkSession
+from cdap_geo_utils.utils import spark
+from cdap_geo_utils.typing import *
 from pyspark.sql import functions as F, types as T
-# Typing
-from typing import Union
-from pyspark.sql.dataframe import DataFrame as SparkDataFrame
-from pandas import DataFrame as PandasDataFrame, Series
-from geopandas import GeoDataFrame, GeoSeries
-from shapely.geometry.base import BaseGeometry
-DataFrame = Union[SparkDataFrame, PandasDataFrame, GeoDataFrame]
-Geometry = Union[GeoDataFrame, GeoSeries, BaseGeometry]
-spark = SparkSession.getActiveSession()
 
 
 def SparkDataFrame_to_SedonaDataFrame(df: SparkDataFrame):
