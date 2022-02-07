@@ -13,11 +13,11 @@ setup(
     'python >=3.7',
     'GDAL >=3',
     'pyspark >=3',
-    'git+https://github.com/shapely/shapely.git@main',
+    'shapely @ git+ssh://github.com/shapely/shapely.git@main',
     'geopandas >=0.8',
-    'git+https://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils.git@develop',
+    'esa_geo_utils @ git+ssh://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils.git@develop',
   ],
-  extras_require = [
-    'sedona >=1'
-  ]
+  extras_require = {
+    'sedona': ['sedona >=1'],
+  }
 )
