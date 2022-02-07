@@ -12,7 +12,6 @@ setup(
   python_requires = '>=3',
   package_dir = {'': 'src'},
   install_requires = [
-    'python >=3.7',
     'GDAL >=3',
     'pyspark >=3',
     # 'shapely @ git+ssh://git@github.com/shapely/shapely.git',
