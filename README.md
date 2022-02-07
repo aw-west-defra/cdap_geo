@@ -1,78 +1,79 @@
-# ESA Geospatial Utilities
+# Geospatial Functions for CDAP
 
 ## Install
-
-### Within a Databricks notebook
-
 ```sh
-%pip install git+https://github.com/Defra-Data-Science-Centre-of-Excellence/cdap_geo_utils
+%pip install git+https://github.com/aw-west-defra/cdap_geo
 ```
 
-### From the command line
+## Example
+```py
+import geopandas as gpd
+from cdap_geo.convert import GeoDataFrame_to_SparkDataFrame
+from cdap_geo.intersect import (
+  index_intersects as intersects,
+  index_intersection as intersection,
+)
+from cdap_geo.write import sdf_write_geoparquet
 
-```sh
-python -m pip install git+https://github.com/Defra-Data-Science-Centre-of-Excellence/cdap_geo_utils
+other = gpd.read_file('other.geojson')
+other = other.to_crs(epsg=27700)  # be careful
+other = GeoDataFrame_to_SparkDataFrame(other)
+dataset = spark.read.parquet('dataset.parquet')
+
+smaller_dataset = intersects(dataset, other)
+
+sdf_write_geoparquet(smaller_dataset, './path/to/output.parquet', crs=27700)
 ```
 
-## Local development
 
-To ensure compatibility with [Databricks Runtime 9.1 LTS](https://docs.databricks.com/release-notes/runtime/9.1.html), this package was developed on a Linux machine running the `Ubuntu 20.04 LTS` operating system using `Python 3.8.10`, `GDAL 3.4.0`, and `spark 3.1.2`.
+## SubModules
 
-### Install `Python 3.8.10` using [pyenv](https://github.com/pyenv/pyenv)
-
-See the `pyenv-installer`'s [Installation / Update / Uninstallation](https://github.com/pyenv/pyenv-installer#installation--update--uninstallation) instructions.
-
-Install Python 3.8.10 globally:
-
-```sh
-pyenv install 3.8.10
+### Typing
+Define the shared classes in Spark, Pandas, and GeoPandas, which are DataFrames, Geometries
+These are using for type-setting throughout the module.
+```py
+DataFrame = Union[SparkDataFrame, PandasDataFrame, GeoDataFrame]
+Geometry = Union[GeoDataFrame, GeoSeries, BaseGeometry]
 ```
 
-Then install it locally in the repository you're using:
-
-```sh
-pyenv local 3.8.10
+### Utils
+Contains some useful functions reused throughout the module.
+```py
+spark, sc
+get_var_name
+wkb
+get_tree_size, get_size
+sdf_force_execute, sdf_memsize, sdf_print_stats
 ```
 
-### Install `GDAL 3.4.0`
-
-Add the [UbuntuGIS unstable Private Package Archive (PPA)](https://launchpad.net/~ubuntugis/+archive/ubuntu/ubuntugis-unstable)
-and update your package list:
-
-```sh
-sudo add-apt-repository ppa:ubuntugis/ubuntugis-unstable \
-    && sudo apt-get update
+### Convert
+Convert between the shared classes defined in typing.
+```py
+SparkDataFrame_to_SedonaDataFrame
+SedonaDataFrame_to_SparkDataFrame
+SparkDataFrame_to_GeoDataFrame
+GeoDataFrame_to_SparkDataFrame
+GeoSeries_to_GeoDataFrame
+BaseGeometry_to_GeoDataFrame
 ```
 
-Install `gdal 3.4.0`, I found I also had to install python3-gdal (even though
-I'm going to use poetry to install it in a virtual environment later) to
-avoid version conflicts:
-
-```sh
-sudo apt-get install -y gdal-bin=3.4.0+dfsg-1~focal0 \
-    libgdal-dev=3.4.0+dfsg-1~focal0 \
-    python3-gdal=3.4.0+dfsg-1~focal0
+### Write
+Ouput a Spark dataframe as geoparquet.
+```py
+geoparquetify
+sdf_autopartition
+sdf_write_geoparquet
 ```
 
-Verify the installation:
-
-```sh
-ogrinfo --version
-# GDAL 3.4.0, released 2021/11/04
-```
-
-### Install `poetry 1.1.12`
-
-See poetry's [osx / linux / bashonwindows install instructions](https://python-poetry.org/docs/#osx--linux--bashonwindows-install-instructions)
-
-### Clone this repository
-
-```sh
-git clone https://github.com/Defra-Data-Science-Centre-of-Excellence/cdap_geo_utils.git
-```
-
-### Install dependencies using `poetry`
-
-```sh
-poetry install
+### Intersecting
+There is currently three methods for intersecting, UDFs, Sedona, and most recently Indexed UDFs.
+As more functionality is added these will become individual modules.
+- UDFs
+- Sedona
+- Indexed UDFs
+```py
+gpd_gdf_intersects, gpd_gdf_intersection
+intersects_udf, intersects_pudf
+sedona_intersects, sedona_intersection
+buffer, index_intersects, index_intersection
 ```
