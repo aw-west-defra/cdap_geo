@@ -5,6 +5,7 @@ from pyspark import SparkDataFrame
 from pyspark.serializers import AutoBatchedSerializer, PickleSerializer
 from pyspark.sql import SparkSession
 spark = SparkSession.getActiveSession()
+sc = spark.sparkContext
 
 
 # Get the Variable Name
