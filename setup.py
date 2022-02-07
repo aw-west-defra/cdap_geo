@@ -14,7 +14,7 @@ setup(
   install_requires = [
     'GDAL >=3',
     'pyspark >=3',
-    'shapely @ git+https://github.com/shapely/shapely.git',
+    # 'shapely @ git+https://github.com/shapely/shapely.git',
     'geopandas >=0.8',
     'esa_geo_utils @ git+https://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils.git',
   ],
