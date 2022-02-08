@@ -13,6 +13,18 @@ def geoparquetify(
   crs: Union[int, str] = None,
   encoding: str = 'WKB',
 ) -> None:
+
+  # Verify Path
+  if not path.endswith('/'):
+    path += '/'
+  if path.startswith('/dbfs/'):
+    root = path
+    path = path.replace('/dbfs/', 'dbfs:/')
+  elif path.startswith('/dbfs/'):
+    root = path.replace('dbfs:/', '/dbfs/')
+  else:
+    raise f'UnknownPath: {path}'
+
   '''Hack spark parquet to interoperate with geoparquet standard'''
   _get_bounds = F.udf(
     lambda column: wkb(column).bounds,
@@ -56,9 +68,9 @@ def geoparquetify(
   }
   
   # 0th part of the parquet file.
-  for part in dbutils.fs.ls(path):  # TODO: not dbutils
-    if 'part-00000' in part.name:
-      part0_path = part.path.replace('dbfs:/', '/dbfs/')
+  for file in os.listdir(root):
+    if 'part-00000' in file:
+      part0_path = root + file
       break
 
   part = parquet.read_table(part0_path)
