@@ -74,7 +74,7 @@ def sdf_autopartition(sdf: SparkDataFrame, column: str = 'geometry', inplace: bo
   numPartitions = (
     round(sdf.count() / 1e6),
     round(sdf_memsize(sdf) / 1024**2),
-    spark.sparkContext.defaultParallelism * 1.5,
+    round(spark.sparkContext.defaultParallelism * 1.5),
   )
   numPartitions = [min(r, jobs_cap) for r in numPartitions]
   if max(numPartitions) <= sdf.rdd.getNumPartitions():
