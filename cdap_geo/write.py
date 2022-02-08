@@ -4,6 +4,7 @@ from .utils import spark, wkb, sdf_memsize
 from geopandas.io.arrow import _encode_metadata
 from pyspark.sql import functions as F, types as T
 from pyarrow import parquet
+from os import listdir
 
 
 # GeoParquet-ify
@@ -68,7 +69,7 @@ def geoparquetify(
   }
   
   # 0th part of the parquet file.
-  for file in os.listdir(root):
+  for file in listdir(root):
     if 'part-00000' in file:
       part0_path = root + file
       break
