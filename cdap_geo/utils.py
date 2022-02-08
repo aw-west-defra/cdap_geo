@@ -8,7 +8,6 @@ from pyspark.sql import SparkSession
 
 # Define SparkSession and SparkContext
 spark = SparkSession.getActiveSession()
-sc = spark.sparkContext
 
 
 # Get the Variable Name

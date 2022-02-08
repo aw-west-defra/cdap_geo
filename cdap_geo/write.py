@@ -1,6 +1,6 @@
 from . import __version__
 from .typing import *
-from .utils import spark, sc, wkb, sdf_memsize
+from .utils import spark, wkb, sdf_memsize
 from geopandas.io.arrow import _encode_metadata
 from pyspark.sql import functions as F, types as T
 from pyarrow import parquet
@@ -74,7 +74,7 @@ def sdf_autopartition(sdf: SparkDataFrame, column: str = 'geometry', inplace: bo
   numPartitions = (
     round(sdf.count() / 1e6),
     round(sdf_memsize(sdf) / 1024**2),
-    sc.defaultParallelism * 1.5,
+    spark.sparkContext.defaultParallelism * 1.5,
   )
   numPartitions = [min(r, jobs_cap) for r in numPartitions]
   if max(numPartitions) <= sdf.rdd.getNumPartitions():
