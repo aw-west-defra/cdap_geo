@@ -14,6 +14,10 @@ def geoparquetify(
   crs: Union[int, str] = None,
   encoding: str = 'WKB',
 ) -> None:
+  '''
+  Hack spark parquet to interoperate with geoparquet standard
+  by Dan Lewis
+  '''
 
   # Verify Path
   if not path.endswith('/'):
@@ -23,15 +27,12 @@ def geoparquetify(
     path = path.replace('/dbfs/', 'dbfs:/')
   elif path.startswith('/dbfs/'):
     root = path.replace('dbfs:/', '/dbfs/')
-  else:
-    raise f'UnknownPath: {path}'
 
-  '''Hack spark parquet to interoperate with geoparquet standard'''
+  # Bounds
   _get_bounds = F.udf(
     lambda column: wkb(column).bounds,
     returnType = T.ArrayType(T.DoubleType()),
   )
-
   data = spark.read.parquet(path)
   data = data.withColumn('bounds', _get_bounds('geometry'))
 
