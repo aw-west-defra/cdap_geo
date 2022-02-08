@@ -25,7 +25,7 @@ def geoparquetify(
   if path.startswith('/dbfs/'):
     root = path
     path = path.replace('/dbfs/', 'dbfs:/')
-  elif path.startswith('/dbfs/'):
+  elif path.startswith('dbfs:/'):
     root = path.replace('dbfs:/', '/dbfs/')
 
   # Bounds
