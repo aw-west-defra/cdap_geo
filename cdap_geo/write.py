@@ -86,7 +86,7 @@ def geoparquetify(
 def sdf_autopartition(sdf: SparkDataFrame, column: str = 'geometry', inplace: bool = False) -> SparkDataFrame:
   jobs_cap = 100_000
   numPartitions = (
-    round(sdf.count() / 1e6),
+    round(sdf.rdd.countApprox(800, .95) / 1e6),
     round(sdf_memsize(sdf) / 1024**2),
     round(spark.sparkContext.defaultParallelism * 1.5),
   )
