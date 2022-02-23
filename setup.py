@@ -14,7 +14,7 @@ setup(
   install_requires = [
     'pyspark >=3',
     'geopandas >=0.8',
-    'pyspark_vector_files',
+    'esa_geo_utils @ git+https://github.com/Defra-Data-Science-Centre-of-Excellence/esa_geo_utils.git',
   ],
   extras_require = {
     'sedona': ['sedona >=1'],
