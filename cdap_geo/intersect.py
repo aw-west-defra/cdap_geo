@@ -75,45 +75,42 @@ def index_collect(col: set, union: bool):
     row = F.first(col)
   return row.alias(col)
 
-def index_join(left: SparkDataFrame, right: SparkDataFrame,
-    keep_right: bool, keep_indexes: bool, resolution: int):
+def index_fun(left: SparkDataFrame, right: SparkDataFrame, fun: Callable,
+    keep_right: bool = False, keep_indexes: bool = False, resolution: int = 100):
+  # Drop
+  if not keep_right:
+    right = right.select('geometry')
+  # Index
   right = right.withColumnRenamed('geometry', 'geometry_right')
-  cols = set(left.columns)
-  cols.update(['geometry_right'])
-  if keep_indexes:
-    cols.update(['geometry_indexes'])
-  if keep_right:
-    cols.update(right.columns)
   left = left.withColumn('id_left', F.monotonically_increasing_id())
   right = right.withColumn('id_right', F.monotonically_increasing_id())
   left = left.withColumn('geometry_indexes', index_apply('geometry', resolution))
   right = right.withColumn('geometry_index', index_apply('geometry_right', resolution))
-  left = left.withColumn('geometry_index', F.explode('geometry_indexes'))
-  right = right.withColumn('geometry_index', F.explode('geometry_index'))
-  sdf = left.join(right, on='geometry_index', how='inner')
-  sdf = sdf.groupBy('id_left', 'id_right').agg(*[index_collect(col, False) for col in cols])
-  sdf = sdf.drop('id_right')
-  return sdf
-
-def index_distinct(sdf: SparkDataFrame,
-    keep_right: bool, union: bool):
+  left_id = left.select('id_left', 'geometry_indexes')
+  right_id = right.select('id_right', 'geometry_index')
+  left_id = left_id.withColumn('geometry_index', F.explode('geometry_indexes'))
+  right_id = right_id.withColumn('geometry_index', F.explode('geometry_index'))
+  lookup = left_id.join(right_id, on='geometry_index', how='inner')
+  lookup = lookup.select('id_left', 'id_right').distinct()
+  # Join
+  sdf = left.join(lookup, on='id_left', how='inner').join(right, on='id_right', how='inner')
+  # Drop
+  sdf = sdf.drop('id_right', 'geometry_index')
+  if not keep_indexes:
+    sdf = sdf.drop('geometry_indexes')
+  # Function
+  sdf = fun(sdf)
+  # Drop
   if not keep_right:
-    cols = sdf.columns
-    cols.remove('geometry_right')
-    sdf = sdf.groupBy('id_left').agg(*[index_collect(col, union) for col in cols])
+    sdf = sdf.groupBy('id_left').agg(*[index_collect(col, False) for col in cols])
+    sdf = sdf.drop('geometry_right')
   sdf = sdf.drop('id_left')
   return sdf
 
-def index_intersects(left: SparkDataFrame, right: SparkDataFrame,
-    keep_right: bool = False, keep_indexes: bool = False, resolution: int = 100):
-  sdf = index_join(left, right, keep_right, keep_indexes, resolution)
-  sdf = sdf.filter(index_intersects_udf('geometry', 'geometry_right'))
-  sdf = index_distinct(sdf, keep_right, union=False)
-  return sdf
+def index_intersects(left: SparkDataFrame, right: SparkDataFrame, **kwargs):
+  fun = lambda sdf:  sdf.filter(index_intersects_udf('geometry', 'geometry_right'))
+  return index_fun(left, right, fun, **kwargs)
 
-def index_intersection(left: SparkDataFrame, right: SparkDataFrame,
-    keep_right: bool = False, keep_indexes: bool = False, resolution: int = 100):
-  sdf = index_join(left, right, keep_right, keep_indexes, resolution)
-  sdf = sdf.withColumn('geometry', index_intersection_udf('geometry', 'geometry_right'))
-  sdf = index_distinct(sdf, keep_right, union=False)
-  return sdf
+def index_intersection(left: SparkDataFrame, right: SparkDataFrame, **kwargs):
+  fun = lambda sdf:  sdf.withColumn('geometry', index_intersection_udf('geometry', 'geometry_right'))
+  return index_fun(left, right, fun, **kwargs)
