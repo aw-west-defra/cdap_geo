@@ -11,9 +11,13 @@ spark = SparkSession.getActiveSession()
 
 
 # Get the Variable Name
-def get_var_name(var):
-  _vars = currentframe().f_back.f_back.f_locals
-  for k, v in _vars.items():
+def get_var_name(var, f_back: int = None):
+  if not f_back:
+    f_back = 1
+  _vars = currentframe()
+  for _ in range(f_back+1):
+    _vars = _vars.f_back
+  for k, v in _vars.f_locals.items():
     if v is var:
       return k
 
@@ -60,7 +64,7 @@ def sdf_memsize(sdf: SparkDataFrame) -> int:
   JavaObj = rdd.ctx._jvm.org.apache.spark.mllib.api.python.SerDe.pythonToJava(rdd._jrdd, True)
   return spark._jvm.org.apache.spark.util.SizeEstimator.estimate(JavaObj)
 
-def sdf_print_stats(sdf: SparkDataFrame):
-  stats = (get_var_name(sdf), sdf.count(), sdf_memsize(sdf), sdf.rdd.getNumPartitions())
+def sdf_print_stats(sdf: SparkDataFrame, f_back = None):
+  stats = (get_var_name(sdf, f_back), sdf.count(), sdf_memsize(sdf), sdf.rdd.getNumPartitions())
   print('{}:  Count:{},  Size:{},  Partitions:{}'.format(*stats))
   return sdf
