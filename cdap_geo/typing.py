@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Callable
 from pyspark.sql.dataframe import DataFrame as SparkDataFrame
 from pandas import DataFrame as PandasDataFrame, Series
 from geopandas import GeoDataFrame, GeoSeries
