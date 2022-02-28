@@ -102,7 +102,7 @@ def index_fun(left: SparkDataFrame, right: SparkDataFrame, fun: Callable,
   sdf = fun(sdf)
   # Drop
   if not keep_right:
-    sdf = sdf.groupBy('id_left').agg(*[index_collect(col, False) for col in cols])
+    sdf = sdf.groupBy('id_left').agg(*[index_collect(col, False) for col in sdf.columns])
     sdf = sdf.drop('geometry_right')
   sdf = sdf.drop('id_left')
   return sdf
