@@ -62,7 +62,7 @@ def sdf_memsize(sdf: SparkDataFrame) -> int:
   JavaObj = rdd.ctx._jvm.org.apache.spark.mllib.api.python.SerDe.pythonToJava(rdd._jrdd, True)
   return spark._jvm.org.apache.spark.util.SizeEstimator.estimate(JavaObj)
 
-def sdf_print_stats(sdf: SparkDataFrame, name: None, f_back: int = 2):
+def sdf_print_stats(sdf: SparkDataFrame, name: str = None, f_back: int = 2) -> SparkDataFrame:
   if name is None:
     name = get_var_name(sdf, f_back)
   stats = (name, sdf.count(), sdf_memsize(sdf), sdf.rdd.getNumPartitions())
