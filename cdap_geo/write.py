@@ -112,12 +112,15 @@ def sdf_write_geoparquet(
   # autopartition
   autopartition: bool = False,
   inplace: bool = False,
+  count_ratio: float = 1e-6,
+  mem_ratio: float = 1/1024**2,
+  thead_ratio: float = 1.5
   # geoparquetify
   geometry_column: str = 'geometry',
   crs: Union[int, str] = None,
   encoding: str = 'WKB',
 ) -> None:
   if autopartition:
-    sdf_autopartition(sdf, geometry_column, inplace)
+    sdf_autopartition(sdf, geometry_column, inplace, count_ratio, mem_ratio, thead_ratio)
   sdf.write.parquet(path, mode, partitionBy, compression)
   geoparquetify(path, geometry_column, crs, encoding)
