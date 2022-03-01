@@ -83,7 +83,7 @@ def geoparquetify(
 
 
 # AutoPartition
-def sdf_autopartition(sdf: SparkDataFrame, column: str = 'geometry', inplace: bool = False
+def sdf_autopartition(sdf: SparkDataFrame, column: str = 'geometry', inplace: bool = False,
     count_ratio: float = 1e-6, mem_ratio: float = 1/1024**2, thead_ratio: float = 1.5) -> SparkDataFrame:
   jobs_cap = 100_000
   numPartitions = (
@@ -114,7 +114,7 @@ def sdf_write_geoparquet(
   inplace: bool = False,
   count_ratio: float = 1e-6,
   mem_ratio: float = 1/1024**2,
-  thead_ratio: float = 1.5
+  thead_ratio: float = 1.5,
   # geoparquetify
   geometry_column: str = 'geometry',
   crs: Union[int, str] = None,
