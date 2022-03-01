@@ -87,7 +87,7 @@ def sdf_autopartition(sdf: SparkDataFrame, column: str = 'geometry', inplace: bo
     count_ratio: float = 1e-6, mem_ratio: float = 1/1024**2, thead_ratio: float = 1.5) -> SparkDataFrame:
   jobs_cap = 100_000
   numPartitions = (
-    round(sdf.count() * count_ratio),
+    round(sdf.rdd.countApprox(800, .8) * count_ratio),
     round(sdf_memsize(sdf) * mem_ratio),
     round(spark.sparkContext.defaultParallelism * thead_ratio),
   )
