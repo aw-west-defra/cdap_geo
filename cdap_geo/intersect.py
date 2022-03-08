@@ -93,7 +93,7 @@ def index_fun(left: SparkDataFrame, right: SparkDataFrame, fun: Callable,
   lookup = left_id.join(right_id, on='geometry_index', how='inner')
   lookup = lookup.select('id_left', 'id_right').distinct()
   # Join
-  sdf = left.join(lookup, on='id_left', how='inner').join(right, on='id_right', how='inner')
+  sdf = lookup.join(left, on='id_left', how='inner').join(right, on='id_right', how='inner')
   # Drop
   sdf = sdf.drop('id_right', 'geometry_index')
   if not keep_indexes:
