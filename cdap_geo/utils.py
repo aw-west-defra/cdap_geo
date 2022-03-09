@@ -24,6 +24,9 @@ def get_var_name(var, f_back: int = 1):
 def wkb(data):
   return wkb_io.loads(bytes(data))
 
+def wkbs(data):
+  return GeoSeries.from_wkb(data)
+
 
 # File/Dir Size
 def get_tree_size(path: str) -> int:
@@ -36,18 +39,15 @@ def get_tree_size(path: str) -> int:
       total += entry.stat(follow_symlinks=False).st_size
   return total
 
-def _get_size(path: str) -> int:
-  '''Return file or tree size in bytes'''
-  if os.path.isfile(path):
-    return os.path.getsize(path)
-  elif os.path.isdir(path):
-    return get_tree_size(path)
-
 def get_size(path: str) -> int:
-  '''Support DBFS'''
+  '''Return file or tree size in bytes.  Also supports DBFS.'''
   if path.startswith('dbfs:/'):
     path = path.replace('dbfs:/', '/dbfs/')
-  return _get_size(path)
+  if os.path.isfile(path):
+    size = os.path.getsize(path)
+  elif os.path.isdir(path):
+    size = get_tree_size(path)
+  return size
 
 
 # Force Execute
@@ -65,6 +65,8 @@ def sdf_memsize(sdf: SparkDataFrame) -> int:
 def sdf_print_stats(sdf: SparkDataFrame, name: str = None, f_back: int = 2) -> SparkDataFrame:
   if name is None:
     name = get_var_name(sdf, f_back)
-  stats = (name, sdf.count(), sdf_memsize(sdf), sdf.rdd.getNumPartitions())
-  print('{}:  Count:{},  Size:{},  Partitions:{}'.format(*stats))
+  Count = sdf.count()
+  Size = sdf_memsize(sdf)
+  Parts = sdf.rdd.getNumPartitions()
+  print(f'{name}:  {Count=},  {Size=},  {Parts=}')
   return sdf
