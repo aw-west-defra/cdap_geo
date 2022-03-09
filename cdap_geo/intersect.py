@@ -67,6 +67,7 @@ def buffer(column, resolution):
     return wkb(data).buffer(resolution).wkb
   return _buffer(column)
 
+
 # Index
 def index_apply(column, resolution):
   '''Spatial Indexing
