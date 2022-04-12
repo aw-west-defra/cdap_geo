@@ -68,5 +68,5 @@ def sdf_print_stats(sdf: SparkDataFrame, name: str = None, f_back: int = 2) -> S
   Count = sdf.count()
   Size = sdf_memsize(sdf)
   Parts = sdf.rdd.getNumPartitions()
-  print(f'{name}:  {Count=},  {Size=},  {Parts=}')
+  print(f'{name}:  Count={Count},  Size={Size},  Parts={Parts}')
   return sdf
