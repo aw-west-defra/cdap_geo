@@ -20,7 +20,9 @@ other = other.to_crs(epsg=27700)  # be careful
 other = GeoDataFrame_to_SparkDataFrame(other)
 dataset = spark.read.parquet('dataset.parquet')
 
-smaller_dataset = intersects(dataset, other)
+resolution = 10_000  # ∈ (1, 10, 100, 1_000, 10_000, 100_000)
+
+smaller_dataset = intersects(dataset, other, resolution)
 
 sdf_write_geoparquet(smaller_dataset, './path/to/output.parquet', crs=27700)
 ```
