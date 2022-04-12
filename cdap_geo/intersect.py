@@ -1,6 +1,6 @@
 from .typing import *
 from .utils import spark, wkb, wkbs
-from esa_geo_utils.indexing import calculate_bng_index
+from .indexing import calculate_bng_index
 from pyspark.sql import functions as F, types as T
 
 
