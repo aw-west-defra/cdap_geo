@@ -141,10 +141,10 @@ def bbox_join(left, right, lsuffix='', rsuffix='_right'):
   l = bbox_bounds(left, lsuffix)
   r = bbox_bounds(right, rsuffix)
   lookup = l.join(r, on=None).filter(
-    ~ ( (F.col('minx'+lsuffix) > F.col('maxx'+rlsuffix))  # east of
-    | (F.col('miny'+lsuffix) > F.col('maxy'+rlsuffix))  # north of
-    | (F.col('maxx'+lsuffix) < F.col('minx'+rlsuffix))  # west of
-    | (F.col('maxy'+lsuffix) < F.col('miny'+rlsuffix)) )  # south of
+    ~ ( (F.col('minx'+lsuffix) > F.col('maxx'+rsuffix))  # east of
+    | (F.col('miny'+lsuffix) > F.col('maxy'+rsuffix))  # north of
+    | (F.col('maxx'+lsuffix) < F.col('minx'+rsuffix))  # west of
+    | (F.col('maxy'+lsuffix) < F.col('miny'+rsuffix)) )  # south of
   ).drop(
     'minx'+lsuffix, 'miny'+lsuffix, 'maxx'+lsuffix, 'maxy'+lsuffix,
     'minx'+rsuffix, 'miny'+rsuffix, 'maxx'+rsuffix, 'maxy'+rsuffix
