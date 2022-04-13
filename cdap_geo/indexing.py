@@ -63,13 +63,12 @@ Y_START = {10000: 3, 1000: 4, 100: 5, 10: 6, 1: 7}
 Y_STOP = {10000: 4, 1000: 6, 100: 8, 10: 10, 1: 12}
 
 def _str2int(s):
-    try:
-        i = int(s)
-    except ValueError:
-        print(s)
-        i = int(float(s))
-        print(i)
-    return i
+  try:
+    i = int(s)
+  except ValueError:
+    raise ValueError(s)
+  return i
+
 
 def _coords_to_bng(
     eastings: Union[int, float],
