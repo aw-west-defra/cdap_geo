@@ -66,7 +66,9 @@ def _str2int(s):
     try:
         i = int(s)
     except ValueError:
+        print(s)
         i = int(float(s))
+        print(i)
     return i
 
 def _coords_to_bng(
