@@ -88,7 +88,7 @@ def index_apply(column, resolution):
     return calculate_bng_index(column, resolution=resolution, how='intersects')
   return _index_apply(column)
 
-def index_sjoin(left, right, resolution):
+def index_join(left, right, resolution):
   left = ( left
     .withColumn('index_left', F.monotonically_increasing_id()) )
   right = ( right
@@ -111,12 +111,12 @@ def index_sjoin(left, right, resolution):
   return sdf
 
 def index_intersects(left, right, resolution):
-  sdf = index_sjoin(left, right, resolution) \
+  sdf = index_join(left, right, resolution) \
     .filter(intersects_pudf('geometry', 'geometry_right'))
   return sdf
 
 def index_intersection(left, right, resolution):
-  sdf = index_sjoin(left, right, resolution) \
+  sdf = index_join(left, right, resolution) \
     .withColumn('geometry', intersection_pudf('geometry', 'geometry_right'))
   return sdf
 
