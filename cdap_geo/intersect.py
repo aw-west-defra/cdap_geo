@@ -4,6 +4,26 @@ from .indexing import calculate_bng_index
 from pyspark.sql import functions as F, types as T
 
 
+# Spatial Functions
+@F.udf(returnType=T.DoubleType())
+def area(geom):
+  return wkb(geom).area
+
+@F.udf(returnType=T.BinaryType())
+def unary_union(data):
+  return sum(wkb(data) for geom in geoms).wkb
+
+def buffer(column, resolution):
+  @F.udf(returnType=T.BinaryType())
+  def _buffer(data):
+    return wkb(data).buffer(resolution).wkb
+  return _buffer(column)
+
+@F.udf(returnType=T.ArrayType(T.DoubleType()))
+def bounds(data):
+  return wkb(data).bounds
+
+
 # GeoDataFrame Intersecting, returns GeoDataFrame not GeoSeries
 def gpd_gdf_intersects(gdf: GeoDataFrame, other: BaseGeometry):
   return gdf[gdf.intersects(other)]
@@ -57,18 +77,8 @@ def index_intersection_udf(left, right):
 def index_intersection_pudf(left, right):
   return wkbs(left).intersection(wkbs(right)).wkb
 
-@F.udf(returnType=T.BinaryType())
-def index_unary_union(data):
-  return sum(wkb(data) for geom in geoms).wkb
 
-def buffer(column, resolution):
-  @F.udf(returnType=T.BinaryType())
-  def _buffer(data):
-    return wkb(data).buffer(resolution).wkb
-  return _buffer(column)
-
-
-# Index
+# Spatial Index Join
 def index_apply(column, resolution):
   '''Spatial Indexing
   currying resolution ∈ (1, 10, 100, 1_000, 10_000, 100_000)
@@ -96,17 +106,61 @@ def index_sjoin(left, right, resolution):
     .join(left_index, right_index, on='index_spatial')
     .drop('index_spatial').distinct()
     .join(left, on='index_left')
-    .join(right, on='index_right') )
+    .join(right, on='index_right')
+    .drop('index_left', 'index_right') )
   return sdf
 
 def index_intersects(left, right, resolution):
-  sdf = ( index_sjoin(left, right, resolution)
+  sdf = index_sjoin(left, right, resolution) \
     .filter(index_intersects_pudf('geometry', 'geometry_right'))
-    .drop('index_left', 'index_right', 'geometry_right') )
   return sdf
 
 def index_intersection(left, right, resolution):
-  sdf = ( index_sjoin(left, right, resolution)
+  sdf = index_sjoin(left, right, resolution) \
     .withColumn('geometry', index_intersection_pudf('geometry', 'geometry_right'))
-    .drop('index_left', 'index_right', 'geometry_right') )
+  return sdf
+
+
+# Bounding Box Join
+def bbox_bounds(df, suffix'):
+  return df \
+    .withColumn('bounds', bounds('geometry'+suffix)) \
+    .withColumn('minx'+suffix, F.col('bounds')[0]) \
+    .withColumn('miny'+suffix, F.col('bounds')[1]) \
+    .withColumn('maxx'+suffix, F.col('bounds')[2]) \
+    .withColumn('maxy'+suffix, F.col('bounds')[3]) \
+    .select('index'+suffix, 'minx'+suffix, 'miny'+suffix, 'maxx'+suffix, 'maxy'+suffix)
+
+def bbox_join(left, right, lsuffix='', rsuffix='_right'):
+  left = ( left
+    .withColumnRenamed('geometry', 'geometry'+lsuffix)
+    .withColumn('index', F.monotonically_increasing_id()) )
+  right = ( right
+    .withColumnRenamed('geometry', 'geometry'+rsuffix)
+    .withColumn('index_right', F.monotonically_increasing_id()) )  
+  l = bbox_bounds(left, lsuffix)
+  r = bbox_bounds(right, rsuffix)
+  lookup = l.join(r, on=None).filter(
+    ~ ( (F.col('minx'+lsuffix) > F.col('maxx'+rlsuffix))  # east of
+    | (F.col('miny'+lsuffix) > F.col('maxy'+rlsuffix))  # north of
+    | (F.col('maxx'+lsuffix) < F.col('minx'+rlsuffix))  # west of
+    | (F.col('maxy'+lsuffix) < F.col('miny'+rlsuffix)) )  # south of
+  ).drop(
+    'minx'+lsuffix, 'miny'+lsuffix, 'maxx'+lsuffix, 'maxy'+lsuffix,
+    'minx'+rsuffix, 'miny'+rsuffix, 'maxx'+rsuffix, 'maxy'+rsuffix
+  )
+  df = lookup \
+    .join(left, on='index') \
+    .join(right, on='index_right') \
+    .drop('index', 'index_right')
+  return df
+
+def bbox_intersects(left, right):
+  sdf = bbox_join(left, right) \
+    .filter(intersects_pudf('geometry', 'geometry_right'))
+  return sdf
+
+def bbox_intersection(left, right):
+  sdf = bbox_join(left, right) \
+    .withColumn('geometry', index_intersection_pudf('geometry', 'geometry_right'))
   return sdf
