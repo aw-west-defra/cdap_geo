@@ -85,7 +85,7 @@ def index_apply(column, resolution):
   '''
   @F.udf(returnType=T.ArrayType(T.StringType()))
   def _index_apply(column):
-    return set(calculate_bng_index(column, resolution=resolution, how='intersects'))
+    return list(set(calculate_bng_index(column, resolution=resolution, how='intersects')))
   return _index_apply(column)
 
 def index_join(left, right, resolution):
