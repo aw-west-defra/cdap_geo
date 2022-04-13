@@ -62,18 +62,26 @@ G100 = {
 Y_START = {10000: 3, 1000: 4, 100: 5, 10: 6, 1: 7}
 Y_STOP = {10000: 4, 1000: 6, 100: 8, 10: 10, 1: 12}
 
+def _str2int(s):
+    try:
+        i = int(s)
+    except ValueError:
+        i = int(float(s))
+    return i
 
 def _coords_to_bng(
-    eastings: Union[int, float], northings: Union[int, float], resolution: int
+    eastings: Union[int, float],
+    northings: Union[int, float],
+    resolution: int
 ) -> str:
     # convert coordinates to string, padding if necessary
     eastings_string = str(int(eastings)).rjust(6, "0")
     northings_string = str(int(northings)).rjust(6, "0")
 
     # split the strings (index from end to handle Shetlands 7 digit northings)
-    eastings_quotient = int(eastings_string[:-5])
+    eastings_quotient = _str2int(eastings_string[:-5])
     eastings_remainder = eastings_string[-5:]
-    northings_quotient = int(northings_string[:-5])
+    northings_quotient = _str2int(northings_string[:-5])
     northings_remainder = northings_string[-5:]
 
     # translate those into numeric equivalents of the grid letters
