@@ -76,8 +76,8 @@ def _coords_to_bng(
     resolution: int
 ) -> str:
     # Limit to Letter Bounds
-    eastings = _bound_to_letters(eastings)
-    northings = _bound_to_letters(northings)
+    #eastings = _bound_to_letters(eastings)
+    #northings = _bound_to_letters(northings)
     
     # convert coordinates to string, padding if necessary
     eastings_string = str(int(eastings)).rjust(6, "0")
