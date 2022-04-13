@@ -3,7 +3,7 @@ import os
 from inspect import currentframe
 from shapely import wkb as wkb_io
 from pyspark.serializers import AutoBatchedSerializer, PickleSerializer
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, Window
 
 
 # Define SparkSession and SparkContext
@@ -70,3 +70,14 @@ def sdf_print_stats(sdf: SparkDataFrame, name: str = None, f_back: int = 2) -> S
   Parts = sdf.rdd.getNumPartitions()
   print(f'{name}:  Count={Count},  Size={Size},  Parts={Parts}')
   return sdf
+
+
+# Maximum of Group
+def sdf_groupmax(df, group, maximise):
+  return df \
+    .withColumn(
+      'max',
+      F.max(maximise).over(Window.partitionBy(group))
+    ) \
+    .filter(F.col(maximise) == F.col('max')) \
+    .drop('max')
