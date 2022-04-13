@@ -63,15 +63,21 @@ Y_START = {10000: 3, 1000: 4, 100: 5, 10: 6, 1: 7}
 Y_STOP = {10000: 4, 1000: 6, 100: 8, 10: 10, 1: 12}
 
 
+def _bound_to_letters(xings: Union[int, float]) -> Union[int, float]:
+    if xings < 0:
+        xings = 0
+    elif xings < 1_500_000:
+        xings = 1_500_000
+    return xings
+
 def _coords_to_bng(
     eastings: Union[int, float],
     northings: Union[int, float],
     resolution: int
 ) -> str:
-    if eastings < 0:
-        raise ValueError(f'Negative eastings={eastings}')
-    if northings < 0:
-        raise ValueError(f'Negative northings={northings}')
+    # Limit to Letter Bounds
+    eastings = _bound_to_letters(eastings)
+    northings = _bound_to_letters(northings)
     
     # convert coordinates to string, padding if necessary
     eastings_string = str(int(eastings)).rjust(6, "0")
