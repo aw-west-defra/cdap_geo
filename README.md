@@ -46,6 +46,7 @@ get_var_name
 wkb
 get_tree_size, get_size
 sdf_force_execute, sdf_memsize, sdf_print_stats
+sdf_groupmax
 ```
 
 ### Convert
@@ -67,15 +68,18 @@ sdf_autopartition
 sdf_write_geoparquet
 ```
 
-### Intersecting
-There is currently three methods for intersecting, UDFs, Sedona, and most recently Indexed UDFs.
-As more functionality is added these will become individual modules.
+### Intersect
+There is currently four methods for intersecting, UDFs, Sedona, Indexed UDFs, and most recently Bounding Box UDFs.
 - UDFs
 - Sedona
 - Indexed UDFs
+- Bounding Box UDFs
 ```py
-gpd_gdf_intersects, gpd_gdf_intersection
-intersects_udf, intersects_pudf
+area, unary_union, buffer, bounds
+gdf_intersects, gdf_intersection
+gdf_intersects_udf, gdf_intersects_pudf
 sedona_intersects, sedona_intersection
-buffer, index_intersects, index_intersection
+intersects_udf, intersects_pudf, intersection_udf, intersection_pudf
+index_join, index_intersects, index_intersection
+bbox_join, bbox_intersects, bbox_intersection
 ```
