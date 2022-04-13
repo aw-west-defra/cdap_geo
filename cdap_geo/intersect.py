@@ -25,21 +25,21 @@ def bounds(data):
 
 
 # GeoDataFrame Intersecting, returns GeoDataFrame not GeoSeries
-def gpd_gdf_intersects(gdf: GeoDataFrame, other: BaseGeometry):
+def gdf_intersects(gdf: GeoDataFrame, other: BaseGeometry):
   return gdf[gdf.intersects(other)]
 
-def gpd_gdf_intersection(gdf: GeoDataFrame, other: BaseGeometry):
+def gdf_intersection(gdf: GeoDataFrame, other: BaseGeometry):
   return gpd_gdf_intersects(gdf, other).clip(other)
 
 
 # Intersecting UDF with MultiPolygon
-def intersects_udf(left, right):
+def gdf_intersects_udf(left, right: Geometry):
   @F.udf(returnType=T.BooleanType())
   def cond(left):
     return wkb(left).intersects(right)
   return cond(left)
 
-def intersects_pudf(left: Series, right: Geometry) -> Series:
+def gdf_intersects_pudf(left: Series, right: Geometry) -> Series:
   @F.pandas_udf(returnType=T.BooleanType())
   def cond(left: Series) -> Series:
     return wkbs(left).intersects(right)
@@ -62,19 +62,19 @@ def sedona_intersection(df0, df1):
 
 # Geometry UDFs
 @F.udf(returnType=T.BooleanType())
-def index_intersects_udf(left, right):
+def intersects_udf(left, right):
   return wkb(left).intersects(wkb(right))
 
 @F.pandas_udf(returnType=T.BooleanType())
-def index_intersects_pudf(left, right):
+def intersects_pudf(left, right):
   return wkbs(left).intersects(wkbs(right))
 
 @F.udf(returnType=T.BinaryType())
-def index_intersection_udf(left, right):
+def intersection_udf(left, right):
   return wkb(left).intersection(wkb(right)).wkb
 
 @F.pandas_udf(returnType=T.BinaryType())
-def index_intersection_pudf(left, right):
+def intersection_pudf(left, right):
   return wkbs(left).intersection(wkbs(right)).wkb
 
 
@@ -112,12 +112,12 @@ def index_sjoin(left, right, resolution):
 
 def index_intersects(left, right, resolution):
   sdf = index_sjoin(left, right, resolution) \
-    .filter(index_intersects_pudf('geometry', 'geometry_right'))
+    .filter(intersects_pudf('geometry', 'geometry_right'))
   return sdf
 
 def index_intersection(left, right, resolution):
   sdf = index_sjoin(left, right, resolution) \
-    .withColumn('geometry', index_intersection_pudf('geometry', 'geometry_right'))
+    .withColumn('geometry', intersection_pudf('geometry', 'geometry_right'))
   return sdf
 
 
@@ -162,5 +162,5 @@ def bbox_intersects(left, right):
 
 def bbox_intersection(left, right):
   sdf = bbox_join(left, right) \
-    .withColumn('geometry', index_intersection_pudf('geometry', 'geometry_right'))
+    .withColumn('geometry', intersection_pudf('geometry', 'geometry_right'))
   return sdf
