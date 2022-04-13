@@ -122,7 +122,7 @@ def index_intersection(left, right, resolution):
 
 
 # Bounding Box Join
-def bbox_bounds(df, suffix'):
+def bbox_bounds(df, suffix):
   return df \
     .withColumn('bounds', bounds('geometry'+suffix)) \
     .withColumn('minx'+suffix, F.col('bounds')[0]) \
