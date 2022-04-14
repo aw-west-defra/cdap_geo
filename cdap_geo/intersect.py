@@ -148,7 +148,7 @@ def bbox_indexes(suffix, resolution, limits):
   )
 
 
-def bbox_join(left, right, resolution=100_000, lsuffix='', rsuffix='_right', limits=[-500_000, -500_000, 1_500_000, 1_500_000]):
+def bbox_join(left, right, resolution=100_000, lsuffix='', rsuffix='_right', limits=[-500_000, -500_000, 1_500_000, 1_500_000], do_bbox=True):
   # Lookup Index
   left = left \
     .withColumnRenamed('geometry', 'geometry'+lsuffix) \
@@ -167,12 +167,14 @@ def bbox_join(left, right, resolution=100_000, lsuffix='', rsuffix='_right', lim
   df = l.join(r, on='index_spatial') \
     .drop('index_spatial').distinct()
   # BBox Filter
-  df = df.filter(
-      ~ ( (F.col('minx'+lsuffix) > F.col('maxx'+rsuffix))  # east of
-      | (F.col('miny'+lsuffix) > F.col('maxy'+rsuffix))  # north of
-      | (F.col('maxx'+lsuffix) < F.col('minx'+rsuffix))  # west of
-      | (F.col('maxy'+lsuffix) < F.col('miny'+rsuffix)) )  # south of
-    ).drop(
+  if do_bbox:
+    df = df.filter(
+        ~ ( (F.col('minx'+lsuffix) > F.col('maxx'+rsuffix))  # east of
+        | (F.col('miny'+lsuffix) > F.col('maxy'+rsuffix))  # north of
+        | (F.col('maxx'+lsuffix) < F.col('minx'+rsuffix))  # west of
+        | (F.col('maxy'+lsuffix) < F.col('miny'+rsuffix)) )  # south of
+      )
+  df = df.drop(
       'minx'+lsuffix, 'miny'+lsuffix, 'maxx'+lsuffix, 'maxy'+lsuffix,
       'minx'+rsuffix, 'miny'+rsuffix, 'maxx'+rsuffix, 'maxy'+rsuffix,
     )
