@@ -131,23 +131,22 @@ def bbox_bounds(df, suffix):
     .withColumn('maxy'+suffix, F.col('bounds')[3]) \
     .select('index'+suffix, 'minx'+suffix, 'miny'+suffix, 'maxx'+suffix, 'maxy'+suffix)
 
-@F.udf(returnType=T.ArrayType(T.StringType()))
-def bbox_indexes(minx, miny, maxx, maxy, resolution, limits):
-  xs = list(zip(range(limits[0], limits[2]-resolution, resolution), range(limits[0]+resolution, limits[2], resolution)))
-  ys = list(zip(range(limits[1], limits[3]-resolution, resolution), range(limits[1]+resolution, limits[3], resolution)))
-  indexes = []
-  for xl, xu in xs:
-    for yl, yu in ys:
-      if (xl<minx<xu or xl<maxx<xu) and (yl<miny<yu or yl<maxy<yu):
-        indexes.append(f'{xl}-{yl}')
-  return indexes
-
-def bbox_indexes_curried(suffix, resolution, limits):
-  return bbox_indexes(
+def bbox_indexes(suffix, resolution, limits):
+  @F.udf(returnType=T.ArrayType(T.StringType()))
+  def _bbox_indexes(minx, miny, maxx, maxy):
+    xs = list(zip(range(limits[0], limits[2]-resolution, resolution), range(limits[0]+resolution, limits[2], resolution)))
+    ys = list(zip(range(limits[1], limits[3]-resolution, resolution), range(limits[1]+resolution, limits[3], resolution)))
+    indexes = []
+    for xl, xu in xs:
+      for yl, yu in ys:
+        if (xl<minx<xu or xl<maxx<xu) and (yl<miny<yu or yl<maxy<yu):
+          indexes.append(f'{xl}-{yl}')
+    return indexes
+  return _bbox_indexes(
     F.col('minx'+suffix), F.col('miny'+suffix),
     F.col('maxx'+suffix), F.col('maxy'+suffix),
-    F.lit(resolution), F.lit(limits),
   )
+
 
 def bbox_join(left, right, resolution=100_000, lsuffix='', rsuffix='_right', limits=[-500_000, -500_000, 1_500_000, 1_500_000]):
   # Lookup Index
@@ -159,10 +158,10 @@ def bbox_join(left, right, resolution=100_000, lsuffix='', rsuffix='_right', lim
     .withColumn('index'+rsuffix, F.monotonically_increasing_id())
   # Bounds and Spatial Index
   l = bbox_bounds(left, lsuffix) \
-    .withColumn('index_spatial', bbox_indexes_curried(lsuffix, resolution, limits)) \
+    .withColumn('index_spatial', bbox_indexes(lsuffix, resolution, limits)) \
     .withColumn('index_spatial', F.explode('index_spatial'))
   r = bbox_bounds(right, rsuffix) \
-    .withColumn('index_spatial', bbox_indexes_curried(rsuffix, resolution, limits)) \
+    .withColumn('index_spatial', bbox_indexes(rsuffix, resolution, limits)) \
     .withColumn('index_spatial', F.explode('index_spatial'))
   # Spatial Index Filter
   df = l.join(r, on='index_spatial') \
