@@ -131,28 +131,57 @@ def bbox_bounds(df, suffix):
     .withColumn('maxy'+suffix, F.col('bounds')[3]) \
     .select('index'+suffix, 'minx'+suffix, 'miny'+suffix, 'maxx'+suffix, 'maxy'+suffix)
 
-def bbox_join(left, right, lsuffix='', rsuffix='_right'):
-  left = ( left
-    .withColumnRenamed('geometry', 'geometry'+lsuffix)
-    .withColumn('index', F.monotonically_increasing_id()) )
-  right = ( right
-    .withColumnRenamed('geometry', 'geometry'+rsuffix)
-    .withColumn('index_right', F.monotonically_increasing_id()) )  
-  l = bbox_bounds(left, lsuffix)
-  r = bbox_bounds(right, rsuffix)
-  lookup = l.join(r, on=None).filter(
-    ~ ( (F.col('minx'+lsuffix) > F.col('maxx'+rsuffix))  # east of
-    | (F.col('miny'+lsuffix) > F.col('maxy'+rsuffix))  # north of
-    | (F.col('maxx'+lsuffix) < F.col('minx'+rsuffix))  # west of
-    | (F.col('maxy'+lsuffix) < F.col('miny'+rsuffix)) )  # south of
-  ).drop(
-    'minx'+lsuffix, 'miny'+lsuffix, 'maxx'+lsuffix, 'maxy'+lsuffix,
-    'minx'+rsuffix, 'miny'+rsuffix, 'maxx'+rsuffix, 'maxy'+rsuffix
+@F.udf(returnType=T.ArrayType(T.StringType()))
+def bbox_indexes(minx, miny, maxx, maxy, resolution, limits):
+  xs = list(zip(range(limits[0], limits[2]-resolution, resolution), range(limits[0]+resolution, limits[2], resolution)))
+  ys = list(zip(range(limits[1], limits[3]-resolution, resolution), range(limits[1]+resolution, limits[3], resolution)))
+  indexes = []
+  for xl, xu in xs:
+    for yl, yu in ys:
+      if (xl<minx<xu or xl<maxx<xu) and (yl<miny<yu or yl<maxy<yu):
+        indexes.append(f'{xl}-{yl}')
+  return indexes
+
+def bbox_indexes_curried(suffix, resolution, limits):
+  return bbox_indexes(
+    F.col('minx'+suffix), F.col('miny'+suffix),
+    F.col('maxx'+suffix), F.col('maxy'+suffix),
+    F.lit(resolution), F.lit(limits),
   )
-  df = lookup \
-    .join(left, on='index') \
-    .join(right, on='index_right') \
-    .drop('index', 'index_right')
+
+def bbox_join(left, right, resolution=100_000, lsuffix='', rsuffix='_right', limits=[-500_000, -500_000, 1_500_000, 1_500_000]):
+  # Lookup Index
+  left = left \
+    .withColumnRenamed('geometry', 'geometry'+lsuffix) \
+    .withColumn('index'+lsuffix, F.monotonically_increasing_id())
+  right = right \
+    .withColumnRenamed('geometry', 'geometry'+rsuffix) \
+    .withColumn('index'+rsuffix, F.monotonically_increasing_id())
+  # Bounds and Spatial Index
+  l = bbox_bounds(left, lsuffix) \
+    .withColumn('index_spatial', bbox_indexes_curried(lsuffix, resolution, limits)) \
+    .withColumn('index_spatial', F.explode('index_spatial'))
+  r = bbox_bounds(right, rsuffix) \
+    .withColumn('index_spatial', bbox_indexes_curried(rsuffix, resolution, limits)) \
+    .withColumn('index_spatial', F.explode('index_spatial'))
+  # Spatial Index Filter
+  df = l.join(r, on='index_spatial') \
+    .drop('index_spatial').distinct()
+  # BBox Filter
+  df = df.filter(
+      ~ ( (F.col('minx'+lsuffix) > F.col('maxx'+rsuffix))  # east of
+      | (F.col('miny'+lsuffix) > F.col('maxy'+rsuffix))  # north of
+      | (F.col('maxx'+lsuffix) < F.col('minx'+rsuffix))  # west of
+      | (F.col('maxy'+lsuffix) < F.col('miny'+rsuffix)) )  # south of
+    ).drop(
+      'minx'+lsuffix, 'miny'+lsuffix, 'maxx'+lsuffix, 'maxy'+lsuffix,
+      'minx'+rsuffix, 'miny'+rsuffix, 'maxx'+rsuffix, 'maxy'+rsuffix,
+    )
+  # Geometry Filter
+  df = df \
+    .join(left, on='index'+lsuffix) \
+    .join(right, on='index'+rsuffix) \
+    .drop('index'+lsuffix, 'index'+rsuffix)
   return df
 
 def bbox_intersects(left, right):
