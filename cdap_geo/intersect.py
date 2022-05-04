@@ -5,7 +5,7 @@ from pyspark.sql import functions as F, types as T
 
 
 # Spatial Functions
-@F.udf(returnType=T.DoubleType())
+@F.udf(returnType=T.FloatType())
 def area(geom):
   return wkb(geom).area
 
@@ -19,7 +19,7 @@ def buffer(column, resolution):
     return wkb(data).buffer(resolution).wkb
   return _buffer(column)
 
-@F.udf(returnType=T.ArrayType(T.DoubleType()))
+@F.udf(returnType=T.ArrayType(T.FloatType()))
 def bounds(data):
   return wkb(data).bounds
 
