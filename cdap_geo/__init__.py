@@ -9,8 +9,8 @@ from .functions import (
   area,
   buffer,
   bounds,
-  naive_intersects as intersects,
-  naive_intersection as intersection,
+  intersects_udf as intersects,
+  intersection_udf as intersection,
   bbox_intersects as join,
 )
 
