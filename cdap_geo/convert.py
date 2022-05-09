@@ -41,7 +41,7 @@ def BaseGeometry_to_GeoDataFrame(g, crs):
 
 
 
-def to_gdf(x, crs=None):
+def to_gdf(x:Union[SparkDataFrame, GeoSeries, BaseGeometry], crs:Union[int,str]=None) -> GeoDataFrame:
   if isinstance(x, SparkDataFrame):
     gdf = SparkDataFrame_to_GeoDataFrame(x, crs=crs)
   elif isinstance(x, GeoSeries):
@@ -52,7 +52,7 @@ def to_gdf(x, crs=None):
     raise TypeError('Unknown type: ', type(x))
   return gdf
 
-def to_sdf(x):
+def to_sdf(x:Union[GeoDataFrame]) -> SparkDataFrame:
   if isinstance(x, GeoDataFrame):
     sdf = SparkDataFrame_to_GeoDataFrame(x)
   else:
