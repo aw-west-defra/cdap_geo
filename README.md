@@ -35,18 +35,38 @@ from cdap_geo import (
 
 other = gpd.read_file('other.geojson')
 other = other.to_crs(epsg=27700)  # be careful
-other = to_sdf(other)
+other = to_sdf(other) \
+  .select('geometry')  # It's good practice to drop unused columns, or they'll be duplicated.
 
-dataset = spark.read.parquet('dataset.parquet')
+df_input = spark.read.parquet('input.parquet') \  #
+  .select('geometry')
 
-smaller_dataset = cdap_geo.join(dataset, other) \
-  .drop('geometry_right') \
-  .withColumn('geometry', cdap_geo.buffer('geometry')) \
-  .withColumn('buffered_area', cdap_geo.area('geometry')) \
-  .drop('geometry')
+# Join
+df_intersects = join(df_input, other)  # rsuffix='_right'
 
-out_file = './path/to/output.parquet'
-write_geoparquet(smaller_dataset, out_file, crs=27700)
+# Only keep the intersecting geometry
+df_intersection = df_intersects \
+  .withColumn('geometry', intersection('geometry', 'geometry_right')) \
+  .drop('geometry_right')  # remember to drop unused data as early as possible.
 
+# Buffer that intersection and calculate the area
+df_buffered = df_intersection \
+  .withColumn('geometry', buffer('geometry')) \
+  .withColumn('area', area('geometry'))
+
+# Calculate the boundaries of the buffered geometry
+df_with_bounds = df_buffered \
+  .withColumn('bounds', bounds('geometry')) \
+  .withColumn('minx', F.col('bounds')[0]) \
+  .withColumn('miny', F.col('bounds')[1]) \
+  .withColumn('maxx', F.col('bounds')[2]) \
+  .withColumn('maxy', F.col('bounds')[3]) \
+  .drop('bounds')
+
+# Save
+out_file = 'output.parquet'
+write_geoparquet(df_with_bounds, out_file, crs=27700)
+
+# Plot
 gpd.read_parquet(out_file).plot()
 ```
