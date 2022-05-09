@@ -4,7 +4,7 @@ Convert, save geoparquet, join, and some UDFs.
 [PySpark](https://spark.apache.org/docs/3.1.1/api/python/reference/)  
 [GeoPandas](https://geopandas.org/en/stable/docs/reference.html)  
 [Shapely](https://shapely.readthedocs.io/en/latest/manual.html)  
-For loading large files, try [PySpark Vector Files](https://github.com/Defra-Data-Science-Centre-of-Excellence/pyspark-vector-files)  
+[PySpark Vector Files](https://github.com/Defra-Data-Science-Centre-of-Excellence/pyspark-vector-files) for loading large files.  
 *There's more functions for using [Sedona](https://sedona.apache.org/api/sql/Overview/) or just Shapely geometries, but you'll have to read code for them.*
 
 
