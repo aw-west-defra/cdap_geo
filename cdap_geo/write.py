@@ -1,6 +1,7 @@
 from . import __version__
 from .typing import *
 from .utils import spark, wkb, sdf_memsize
+from .functions import bounds
 from geopandas.io.arrow import _encode_metadata
 from pyspark.sql import functions as F, types as T
 from pyarrow import parquet
@@ -29,16 +30,10 @@ def geoparquetify(
     root = path.replace('dbfs:/', '/dbfs/')
 
   # Bounds
-  _get_bounds = F.udf(
-    lambda column: wkb(column).bounds,
-    returnType = T.ArrayType(T.DoubleType()),
-  )
-  data = spark.read.parquet(path)
-  data = data.withColumn('bounds', _get_bounds('geometry'))
-
-  # Generate minx, miny, maxx, maxy
-  bounds = (data
-    .select(
+  bbox = spark.read.parquet(path) \
+    .withColumn(
+      'bounds', bounds('geometry')
+    ).select(
       F.col('bounds')[0].alias('minx'),
       F.col('bounds')[1].alias('miny'),
       F.col('bounds')[2].alias('maxx'),
@@ -49,12 +44,11 @@ def geoparquetify(
       'maxx': 'max',
       'maxy': 'max'
     }).collect()[0]
-  )
   bbox = [
-    bounds['min(minx)'],
-    bounds['min(miny)'],
-    bounds['max(maxx)'],
-    bounds['max(maxy)'],
+    bbox['min(minx)'],
+    bbox['min(miny)'],
+    bbox['max(maxx)'],
+    bbox['max(maxy)'],
   ]
 
   # Create metadata dictionary
@@ -66,7 +60,7 @@ def geoparquetify(
       'bbox': bbox,
     }},
     'schema_version': '0.1.0',
-    'creator': {'library': 'cdap_geo_utils', 'version': __version__},
+    'creator': {'library': 'cdap_geo', 'version': __version__},
   }
   
   # 0th part of the parquet file.
