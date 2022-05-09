@@ -9,7 +9,7 @@
 ```py
 import geopandas as gpd
 from cdap_geo.convert import GeoDataFrame_to_SparkDataFrame
-from cdap_geo.intersect import (
+from cdap_geo.functions import (
   index_intersects as intersects,
   index_intersection as intersection,
 )
@@ -68,7 +68,7 @@ sdf_autopartition
 sdf_write_geoparquet
 ```
 
-### Intersect
+### Functions
 There is currently four methods for intersecting, UDFs, Sedona, Indexed UDFs, and most recently Bounding Box UDFs.
 - UDFs
 - Sedona
