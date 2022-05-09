@@ -2,7 +2,7 @@
 
 ## Install
 ```sh
-%pip install git+https://github.com/aw-west-defra/cdap_geo
+%pip install git+https://github.com/aw-west-defra/cdap_geo.git
 ```
 
 ## Example
