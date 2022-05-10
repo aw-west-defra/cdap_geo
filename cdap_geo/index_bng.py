@@ -1,4 +1,4 @@
-from .indexing import calculate_bng_index
+from ._indexing import calculate_bng_index
 from pyspark.sql import functions as F, types as T
 
 
