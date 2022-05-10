@@ -18,6 +18,6 @@ setup(
   extras_require = {
     'sedona >=1',
     'pyspark_vector_files =0.1',
-    'bng_indexer @ git+https://github.com/Defra-Data-Science-Centre-of-Excellence/bng-indexer =0.1',
+    'bng_indexer @ git+https://github.com/Defra-Data-Science-Centre-of-Excellence/bng-indexer',
   },
 )
