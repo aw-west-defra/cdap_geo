@@ -16,6 +16,8 @@ setup(
     'geopandas >=0.8',
   ],
   extras_require = {
-    'sedona': ['sedona >=1'],
+    'sedona >=1',
+    'pyspark_vector_files =0.1',
+    'bng_indexer @ git+https://github.com/Defra-Data-Science-Centre-of-Excellence/bng-indexer =0.1',
   },
 )
