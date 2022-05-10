@@ -1,5 +1,6 @@
 __version__ = 0.4
 
+
 from .convert import (
   to_sdf,
   to_gdf,
@@ -11,6 +12,13 @@ from .functions import (
   bounds,
   intersects_udf as intersects,
   intersection_udf as intersection,
+)
+
+from .index_bng import (
+  bng_index as bng,
+)
+
+from .index_bbox import (
   bbox_intersects as join,
 )
 
