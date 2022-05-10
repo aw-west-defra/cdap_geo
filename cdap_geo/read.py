@@ -5,7 +5,7 @@ from . import write_geoparquet
 from . import bng
 
 
-def ingest(path, suffix, path_to, layers=None, **kwargs):
+def ingest(path, suffix, path_to, layers=None, resolution=100_000, **kwargs):
   if not path_to.endswith('/'):
     path_to += '/'
 
@@ -20,5 +20,5 @@ def ingest(path, suffix, path_to, layers=None, **kwargs):
         layer_identifier = layer,
         **kwargs
     ) \
-      .withColumn('bng', bng('geometry', resolution=100_000))
+      .withColumn('bng', bng('geometry', resolution=resolution))
     write_geoparquet(sdf, path_to)
