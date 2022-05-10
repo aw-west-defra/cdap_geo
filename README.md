@@ -38,7 +38,7 @@ from cdap_geo import (
 [GeoPandas](https://geopandas.org/en/stable/docs/reference.html)  
 [Shapely](https://shapely.readthedocs.io/en/latest/manual.html)  
 Optional:  [PySpark Vector Files](https://github.com/Defra-Data-Science-Centre-of-Excellence/pyspark-vector-files) for loading large files.  
-Optional:  [BNG Indexer](https://github.com/Defra-Data-Science-Centre-of-Excellence/bng-indexer) for a standard indexing method.  Required for `bng` function.  
+Included:  [BNG Indexer](https://github.com/Defra-Data-Science-Centre-of-Excellence/bng-indexer) for a standard indexing method.  Required for `bng` function.  
 
 
 ## Example
