@@ -25,3 +25,7 @@ from .index_bbox import (
 from .write import (
   sdf_write_geoparquet as write_geoparquet,
 )
+
+from .read import (
+  ingest
+)
