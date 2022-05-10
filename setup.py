@@ -16,6 +16,7 @@ setup(
     'geopandas >=0.8',
   ],
   extras_require = {
-    'sedona': ['sedona >=1'],
+    'sedona': ['sedona >1'],
+    'pyspark_vector_files': ['pyspark_vector_files'],
   },
 )

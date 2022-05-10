@@ -1,85 +1,98 @@
 # Geospatial Functions for CDAP
+Spark and GeoPandas in a small package.  
+Convert, save geoparquet, join, and some UDFs.  
+*There's more functions for using [Sedona](https://sedona.apache.org/api/sql/Overview/) or just Shapely geometries, but you'll have to read code for them.*
+
 
 ## Install
+In Databricks notebook using:
 ```sh
-%pip install git+https://github.com/aw-west-defra/cdap_geo
+%pip install git+https://github.com/aw-west-defra/cdap_geo.git
 ```
 
+
+## Documentation
+This is definately a work in progress.
+```
+from cdap_geo import (
+  # Convert
+  to_sdf,            # lots of things -> SparkDataFrame
+  to_gdf,            # lots of things -> SparkDataFrame
+  # UDFs
+  area,              # calculate Area -> T.FloatType()
+  buffer,            # calculate Buffer -> wkb = T.BinaryType()
+  bounds,            # calculate Bound -> T.ArrayType([T.FloatType()]*4)
+  intersects,        # calculate Intersects -> T.BooleanType()
+  intersection,      # calculate Intersection -> wkb = T.BinaryType()
+  # Spatial Join
+  join,              # spatially Join two SparkDataFrames -> SparkDataFrame
+  bng,               # calculate spatial British National Grid index -> T.ArrayType(T.StringType())
+  # Write
+  write_geoparquet,  # Save with metadata -> None
+)
+```
+
+
+## Requirements
+[PySpark](https://spark.apache.org/docs/3.1.1/api/python/reference/)  
+[GeoPandas](https://geopandas.org/en/stable/docs/reference.html)  
+[Shapely](https://shapely.readthedocs.io/en/latest/manual.html)  
+Optional:  [PySpark Vector Files](https://github.com/Defra-Data-Science-Centre-of-Excellence/pyspark-vector-files) for loading large files.  
+Included:  [BNG Indexer](https://github.com/Defra-Data-Science-Centre-of-Excellence/bng-indexer) for a standard indexing method.  Required for `bng` function.  
+
+
 ## Example
+Import libraries, and load data.
 ```py
 import geopandas as gpd
-from cdap_geo.convert import GeoDataFrame_to_SparkDataFrame
-from cdap_geo.intersect import (
-  index_intersects as intersects,
-  index_intersection as intersection,
-)
-from cdap_geo.write import sdf_write_geoparquet
+import cdap_geo
 
 other = gpd.read_file('other.geojson')
 other = other.to_crs(epsg=27700)  # be careful
-other = GeoDataFrame_to_SparkDataFrame(other)
-dataset = spark.read.parquet('dataset.parquet')
+other = cdap_geo.to_sdf(other) \
+  .select('geometry')  # It's good practice to drop unused columns.
 
-resolution = 10_000  # ∈ (1, 10, 100, 1_000, 10_000, 100_000)
-
-smaller_dataset = intersects(dataset, other, resolution)
-
-sdf_write_geoparquet(smaller_dataset, './path/to/output.parquet', crs=27700)
+df_input = spark.read.parquet('input.parquet') \
+  .select('geometry')  # This will speed up tasks and require less RAM.
 ```
-
-
-## SubModules
-
-### Typing
-Define the shared classes in Spark, Pandas, and GeoPandas, which are DataFrames, Geometries
-These are using for type-setting throughout the module.
+Spatially join two data together.
 ```py
-DataFrame = Union[SparkDataFrame, PandasDataFrame, GeoDataFrame]
-Geometry = Union[GeoDataFrame, GeoSeries, BaseGeometry]
+df_intersects = cdap_geo.join(df_input, other)  # rsuffix='_right'
 ```
-
-### Utils
-Contains some useful functions reused throughout the module.
+Only keep the intersecting geometry.
 ```py
-spark, sc
-get_var_name
-wkb
-get_tree_size, get_size
-sdf_force_execute, sdf_memsize, sdf_print_stats
-sdf_groupmax
+df_intersection = df_intersects \
+  .withColumn('geometry', cdap_geo.intersection('geometry', 'geometry_right')) \
+  .drop('geometry_right')  # remember to drop unused data as early as possible.
 ```
-
-### Convert
-Convert between the shared classes defined in typing.
+Buffer that intersection and calculate the area.
 ```py
-SparkDataFrame_to_SedonaDataFrame
-SedonaDataFrame_to_SparkDataFrame
-SparkDataFrame_to_GeoDataFrame
-GeoDataFrame_to_SparkDataFrame
-GeoSeries_to_GeoDataFrame
-BaseGeometry_to_GeoDataFrame
+df_buffered = df_intersection \
+  .withColumn('geometry', cdap_geo.buffer('geometry')) \
+  .withColumn('area', cdap_geo.area('geometry'))
 ```
-
-### Write
-Ouput a Spark dataframe as geoparquet.
+Calculate the boundaries of the buffered geometry.  
+And move the boundaries to their own columns.
 ```py
-geoparquetify
-sdf_autopartition
-sdf_write_geoparquet
+df_with_bounds = df_buffered \
+  .withColumn('bounds', cdap_geo.bounds('geometry')) \
+  .withColumn('minx', F.col('bounds')[0]) \
+  .withColumn('miny', F.col('bounds')[1]) \
+  .withColumn('maxx', F.col('bounds')[2]) \
+  .withColumn('maxy', F.col('bounds')[3]) \
+  .drop('bounds')
 ```
-
-### Intersect
-There is currently four methods for intersecting, UDFs, Sedona, Indexed UDFs, and most recently Bounding Box UDFs.
-- UDFs
-- Sedona
-- Indexed UDFs
-- Bounding Box UDFs
+*Earlier we used `cdap_geo.join` which calculates its own spatial index and bounding box optimisation for a spatial join.  But it is better to apply a spatial index during data ingestion.*  
+Add British Nation Grid index for future joining with other datasets.
 ```py
-area, unary_union, buffer, bounds
-gdf_intersects, gdf_intersection
-gdf_intersects_udf, gdf_intersects_pudf
-sedona_intersects, sedona_intersection
-intersects_udf, intersects_pudf, intersection_udf, intersection_pudf
-index_join, index_intersects, index_intersection
-bbox_join, bbox_intersects, bbox_intersection
+df_out = df_with_bounds \
+  .withColumn('bng', cdap_geo.bng('geometry'))
 ```
+Save to geoparquet and reload the smaller dataframe using GeoPandas to plot it.  
+```py
+out_file = 'output.parquet'
+cdap_geo.write_geoparquet(df_out, out_file, crs=27700)
+if cdap_geo.utils.get_size(out_file) < 1e9:
+  gpd.read_parquet(out_file).plot()
+```
+*But we used a secret function `cdap_geo.utils.get_size` find out how large the parquet is, and only load and plot if it's <1GB.*

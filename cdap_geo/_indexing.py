@@ -480,8 +480,4 @@ def wkt_from_bng(bng_reference: str) -> str:
             int(bng_reference[y_index_start:y_index_stop][:out_res]) * resolution
         )
 
-    return f"""POLYGON(({ll_x} {ll_y},
-                        {ll_x + resolution} {ll_y},
-                        {ll_x + resolution} {ll_y + resolution},
-                        {ll_x} {ll_y + resolution},
-                        {ll_x} {ll_y}))"""
+    return 'POLYGON(({ll_x} {ll_y}, {ll_x + resolution} {ll_y}, {ll_x + resolution} {ll_y + resolution}, {ll_x} {ll_y + resolution}, {ll_x} {ll_y}))'
