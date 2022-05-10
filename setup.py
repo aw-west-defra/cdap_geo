@@ -14,7 +14,6 @@ setup(
   install_requires = [
     'pyspark >=3',
     'geopandas >=0.8',
-    'bng_indexer @ git+https://github.com/Defra-Data-Science-Centre-of-Excellence/bng-indexer#egg=bng_indexer',
   ],
   extras_require = {
     'sedona': ['sedona >1'],
