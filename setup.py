@@ -14,10 +14,10 @@ setup(
   install_requires = [
     'pyspark >=3',
     'geopandas >=0.8',
+    'bng_indexer @ git+https://github.com/Defra-Data-Science-Centre-of-Excellence/bng-indexer.git',
   ],
   extras_require = {
-    'sedona',
-    'pyspark_vector_files',
-    'git+https://github.com/Defra-Data-Science-Centre-of-Excellence/bng-indexer.git',
+    'sedona': ['sedona >1'],
+    'pyspark_vector_files': ['pyspark_vector_files'],
   },
 )
