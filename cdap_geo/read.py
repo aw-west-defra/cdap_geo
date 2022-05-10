@@ -6,11 +6,14 @@ from . import bng
 
 
 
-def ingest(path, suffix, path_to, **kwargs):
+def ingest(path, suffix, path_to, layers=None, **kwargs):
   if not path_to.endswith('/'):
     path_to += '/'
 
-  for layer in listlayer(path):
+  if layers == None:
+    layers = listlayers(path)
+
+  for layer in layers:
     path_to += layer+'.parquet'
     sdf = read_vector_files(
         path = path,
