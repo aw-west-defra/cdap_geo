@@ -68,5 +68,5 @@ def bbox_join(left, right, lsuffix='', rsuffix='_right', resolutions=[100_000, 1
 
 def bbox_intersects(left, right):
   sdf = bbox_join(left, right) \
-    .filter(intersects_udf('geometry', 'geometry_right'))
+    .filter(intersects('geometry', 'geometry_right'))
   return sdf
