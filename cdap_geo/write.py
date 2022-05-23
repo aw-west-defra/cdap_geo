@@ -32,7 +32,7 @@ def geoparquetify(
   # Bounds
   bbox = spark.read.parquet(path) \
     .withColumn(
-      'bounds', bounds('geometry')
+      'bounds', bounds(geometry_column)
     ).select(
       F.col('bounds')[0].alias('minx'),
       F.col('bounds')[1].alias('miny'),
