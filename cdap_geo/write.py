@@ -77,7 +77,7 @@ def geoparquetify(
 
 
 # AutoPartition
-def sdf_autopartition(sdf: SparkDataFrame, column: str = 'geometry', inplace: bool = False,
+def sdf_autopartition(sdf: SparkDataFrame, partitionBy: str = None, inplace: bool = False,
     count_ratio: float = 1e-6, mem_ratio: float = 1/1024**2, thead_ratio: float = 1.5) -> SparkDataFrame:
   jobs_cap = 100_000
   numPartitions = (
@@ -89,7 +89,7 @@ def sdf_autopartition(sdf: SparkDataFrame, column: str = 'geometry', inplace: bo
   if max(numPartitions) <= sdf.rdd.getNumPartitions():
     return sdf
   print(f'\tRepartitioning: From {sdf.rdd.getNumPartitions()}, To max{numPartitions}')
-  sdf_repartitioned = sdf.repartition(max(numPartitions), column)
+  sdf_repartitioned = sdf.repartition(max(numPartitions), partitionBy)
   if inplace:
     sdf = sdf_repartitioned
   return sdf_repartitioned
@@ -115,6 +115,6 @@ def sdf_write_geoparquet(
   encoding: str = 'WKB',
 ) -> None:
   if autopartition:
-    sdf_autopartition(sdf, geometry_column, inplace, count_ratio, mem_ratio, thead_ratio)
+    sdf_autopartition(sdf, partitionBy, inplace, count_ratio, mem_ratio, thead_ratio)
   sdf.write.parquet(path, mode, partitionBy, compression)
   geoparquetify(path, geometry_column, crs, encoding)
