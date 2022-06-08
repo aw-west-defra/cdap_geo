@@ -1,4 +1,5 @@
-import requests
+from requests import get
+from geopandas import read_file
 
 known_arcgis = {
   # ONS
@@ -9,9 +10,9 @@ known_arcgis = {
   # Natural England
   'npark': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/National_Parks_England/FeatureServer/0/query?where=1%3D1&outFields=NAME&outSR=27700&f=json',
   'aonb': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/Areas_of_Outstanding_Natural_Beauty_England/FeatureServer/0/query?where=1%3D1&outFields=NAME&outSR=27700&f=json',
-  'sssi': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/SSSI_England/FeatureServer/0/query?where=1%3D1&outFields=SSSI_NAME,REFERENCE,STATUS,GID,ENSISID,GIS_DATE,VERSION&outSR=27700&f=json',
-  'spa': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/Special_Protection_Areas_England/FeatureServer/0/query?where=1%3D1&outFields=SPA_NAME,STATUS,ID&outSR=27700&f=json',
-  'spc': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/Special_Areas_of_Conservation_England/FeatureServer/0/query?where=1%3D1&outFields=SAC_NAME,STATUS,ID&outSR=27700&f=json',
+  'sssi': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/SSSI_England/FeatureServer/0/query?where=1%3D1&outFields=SSSI_NAME,STATUS&outSR=27700&f=json',
+  'spa': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/Special_Protection_Areas_England/FeatureServer/0/query?where=1%3D1&outFields=SPA_NAME,STATUS&outSR=27700&f=json',
+  'sac': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/Special_Areas_of_Conservation_England/FeatureServer/0/query?where=1%3D1&outFields=SAC_NAME,STATUS&outSR=27700&f=json',
   'grade': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/National_Habitat_Networks_England/FeatureServer/0/query?where=1%3D1&outFields=Class&outSR=27700&f=json',
 }
 
@@ -22,9 +23,10 @@ def read_arcgis(f, limit=1000):
   name = f0.split(a)[1]
   f0 += b
   f_count = f0 + 'where=1%3D1&returnCountOnly=true&f=json'
-  count = requests.get(f_count).json()['count']
+
+  count = get(f_count).json()['count']
   if count < limit:  # Single File
-    df = gpd.read_file(f)
+    df = read_file(f)
   else:  # Multiple Files
     return NotImplementedError(f'{name} has {count:,} rows > {limit:,} limit.  Multi-read solution coming...')
     df = []
@@ -32,5 +34,5 @@ def read_arcgis(f, limit=1000):
       u = min(l + limit, count)
       r = 'objectIds=' + ','.join( str(x) for x in range(l, u) ) + '&'
       f_part = f0 + r + f1
-      df.append( gpd.read_file(f_part) )
+      df.append( read_file(f_part) )
   return df, count
