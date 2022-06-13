@@ -1,6 +1,12 @@
 from requests import get
 from geopandas import read_file
 
+known_url = {
+  # Defra Magic
+  'moorland': 'https://magic.defra.gov.uk/Datasets/Zip_files/magmoor_shp.zip',
+  'lfa': 'https://magic.defra.gov.uk/Datasets/Zip_files/maglfa_shp.zip',
+}
+
 known_arcgis = {
   # ONS
   'region': 'https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Regions_December_2021_EN_BFC/FeatureServer/0/query?where=1%3D1&outFields=RGN21NM&outSR=27700&f=json',
