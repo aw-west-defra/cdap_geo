@@ -1,11 +1,14 @@
 from requests import get
 from geopandas import read_file
+from pandas import concat
+
 
 known_url = {
   # Defra Magic
   'moorland': 'https://magic.defra.gov.uk/Datasets/Zip_files/magmoor_shp.zip',
   'lfa': 'https://magic.defra.gov.uk/Datasets/Zip_files/maglfa_shp.zip',
 }
+
 
 known_arcgis = {
   # ONS
@@ -31,7 +34,8 @@ known_arcgis = {
   'crow_commons': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/CRoW_Act_2000_Section_4_Conclusive_Registered_Common_Land/FeatureServer/0/query?where=1%3D1&outFields=UNIQUEID,MAPPINGARE,MAPSTATUS,AUTHORITY,CL_NUMBER,NAME,DATESIGNED,CACHAIR&outSR=27700&f=json'
 }
 
-def read_arcgis(f, limit=1000):
+
+def gpd_read_arcgis(f, limit=200):
   a = '/arcgis/rest/services/'
   b = '/FeatureServer/0/query?'
   f0, f1 = f.split(b)
@@ -43,11 +47,11 @@ def read_arcgis(f, limit=1000):
   if count < limit:  # Single File
     df = read_file(f)
   else:  # Multiple Files
-    return NotImplementedError(f'{name} has {count:,} rows > {limit:,} limit.  Multi-read solution coming...')
-    df = []
+    dfs = []
     for l in range(1, count, limit):
       u = min(l + limit, count)
       r = 'objectIds=' + ','.join( str(x) for x in range(l, u) ) + '&'
       f_part = f0 + r + f1
-      df.append( read_file(f_part) )
-  return df, count
+      dfs.append( read_file(f_part) )
+    df = concat(dfs)
+  return df
