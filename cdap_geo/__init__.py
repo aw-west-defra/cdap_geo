@@ -23,7 +23,8 @@ from .index_bbox import (
 )
 
 from .remotes import (
-  gpd_read_remote as read_remote
+  list_remotes,
+  gpd_read_remote as read_remote,
 )
 
 from .write import (
