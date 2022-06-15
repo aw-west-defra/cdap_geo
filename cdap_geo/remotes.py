@@ -131,6 +131,7 @@ remote = {
   },
 }
 
+list_remotes = list(remote.keys())
 
 def gpd_read_remote(name):
   if name in remote:
