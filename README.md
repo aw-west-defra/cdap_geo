@@ -29,6 +29,7 @@ from cdap_geo import (
   bng,               # calculate spatial British National Grid index -> T.ArrayType(T.StringType())
   # Read
   read_gpkg          # quickly read GeoPackage -> SparkDataFrame
+  ingest             # read dataset folder -> GeoParquet dataset folder with bng
   # Write
   write_geoparquet,  # Save with metadata -> None
 )
