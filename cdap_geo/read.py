@@ -1,5 +1,5 @@
 import os
-from . import bng, to_crs, write_geoparquet
+from . import bng, crs, write_geoparquet
 from .utils import spark
 from typing import Union
 from struct import unpack
@@ -110,8 +110,9 @@ def ingest(
   path_in: str,
   suffix: str,
   layers: Union[str, int] = None,
-  crs: int = 27700,
-  resolution: int = 100_000,
+  crs_from: int = 27700,
+  crs_to: int = 27700,
+  bng_resolution: int = 1000,
   **kwargs,
 ):
   '''Ingest a dataset folder into a GeoParquet dataset folder
@@ -136,8 +137,10 @@ def ingest(
         suffix = suffix,
         layer_identifier = layer,
         **kwargs
-    ) \
-      .withColumn('geometry', to_crs('geometry', crs=crs)) \
-      .withColumn('bng', bng('geometry', resolution=resolution))
+    )
+    if crs_from != crs_to:
+      sdf = sdf.withColumn('geometry', crs('geometry', crs_from, crs_to))
+    if bng_resolution:
+      sdf = sdf.withColumn('bng', bng('geometry', resolution=bng_resolution))
 
     write_geoparquet(sdf, path_out)
