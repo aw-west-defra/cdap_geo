@@ -27,6 +27,8 @@ from cdap_geo import (
   # Spatial Join
   join,              # spatially Join two SparkDataFrames -> SparkDataFrame
   bng,               # calculate spatial British National Grid index -> T.ArrayType(T.StringType())
+  # Read
+  read_gpkg          # quickly read GeoPackage -> SparkDataFrame
   # Write
   write_geoparquet,  # Save with metadata -> None
 )
