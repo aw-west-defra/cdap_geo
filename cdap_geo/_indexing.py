@@ -258,7 +258,7 @@ def _bng_geom_index(
         return [
             (coords[idx][0], box)
             for idx, box in enumerate(boxes)
-            if prepared_geometry.intersects(box)
+            if prepared_geometry.overlaps(box)
         ]
 
     else:
@@ -266,7 +266,7 @@ def _bng_geom_index(
         return [
             coords[idx][0]
             for idx, box in enumerate(boxes)
-            if prepared_geometry.intersects(box)
+            if prepared_geometry.overlaps(box)
         ]
 
 
