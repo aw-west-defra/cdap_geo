@@ -23,7 +23,8 @@ from .index_bbox import (
 )
 
 from .read import (
-  read_gpkg
+  read_gpkg,
+  ingest,
 )
 
 from .remotes import (
