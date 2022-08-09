@@ -12,8 +12,8 @@ In Databricks notebook using:
 
 
 ## Documentation
-This is definately a work in progress.
-```
+This is definitely a work in progress.
+```py
 from cdap_geo import (
   # Convert
   to_sdf,            # lots of things -> SparkDataFrame

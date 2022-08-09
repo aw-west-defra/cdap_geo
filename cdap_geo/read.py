@@ -1,9 +1,11 @@
+import os
+from . import bng, write_geoparquet
 from .utils import spark
 from typing import Union
 from struct import unpack
 from pyspark.sql import functions as F, types as T
 from fiona import listlayers
-
+from geopandas._compat import import_optional_dependency
 
 
 GeoPackageDialect_scala = '''
@@ -95,3 +97,38 @@ def read_gpkg(filepath: str, layer: Union[str, int] = None):
     .drop('geom')
 
   return sdf
+
+
+
+def ingest(
+  path_out: str,
+  path_in: str,
+  suffix: str,
+  layers = None,
+  resolution = 100_000,
+  **kwargs,
+):
+  if not path_out.endswith('/'):
+    path_out += '/'
+
+  if layers == None:
+    layer = listlayers(path)
+  
+  if suffix.lower('.gpkg'):
+    _read = lambda path, suffix, layer_identifier, **kwargs:  read_gpkg(path+suffix, layer_identifier)
+  else:
+    _read = import_optional_dependency('pyspark_vector_files', extra).read_vector_files
+
+  for layer in layers:
+    path_out += layer+'.parquet'
+    sdf = _read(
+        path = path_in,
+        suffix = suffix,
+        layer_identifier = layer,
+        **kwargs
+    ) \
+      .withColumn('bng', bng('geometry', resolution=resolution))
+
+    write_geoparquet(sdf, path_out)
+
+
