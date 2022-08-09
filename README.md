@@ -21,6 +21,7 @@ from cdap_geo import (
   # UDFs
   area,              # calculate Area -> T.FloatType()
   buffer,            # calculate Buffer -> wkb = T.BinaryType()
+  to_crs,            # convert Coordinate Reference System -> wkb = T.BinaryType()
   bounds,            # calculate Bound -> T.ArrayType([T.FloatType()]*4)
   intersects,        # calculate Intersects -> T.BooleanType()
   intersection,      # calculate Intersection -> wkb = T.BinaryType()
