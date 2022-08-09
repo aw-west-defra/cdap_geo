@@ -114,6 +114,8 @@ def sdf_write_geoparquet(
   crs: Union[int, str] = None,
   encoding: str = 'WKB',
 ) -> None:
+  if path.startswith('/dbfs/'):
+    path = path.replace('/dbfs/', 'dbfs:/')
   if autopartition:
     sdf_autopartition(sdf, partitionBy, inplace, count_ratio, mem_ratio, thead_ratio)
   sdf.write.parquet(path, mode, partitionBy, compression)
