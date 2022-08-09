@@ -24,12 +24,12 @@ def buffer(column, resolution):
 def bounds(data):
   return wkb(data).bounds
 
-def convert_crs(column, crs_from, crs_to):
+def crs(column, crs_from, crs_to):
   project = Transformer.from_crs(CRS(f'EPSG:{crs_from}'), CRS(f'EPSG:{crs_to}'), always_xy=True).transform
   @F.udf(returnType=T.BinaryType())
-  def _convert_crs(data):
+  def _crs(data):
     return transform(project, wkb(data)).wkb
-  return _convert_crs(column)
+  return _crs(column)
 
 
 # GeoDataFrame Intersecting, returns GeoDataFrame not GeoSeries
