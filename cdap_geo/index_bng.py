@@ -3,7 +3,7 @@ from ._indexing import calculate_bng_index
 from pyspark.sql import functions as F, types as T
 
 
-def bng_index(column, resolution):
+def bng_index(column, resolution=1000):
   '''Spatial Indexing
   currying resolution ∈ (1, 10, 100, 1_000, 10_000, 100_000)
   '''
