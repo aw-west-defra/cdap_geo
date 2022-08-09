@@ -39,7 +39,7 @@ JdbcDialects.registerDialect(GeoPackageDialect)
 
 
 
-def read_gpkg(filepath: str, layer: Union[str, int] = None):
+def read_gpkg(filepath: str, layer: Union[str, int] = None, quiet: bool = False):
   ''' Read GeoPackage into Spark
   requires scala: GeoPackageDialect
   '''
@@ -55,7 +55,7 @@ def read_gpkg(filepath: str, layer: Union[str, int] = None):
   if isinstance(layer, int):
     layers = _listlayers_gpkg(filepath)
     layer = layers[layer]
-    if 1 < len(layers):
+    if not quiet and 1 < len(layers):
       print(f'\tSelecting: {layer} from {layers}')
   
   sdf = _read_gpkg(filepath, layer) \
