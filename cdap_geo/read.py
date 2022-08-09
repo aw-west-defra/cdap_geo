@@ -1,7 +1,9 @@
-from .typing import *
-from .utils import spark, wkb
-from pyspark.sql import functions as F, types as T
+from .utils import spark
 from typing import Union
+from struct import unpack
+from pyspark.sql import functions as F, types as T
+from fiona import listlayers
+
 
 
 GeoPackageDialect_scala = '''
@@ -38,28 +40,58 @@ JdbcDialects.registerDialect(GeoPackageDialect)
 '''
 
 
+gpb_return_schema = T.StructType([
+  T.StructField('magic', T.StringType()),
+  T.StructField('version', T.IntegerType()),
+  T.StructField('flags', T.StringType()),
+  T.StructField('srs_id', T.IntegerType()),
+  T.StructField('envelope', T.ArrayType(T.DoubleType()))
+])
 
-def read_gpkg(filepath: str, layer: Union[str, int] = None, quiet: bool = False):
+gpb_unpacking_schema = lambda unpacked:  {
+  'magic': unpacked[0].decode('ascii') + unpacked[1].decode('ascii'),
+  'version': unpacked[2],
+  'flags': format(unpacked[3], 'b').zfill(8),
+  'srs_id': unpacked[4],
+  'envelope': [unpacked[5], unpacked[6], unpacked[7], unpacked[8]]
+}
+
+
+@F.udf(returnType=gpb_return_schema)
+def unpack_gpb_header(byte_array: bytearray) -> T.StructType:
+  return gpb_unpacking_schema(unpack('ccBBidddd', byte_array))
+
+
+def _read_gpkg(filepath, layer):
+  sdf = spark.read \
+    .format('jdbc') \
+    .option('url', f'jdbc:sqlite:{filepath}') \
+    .option('dbtable', layer) \
+    .load()
+  return sdf
+
+
+def read_gpkg(filepath: str, layer: Union[str, int] = None):
   ''' Read GeoPackage into Spark
   requires scala: GeoPackageDialect
   '''
   HEADER_LENGTH = 40
-  
-  _read_gpkg = lambda filepath, layer:  spark.read.format('jdbc').option('url', f'jdbc:sqlite:{filepath}').option('dbtable', layer).load()
-  _sdfcol_tolist = lambda sdf, col:  sdf.toPandas()[col].tolist()
-  _listlayers_gpkg = lambda filepath: _sdfcol_tolist(_read_gpkg(filepath, 'gpkg_contents'), 'table_name')
-  _gpd2wkb = lambda header_length:  F.expr(f'SUBSTRING(geometry, {header_length}+1, LENGTH(geometry)-{header_length}) AS geometry')
+  split_head = f'SUBSTRING(geom, 0, {HEADER_LENGTH})'
+  split_wkb = f'SUBSTRING(geom, {HEADER_LENGTH}+1, LENGTH(geom)-{HEADER_LENGTH})'
   
   if layer is None:
     layer = 0
   if isinstance(layer, int):
-    layers = _listlayers_gpkg(filepath)
-    layer = layers[layer]
-    if not quiet and 1 < len(layers):
-      print(f'\tSelecting: {layer} from {layers}')
+    layer = listlayers(filepath)[layer]
   
-  sdf = _read_gpkg(filepath, layer) \
-    .withColumnRenamed('geom', 'geometry') \
-    .withColumn('geometry', _gpd2wkb(HEADER_LENGTH)) \
+  try:
+    sdf = _read_gpkg(filepath, layer)
+  except:
+    print('Please run this scala command:\n\n\n%scala'+GeoPackageDialect_scala)
+  
+  sdf = sdf \
+    .withColumn('gpd_header', unpack_gpb_header(F.expr(split_head))) \
+    .withColumn('geometry', F.expr(split_wkb)) \
+    .drop('geom')
 
   return sdf
