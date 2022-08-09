@@ -1,6 +1,8 @@
 from .typing import *
 from .utils import spark, wkb, wkbs
 from pyspark.sql import functions as F, types as T
+from pyproj import Transformer, CRS
+from shapely.ops import transform
 
 
 # Spatial Functions
@@ -22,11 +24,12 @@ def buffer(column, resolution):
 def bounds(data):
   return wkb(data).bounds
 
-def to_crs(column, crs):
+def to_crs(column, crs_from, crs_to):
+  project = Transformer.from_crs(CRS(f'EPSG:{crs_from}'), CRS(f'EPSG:{crs_to}'), always_xy=True).transform
   @F.udf(returnType=T.BinaryType())
-  def _to_crs(data):
-    return wkb(data).to_crs(crs).wkb
-  return _to_crs(column)
+  def _convert_crs(data):
+    return transform(project, wkb(data)).wkb
+  return _convert_crs(column)
 
 
 # GeoDataFrame Intersecting, returns GeoDataFrame not GeoSeries
