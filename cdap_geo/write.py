@@ -1,7 +1,7 @@
 from . import __version__
 from .typing import *
 from .utils import spark, wkb, sdf_memsize
-from . import bounds
+from .functions import bounds
 from geopandas.io.arrow import _encode_metadata
 from pyspark.sql import functions as F, types as T
 from pyarrow import parquet
