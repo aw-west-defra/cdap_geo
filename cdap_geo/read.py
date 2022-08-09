@@ -129,7 +129,7 @@ def ingest(
     path_in = path_in.replace('dbfs:/', '/dbfs/')
   
   if layers == None:
-    layers = listlayers(path)
+    layers = set(l for f in listdir(path_in) if f.endswith(suffix) for l in listlayers(path_in+f))
   
   if suffix.lower('.gpkg'):
     _read = lambda path, suffix, layer_identifier, **kwargs:  read_gpkg(path+suffix, layer_identifier)
@@ -137,7 +137,6 @@ def ingest(
     _read = import_optional_dependency('pyspark_vector_files', extra).read_vector_files
 
   for layer in layers:
-    path_out += layer+'.parquet'
     sdf = _read(
         path = path_in,
         suffix = suffix,
@@ -150,4 +149,4 @@ def ingest(
       sdf = sdf.withColumn('bng', bng('geometry', resolution=bng_resolution)) \
         .repartition('bng')
 
-    sdf_write_geoparquet(sdf, path_out)
+    sdf_write_geoparquet(sdf, path_out+layer+'.parquet')
