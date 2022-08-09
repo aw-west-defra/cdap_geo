@@ -1,5 +1,6 @@
 import os
-from . import bng, crs, write_geoparquet
+from .functions import bng, crs
+from .write import sdf_write_geoparquet
 from .utils import spark
 from typing import Union
 from struct import unpack
@@ -144,4 +145,4 @@ def ingest(
       sdf = sdf.withColumn('bng', bng('geometry', resolution=bng_resolution)) \
         .repartition('bng')
 
-    write_geoparquet(sdf, path_out)
+    sdf_write_geoparquet(sdf, path_out)
