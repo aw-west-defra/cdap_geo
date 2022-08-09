@@ -141,6 +141,7 @@ def ingest(
     if crs_from and crs_from != crs_to:
       sdf = sdf.withColumn('geometry', crs('geometry', crs_from, crs_to))
     if bng_resolution:
-      sdf = sdf.withColumn('bng', bng('geometry', resolution=bng_resolution))
+      sdf = sdf.withColumn('bng', bng('geometry', resolution=bng_resolution)) \
+        .repartition('bng')
 
     write_geoparquet(sdf, path_out)
