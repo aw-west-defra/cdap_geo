@@ -22,6 +22,11 @@ from .index_bbox import (
   bbox_intersects as join,
 )
 
+from .remotes import (
+  list_remotes,
+  gpd_read_remote as read_remote,
+)
+
 from .write import (
   sdf_write_geoparquet as write_geoparquet,
 )

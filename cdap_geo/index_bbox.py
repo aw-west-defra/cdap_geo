@@ -33,10 +33,14 @@ def bbox_join(left, right, lsuffix='', rsuffix='_right', resolutions=[100_000, 1
   # Lookup Index
   left = left \
     .withColumnRenamed('geometry', 'geometry'+lsuffix) \
-    .withColumn('index'+lsuffix, F.monotonically_increasing_id())
+    .withColumn('index'+lsuffix, F.monotonically_increasing_id()) \
+    .repartition('index'+lsuffix)
+  left.cache()
   right = right \
     .withColumnRenamed('geometry', 'geometry'+rsuffix) \
-    .withColumn('index'+rsuffix, F.monotonically_increasing_id())
+    .withColumn('index'+rsuffix, F.monotonically_increasing_id()) \
+    .repartition('index'+rsuffix)
+  right.cache()
   # Bounds and Spatial Index
   l = bbox_bounds(left, lsuffix) \
     .withColumn('index_spatial', bbox_index(lsuffix, resolutions, limits)) \
