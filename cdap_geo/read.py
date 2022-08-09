@@ -135,7 +135,7 @@ def ingest(
   if suffix.lower()=='.gpkg':
     _read = lambda path, suffix, layer_identifier, **kwargs:  read_gpkg(path+suffix, layer_identifier)
   else:
-    _read = import_optional_dependency('pyspark_vector_files', extra).read_vector_files
+    _read = import_optional_dependency('pyspark_vector_files').read_vector_files
 
   for layer in layers:
     sdf = _read(
