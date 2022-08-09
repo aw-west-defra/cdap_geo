@@ -110,7 +110,7 @@ def ingest(
   path_in: str,
   suffix: str,
   layers: Union[str, int] = None,
-  crs_from: int = 27700,
+  crs_from: int = None,
   crs_to: int = 27700,
   bng_resolution: int = 1000,
   **kwargs,
@@ -138,7 +138,7 @@ def ingest(
         layer_identifier = layer,
         **kwargs
     )
-    if crs_from != crs_to:
+    if crs_from and crs_from != crs_to:
       sdf = sdf.withColumn('geometry', crs('geometry', crs_from, crs_to))
     if bng_resolution:
       sdf = sdf.withColumn('bng', bng('geometry', resolution=bng_resolution))
