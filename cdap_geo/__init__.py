@@ -22,6 +22,10 @@ from .index_bbox import (
   bbox_intersects as join,
 )
 
+from .read import (
+  read_gpkg
+)
+
 from .remotes import (
   list_remotes,
   gpd_read_remote as read_remote,
