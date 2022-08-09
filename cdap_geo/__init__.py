@@ -9,7 +9,7 @@ from .convert import (
 from .functions import (
   area,
   buffer,
-  convert_crs,
+  crs,
   bounds,
   intersects_udf as intersects,
   intersection_udf as intersection,
