@@ -1,5 +1,5 @@
 from pyspark.sql import functions as F, types as T
-from . import bounds, intersects
+from .functions import bounds, intersects_udf as intersects
 
 
 # Bounding Box Join
