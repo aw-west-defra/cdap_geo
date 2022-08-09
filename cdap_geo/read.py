@@ -1,10 +1,10 @@
-import os
 from .index_bng import bng_index as bng 
 from .functions import crs
 from .write import sdf_write_geoparquet
 from .utils import spark
 from typing import Union
 from struct import unpack
+from os import listdir
 from pyspark.sql import functions as F, types as T
 from fiona import listlayers
 from geopandas._compat import import_optional_dependency
