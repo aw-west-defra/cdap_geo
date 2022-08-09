@@ -21,12 +21,16 @@ from cdap_geo import (
   # UDFs
   area,              # calculate Area -> T.FloatType()
   buffer,            # calculate Buffer -> wkb = T.BinaryType()
+  to_crs,            # convert Coordinate Reference System -> wkb = T.BinaryType()
   bounds,            # calculate Bound -> T.ArrayType([T.FloatType()]*4)
   intersects,        # calculate Intersects -> T.BooleanType()
   intersection,      # calculate Intersection -> wkb = T.BinaryType()
   # Spatial Join
   join,              # spatially Join two SparkDataFrames -> SparkDataFrame
   bng,               # calculate spatial British National Grid index -> T.ArrayType(T.StringType())
+  # Read
+  read_gpkg          # quickly read GeoPackage -> SparkDataFrame
+  ingest             # read dataset folder -> GeoParquet dataset folder with bng
   # Write
   write_geoparquet,  # Save with metadata -> None
 )
