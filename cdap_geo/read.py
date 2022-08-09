@@ -88,14 +88,15 @@ def read_gpkg(filepath: str, layer: Union[str, int] = None):
   split_head = f'SUBSTRING(geom, 0, {HEADER_LENGTH})'
   split_wkb = f'SUBSTRING(geom, {HEADER_LENGTH}+1, LENGTH(geom)-{HEADER_LENGTH})'
   
+  if filepath.startswith('/dbfs/'):
+    filepath = filepath.replace('/dbfs/', 'dbfs:/')
+
   if layer is None:
     layer = 0
   if isinstance(layer, int):
     layer = listlayers(filepath)[layer]
   
   try:
-    if filepath.startswith('/dbfs/'):
-      filepath = filepath.replace('/dbfs/', 'dbfs:/')
     sdf = _read_gpkg(filepath, layer)
   except:
     print(ErrorMsg_GeoPackageDialect)
