@@ -72,8 +72,6 @@ def unpack_gpb_header(byte_array: bytearray) -> T.StructType:
 
 
 def _read_gpkg(filepath, layer):
-  if filepath.startswith('/dbfs/'):
-    filepath = filepath.replace('/dbfs/', 'dbfs:/')
   sdf = spark.read \
     .format('jdbc') \
     .option('url', f'jdbc:sqlite:{filepath}') \
@@ -96,6 +94,8 @@ def read_gpkg(filepath: str, layer: Union[str, int] = None):
     layer = listlayers(filepath)[layer]
   
   try:
+    if filepath.startswith('/dbfs/'):
+      filepath = filepath.replace('/dbfs/', 'dbfs:/')
     sdf = _read_gpkg(filepath, layer)
   except:
     print(ErrorMsg_GeoPackageDialect)
@@ -125,7 +125,9 @@ def ingest(
   '''
   if not path_out.endswith('/'):
     path_out += '/'
-
+  if path_in.startswith('dbfs:/'):
+    path_in = path_in.replace('dbfs:/', '/dbfs/')
+  
   if layers == None:
     layers = listlayers(path)
   
