@@ -1,5 +1,6 @@
 import os
-from .functions import bng, crs
+from .index_bng import bng_index as bng 
+from .functions import crs
 from .write import sdf_write_geoparquet
 from .utils import spark
 from typing import Union
