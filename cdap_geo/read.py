@@ -72,6 +72,9 @@ def unpack_gpb_header(byte_array: bytearray) -> T.StructType:
 
 
 def _read_gpkg(filepath, layer):
+  if filepath.startswith('/dbfs/'):
+    filepath = filepath.replace('/dbfs/', 'dbfs:/')
+
   sdf = spark.read \
     .format('jdbc') \
     .option('url', f'jdbc:sqlite:{filepath}') \
@@ -87,9 +90,9 @@ def read_gpkg(filepath: str, layer: Union[str, int] = None):
   HEADER_LENGTH = 40
   split_head = f'SUBSTRING(geom, 0, {HEADER_LENGTH})'
   split_wkb = f'SUBSTRING(geom, {HEADER_LENGTH}+1, LENGTH(geom)-{HEADER_LENGTH})'
-  
-  if filepath.startswith('/dbfs/'):
-    filepath = filepath.replace('/dbfs/', 'dbfs:/')
+
+  if filepath.startswith('dbfs:/'):
+    filepath = filepath.replace('dbfs:/', '/dbfs/')
 
   if layer is None:
     layer = 0
