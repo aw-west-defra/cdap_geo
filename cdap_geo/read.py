@@ -1,5 +1,5 @@
 import os
-from . import bng, write_geoparquet
+from . import bng, to_crs, write_geoparquet
 from .utils import spark
 from typing import Union
 from struct import unpack
@@ -8,7 +8,11 @@ from fiona import listlayers
 from geopandas._compat import import_optional_dependency
 
 
-GeoPackageDialect_scala = '''
+
+ErrorMsg_GeoPackageDialect = '''Please run this scala command in a separate cell:
+
+
+%scala
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.types._
 
@@ -59,6 +63,7 @@ gpb_unpacking_schema = lambda unpacked:  {
 }
 
 
+
 @F.udf(returnType=gpb_return_schema)
 def unpack_gpb_header(byte_array: bytearray) -> T.StructType:
   return gpb_unpacking_schema(unpack('ccBBidddd', byte_array))
@@ -89,7 +94,7 @@ def read_gpkg(filepath: str, layer: Union[str, int] = None):
   try:
     sdf = _read_gpkg(filepath, layer)
   except:
-    print('Please run this scala command:\n\n\n%scala'+GeoPackageDialect_scala)
+    print(ErrorMsg_GeoPackageDialect)
   
   sdf = sdf \
     .withColumn('gpd_header', unpack_gpb_header(F.expr(split_head))) \
@@ -104,15 +109,20 @@ def ingest(
   path_out: str,
   path_in: str,
   suffix: str,
-  layers = None,
-  resolution = 100_000,
+  layers: Union[str, int] = None,
+  crs: int = 27700,
+  resolution: int = 100_000,
   **kwargs,
 ):
+  '''Ingest a dataset folder into a GeoParquet dataset folder
+  read through each file in the folder and every layer in those files
+  add bng 
+  '''
   if not path_out.endswith('/'):
     path_out += '/'
 
   if layers == None:
-    layer = listlayers(path)
+    layers = listlayers(path)
   
   if suffix.lower('.gpkg'):
     _read = lambda path, suffix, layer_identifier, **kwargs:  read_gpkg(path+suffix, layer_identifier)
@@ -127,8 +137,7 @@ def ingest(
         layer_identifier = layer,
         **kwargs
     ) \
+      .withColumn('geometry', to_crs('geometry', crs=crs)) \
       .withColumn('bng', bng('geometry', resolution=resolution))
 
     write_geoparquet(sdf, path_out)
-
-
