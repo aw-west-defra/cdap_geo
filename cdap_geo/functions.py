@@ -22,6 +22,12 @@ def buffer(column, resolution):
 def bounds(data):
   return wkb(data).bounds
 
+def to_crs(column, crs):
+  @F.udf(returnType=T.BinaryType())
+  def _to_crs(data):
+    return wkb(data).to_crs(crs).wkb
+  return _to_crs(column)
+
 
 # GeoDataFrame Intersecting, returns GeoDataFrame not GeoSeries
 def gdf_intersects(gdf: GeoDataFrame, other: BaseGeometry):
