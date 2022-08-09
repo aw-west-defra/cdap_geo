@@ -24,7 +24,7 @@ def buffer(column, resolution):
 def bounds(data):
   return wkb(data).bounds
 
-def to_crs(column, crs_from, crs_to):
+def convert_crs(column, crs_from, crs_to):
   project = Transformer.from_crs(CRS(f'EPSG:{crs_from}'), CRS(f'EPSG:{crs_to}'), always_xy=True).transform
   @F.udf(returnType=T.BinaryType())
   def _convert_crs(data):
