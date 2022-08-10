@@ -3,7 +3,7 @@ from .utils import spark, wkb, wkbs
 from pyspark.sql import functions as F, types as T
 from pyproj import Transformer, CRS
 from shapely.ops import transform
-
+from geopandas._compat import import_optional_dependency
 
 # Spatial Functions
 @F.udf(returnType=T.FloatType())
@@ -39,6 +39,13 @@ def gdf_intersects(gdf: GeoDataFrame, other: BaseGeometry):
 def gdf_intersection(gdf: GeoDataFrame, other: BaseGeometry):
   return gpd_gdf_intersects(gdf, other).clip(other)
 
+# GeoPandas function
+def gpd_drop_z(ds):
+  ''' Drop Z coordinates from GeoSeries, returns GeoSeries
+  Requires pygeos to be installed, and such I've added `import pygeos` to check.
+  '''
+  import_optional_dependency('pygeos')
+  return gpd.GeoSeries.from_wkb(ds.to_wkb(output_dimension=2))
 
 # Intersecting UDF with MultiPolygon
 def gdf_intersects_udf(left, right: Geometry):
