@@ -109,6 +109,13 @@ def read_gpkg(filepath: str, layer: Union[str, int] = None):
   return sdf
 
 
+def read_gpkgs(path, suffix, layer_identifier, **kwargs):
+  for f in listdir(path):
+    if f.endswith(suffix):
+      path += f
+      break
+  return read_gpkg(path, layer_identifier)
+
 
 def ingest(
   path_out: str,
@@ -133,16 +140,16 @@ def ingest(
     layers = set(l for f in listdir(path_in) if f.endswith(suffix) for l in listlayers(path_in+f))
   
   if suffix.lower()=='.gpkg':
-    _read = lambda path, suffix, layer_identifier, **kwargs:  read_gpkg(path+suffix, layer_identifier)
+    _read = read_gpkgs
   else:
     _read = import_optional_dependency('pyspark_vector_files').read_vector_files
 
   for layer in layers:
     sdf = _read(
-        path = path_in,
-        suffix = suffix,
-        layer_identifier = layer,
-        **kwargs
+      path = path_in,
+      suffix = suffix,
+      layer_identifier = layer,
+      **kwargs
     )
     if crs_from and crs_from != crs_to:
       sdf = sdf.withColumn('geometry', crs('geometry', crs_from, crs_to))
