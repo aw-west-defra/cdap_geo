@@ -22,6 +22,8 @@ def gpd_read_arcgis(f, limit=200):
       f_part = f0 + r + f1
       dfs.append( read_file(f_part) )
     df = concat(dfs)
+  if '&returnGeometry=false&' in f:
+    df = df.drop(columns=['geometry'])
   return df
 
 
