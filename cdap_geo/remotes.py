@@ -1,9 +1,10 @@
 from requests import get
 from geopandas import read_file
 from pandas import concat
+from .convert import GeoDataFrame_to_PandasDataFrame, GeoDataFrame_to_SparkDataFrame
+from .types import PandasDataFrame
 
-
-def gpd_read_arcgis(f, limit=200):
+def paths_arcgis(f, batch):
   a = '/arcgis/rest/services/'
   b = '/FeatureServer/0/query?'
   f0, f1 = f.split(b)
@@ -12,19 +13,43 @@ def gpd_read_arcgis(f, limit=200):
   f_count = f0 + 'where=1%3D1&returnCountOnly=true&f=json'
 
   count = get(f_count).json()['count']
-  if count < limit:  # Single File
-    df = read_file(f)
-  else:  # Multiple Files
-    dfs = []
-    for l in range(1, count, limit):
-      u = min(l + limit, count)
-      r = 'objectIds=' + ','.join( str(x) for x in range(l, u) ) + '&'
-      f_part = f0 + r + f1
-      dfs.append( read_file(f_part) )
-    df = concat(dfs)
+  
+  paths = []
+  for l in range(1, count, batch):
+    u = min(l + batch, count)
+    r = 'objectIds=' + ','.join( str(x) for x in range(l, u) ) + '&'
+    path = f0 + r + f1
+    paths.append(path)
+  return paths
+
+
+def parallel_reader(pdf):
+  path = str(pdf['path'][0])
+  return gpd.read_file(path) \
+    .pipe(GeoDataFrame_to_PandasDataFrame)
+
+
+def sdf_read_arcgis(f, batch=200):
+  paths = paths_arcgis(f, batch)
+  schema = read_file(paths[0]) \
+    .pipe(GeoDataFrame_to_SparkDataFrame) \
+    .schema
+  sdf = PandasDataFrame({'path': paths}) \
+    .pipe(spark.createDataFrame) \
+    .repartition(len(paths)) \
+    .groupBy('path') \
+    .applyInPandas(parallel_reader, schema)
   if '&returnGeometry=false&' in f:
-    df = df.drop(columns=['geometry'])
-  return df
+    sdf = sdf.drop('geometry')
+  return sdf
+
+
+def gpd_read_arcgis(f, batch=200):
+  paths = paths_arcgis(f, batch)
+  gdf = concat(read_file(f) for f in paths)
+  if '&returnGeometry=false&' in f:
+    gdf = gdf.drop(columns=['geometry'])
+  return gdf
 
 
 def gpd_rename(df, rename):
