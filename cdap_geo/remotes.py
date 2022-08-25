@@ -27,7 +27,7 @@ def paths_arcgis(f, batch):
 
 def parallel_reader(pdf):
   path = str(pdf['path'][0])
-  return gpd.read_file(path) \
+  return read_file(path) \
     .pipe(GeoDataFrame_to_PandasDataFrame)
 
 
