@@ -3,6 +3,7 @@ from geopandas import read_file
 from pandas import concat
 from .convert import GeoDataFrame_to_PandasDataFrame, GeoDataFrame_to_SparkDataFrame
 from .typing import PandasDataFrame
+from .utils import spark
 
 
 def paths_arcgis(f, batch):
