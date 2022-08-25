@@ -22,9 +22,13 @@ def SparkDataFrame_to_GeoDataFrame(df: SparkDataFrame, crs: int = 27700):
   pdf = df.toPandas()
   return GeoDataFrame(pdf, geometry=GeoSeries.from_wkb(pdf['geometry'], crs=crs), crs=crs)
 
-def GeoDataFrame_to_SparkDataFrame(gdf: GeoDataFrame):
+def GeoDataFrame_to_PandasDataFrame(gdf: GeoDataFrame):
   pdf = PandasDataFrame(gdf.copy())
   pdf['geometry'] = GeoSeries.to_wkb(pdf['geometry'])
+  return pdf
+
+def GeoDataFrame_to_SparkDataFrame(gdf: GeoDataFrame):
+  pdf = GeoDataFrame_to_PandasDataFrame(gdf)
   sdf = spark.createDataFrame(pdf)
   return sdf
 
