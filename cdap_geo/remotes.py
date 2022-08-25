@@ -2,7 +2,7 @@ from requests import get
 from geopandas import read_file
 from pandas import concat
 from .convert import GeoDataFrame_to_PandasDataFrame, GeoDataFrame_to_SparkDataFrame
-from .types import PandasDataFrame
+from .typing import PandasDataFrame
 
 def paths_arcgis(f, batch):
   a = '/arcgis/rest/services/'
