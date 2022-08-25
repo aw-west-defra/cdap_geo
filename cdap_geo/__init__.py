@@ -30,7 +30,7 @@ from .read import (
 
 from .remotes import (
   list_remotes,
-  gpd_read_remote as read_remote,
+  gdf_read_remote as read_remote,
 )
 
 from .write import (
