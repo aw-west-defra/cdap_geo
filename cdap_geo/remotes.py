@@ -4,6 +4,7 @@ from pandas import concat
 from .convert import GeoDataFrame_to_PandasDataFrame, GeoDataFrame_to_SparkDataFrame
 from .typing import PandasDataFrame
 
+
 def paths_arcgis(f, batch):
   a = '/arcgis/rest/services/'
   b = '/FeatureServer/0/query?'
@@ -34,25 +35,25 @@ def sdf_read_arcgis(f, batch=200):
   schema = read_file(paths[0]) \
     .pipe(GeoDataFrame_to_SparkDataFrame) \
     .schema
-  sdf = PandasDataFrame({'path': paths}) \
+  df = PandasDataFrame({'path': paths}) \
     .pipe(spark.createDataFrame) \
     .repartition(len(paths)) \
     .groupBy('path') \
     .applyInPandas(parallel_reader, schema)
   if '&returnGeometry=false&' in f:
-    sdf = sdf.drop('geometry')
-  return sdf
+    df = df.drop('geometry')
+  return df
 
 
-def gpd_read_arcgis(f, batch=200):
+def gdf_read_arcgis(f, batch=200):
   paths = paths_arcgis(f, batch)
-  gdf = concat(read_file(f) for f in paths)
+  df = concat(read_file(f) for f in paths)
   if '&returnGeometry=false&' in f:
-    gdf = gdf.drop(columns=['geometry'])
-  return gdf
+    df = df.drop(columns=['geometry'])
+  return df
 
 
-def gpd_rename(df, rename):
+def gdf_rename(df, rename):
   return df.rename(columns=rename)[[*rename.values(), 'geometry']]
 
 
@@ -74,97 +75,97 @@ remote = {
   'region': {
     'link': 'https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Regions_December_2021_EN_BFC/FeatureServer/0/query?where=1%3D1&outFields=RGN21NM&outSR=27700&f=json',
     'rename': {'RGN21NM': 'Region'},
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
   'county': {
     'link': 'https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Counties_and_Unitary_Authorities_December_2021_UK_BFC/FeatureServer/0/query?where=1%3D1&outFields=CTYUA21NM&outSR=27700&f=json',
     'rename': {'CTYUA21NM': 'County'},
     'read': read_file,
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
   'district': {
     'link': 'https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Local_Authority_Districts_December_2021_GB_BFC/FeatureServer/0/query?where=1%3D1&outFields=LAD21NM&outSR=27700&f=json',
     'rename': {'LAD21NM': 'District'},
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
   'ward': {
     'link': 'https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Wards_DEC_2021_UK_BFC_V2/FeatureServer/0/query?where=1%3D1&outFields=WD21NM&outSR=27700&f=json',
     'rename': {'WD21NM': 'Ward'},
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
   # Natural England
   'npark': {
     'link': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/National_Parks_England/FeatureServer/0/query?where=1%3D1&outFields=NAME&outSR=27700&f=json',
     'rename': {'NAME': 'NPark'},
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
   'aonb': {
     'link': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/Areas_of_Outstanding_Natural_Beauty_England/FeatureServer/0/query?where=1%3D1&outFields=NAME&outSR=27700&f=json',
     'rename': {'NAME': 'AONB'},
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
   'sssi': {
     'link': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/SSSI_England/FeatureServer/0/query?where=1%3D1&outFields=SSSI_NAME,STATUS&outSR=27700&f=json',
     'rename': {'SSSI_NAME': 'SSSI', 'STATUS': 'SSSI Status'},
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
   'nca': {
     'link': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/National_Character_Areas_England/FeatureServer/0/query?where=1%3D1&outFields=NCA_Name,NANAME&outSR=27700&f=json',
     'rename': {'NANAME': 'NCA Group', 'NCA_Name': 'NCA'},
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
   
   'spa': {
     'link': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/Special_Protection_Areas_England/FeatureServer/0/query?where=1%3D1&outFields=SPA_NAME,STATUS&outSR=27700&f=json',
     'rename': {'SPA_NAME': 'SPA', 'STATUS': 'SPA Status'},
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
   'sac': {
     'link': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/Special_Areas_of_Conservation_England/FeatureServer/0/query?where=1%3D1&outFields=SAC_NAME,STATUS&outSR=27700&f=json',
     'rename': {'SAC_NAME': 'SAC', 'STATUS': 'SAC Status'},
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
   'class': {
     'link': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/National_Habitat_Networks_England/FeatureServer/0/query?where=1%3D1&outFields=Class&outSR=27700&f=json',
     'rename': {'Class': 'Habitat Class'},
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
 
   'ramsar': {
     'link': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/Ramsar_England/FeatureServer/0/query?where=1%3D1&outFields=NAME,STATUS&outSR=27700&f=json',
     'rename': {'NAME': 'RAMSAR', 'STATUS': 'RAMSAR Status'},
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
   'peat': {
     'link': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/Peaty_Soils_Location_England/FeatureServer/0/query?where=1%3D1&outFields=PCLASSDESC&outSR=27700&f=json',
     'rename': {'PCLASSDESC': 'Peat Class'},
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
   'acl': {
     'link': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/Provisional Agricultural Land Classification (ALC) (England)/FeatureServer/0/query?where=1%3D1&outFields=GEOGEXT,ALC_GRADE&outSR=27700&f=json',
     'rename': {'GEOGEXT': 'ALC', 'ALC_GRADE': 'ACL Grade'},
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
   'trail': {
     'link': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/National_Trails_England/FeatureServer/0/query?where=1%3D1&outFields=Name&outSR=27700&f=json',
     'rename': {'Name': 'Trail'},
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
 
   'crow_commons': {
     'link': 'https://services.arcgis.com/JJzESW51TqeY9uat/arcgis/rest/services/CRoW_Act_2000_Section_4_Conclusive_Registered_Common_Land/FeatureServer/0/query?where=1%3D1&outFields=MAPSTATUS,AUTHORITY,NAME&outSR=27700&f=json',
     'rename': {'AUTHORITY': 'Common Group', 'NAME': 'Common', 'MAPSTATUS': 'Common Status'},
-    'read': gpd_read_arcgis,
+    'read': gdf_read_arcgis,
   },
 }
 
 list_remotes = list(remote.keys())
 
-def gpd_read_remote(name):
+def gdf_read_remote(name):
   if name in remote:
     f = remote[name]['link']
     r = remote[name]['rename']
     df = remote[name]['read'](f)
     if isinstance(r, dict):
-      df = gpd_rename(df, r)
+      df = gdf_rename(df, r)
   return df
