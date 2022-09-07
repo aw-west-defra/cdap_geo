@@ -74,6 +74,29 @@ def sedona_intersection(df0, df1):
   # SQL doesn't overwrite columns just has 2 with the same name
   return df2.drop('geometry').withColumnRenamed('geometry_2', 'geometry')
 
+def st_intersects(df_left, df_right, lsuffix='_left', rsuffix='_right', from_wkb=False):
+  df_left = df_left.withColumnRenamed('geometry', 'geometry'+lsuffix)
+  df_right = df_right.withColumnRenamed('geometry', 'geometry'+rsuffix)
+
+  df_left.createOrReplaceTempView('left')
+  df_right.createOrReplaceTempView('right')
+
+  geometry_left = f'left.geometry{lsuffix}'
+  geometry_right = f'right.geometry{rsuffix}'
+  if from_wkb:
+    geometry_left = f'ST_GeomFromWKB(hex( {geometry_left} ))'
+    geometry_right = f'ST_GeomFromWKB(hex( {geometry_right} ))'
+
+  df = spark.sql(f'''
+    SELECT left.*, right.*
+    FROM left, right
+    WHERE ST_Intersects({geometry_left}, {geometry_right})
+  ''')
+  
+  spark.sql('DROP TABLE left')
+  spark.sql('DROP TABLE right')
+  return df
+
 
 # Geometry UDFs
 @F.udf(returnType=T.BooleanType())
