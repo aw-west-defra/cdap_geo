@@ -13,6 +13,7 @@ from .functions import (
   bounds,
   intersects_udf as intersects,
   intersection_udf as intersection,
+  udf_pointify as pointify,
 )
 
 from .index_bng import (
