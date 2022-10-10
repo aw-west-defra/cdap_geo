@@ -1,5 +1,6 @@
 from .typing import *
 from .utils import spark, wkb, wkbs
+import numpy as np
 from pyspark.sql import functions as F, types as T
 from pyproj import Transformer, CRS
 from shapely.ops import transform
@@ -140,7 +141,7 @@ def udf_pointify(col, resolution:int, as_struct:bool):
       np.arange(ymin+resolution/2, ymax, resolution),
     )
     
-    points = gpd.GeoSeries(map(Point, zip(x.flat, y.flat)))
+    points = GeoSeries(map(Point, zip(x.flat, y.flat)))
     isin = points.within(geometry)
     points = [p.wkb for p in points[isin]]
     
