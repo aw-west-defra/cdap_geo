@@ -3,7 +3,9 @@ from .utils import spark, wkb, wkbs
 from pyspark.sql import functions as F, types as T
 from pyproj import Transformer, CRS
 from shapely.ops import transform
+from shapely.geometry import Point
 from geopandas._compat import import_optional_dependency
+
 
 # Spatial Functions
 @F.udf(returnType=T.FloatType())
@@ -114,3 +116,41 @@ def intersection_udf(left, right):
 @F.pandas_udf(returnType=T.BinaryType())
 def intersection_pudf(left, right):
   return wkbs(left).intersection(wkbs(right)).wkb
+
+
+# Raster
+def udf_pointify(col, resolution:int, as_struct:bool):
+  '''Pointifying is like rasterisation but keeping the shapely geometry'''
+
+  if as_struct:
+    pointifyType = T.StructType([
+      T.StructField('count', T.IntegerType(), True),
+      T.StructField('mean', T.FloatType(), True),
+      T.StructField('points', T.ArrayType(T.BinaryType()), True),
+    ])
+  else:
+    pointifyType = T.ArrayType(T.BinaryType())
+  
+  @F.udf(returnType=pointifyType)
+  def _pointify(col):
+    geometry = wkb(col)
+    xmin, ymin, xmax, ymax = geometry.bounds
+    x, y = np.meshgrid(
+      np.arange(xmin+resolution/2, xmax, resolution),
+      np.arange(ymin+resolution/2, ymax, resolution),
+    )
+    
+    points = gpd.GeoSeries(map(Point, zip(x.flat, y.flat)))
+    isin = points.within(geometry)
+    points = [p.wkb for p in points[isin]]
+    
+    if as_struct:
+      return {
+        'count': isin.sum().item(),  # item = to native (int)
+        'mean': isin.mean().item(),  # item = to native (float)
+        'points': points,
+      }
+    else:
+      return points
+    
+  return _pointify(col)
