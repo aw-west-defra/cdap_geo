@@ -19,7 +19,7 @@ from .functions import (
 
 from .index_bng import (
   bng_index as bng,
-  bng_intersects as bng_join.
+  bng_intersects as bng_join,
 )
 
 from .index_bbox import (
