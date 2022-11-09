@@ -77,7 +77,7 @@ def sedona_intersection(df0, df1):
   # SQL doesn't overwrite columns just has 2 with the same name
   return df2.drop('geometry').withColumnRenamed('geometry_2', 'geometry')
 
-def st_intersects(df_left, df_right, lsuffix='_left', rsuffix='_right', from_wkb=False):
+def st_join(df_left, df_right, lsuffix='_left', rsuffix='_right', from_wkb=False):
   df_left = df_left.withColumnRenamed('geometry', 'geometry'+lsuffix)
   df_right = df_right.withColumnRenamed('geometry', 'geometry'+rsuffix)
 
