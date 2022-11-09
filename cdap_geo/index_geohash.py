@@ -24,5 +24,5 @@ def encode_box(xmin, ymin, xmax, ymax, /,*, invert=True):
 def gdf_geohash(df, /,*, column='geohash', inplace=False):
   if not inplace:
     df = df.copy()
-  df[column] = df.apply(lambda df: encode_box(*df.geometry.bounds), axis=1)
+  df[column] = df.apply(lambda df: encode_box(*df.geometry.to_crs('WGS84').bounds), axis=1)
   return df
