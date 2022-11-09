@@ -18,5 +18,6 @@ setup(
   extras_require = {
     'sedona': ['sedona >1'],
     'pyspark_vector_files': ['pyspark_vector_files'],
+    'geohash2': ['geohash2'],
   },
 )
