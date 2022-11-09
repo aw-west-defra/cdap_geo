@@ -14,10 +14,12 @@ from .functions import (
   intersects_udf as intersects,
   intersection_udf as intersection,
   udf_pointify as pointify,
+  st_intersects as st_join,
 )
 
 from .index_bng import (
   bng_index as bng,
+  bng_intersects as bng_join.
 )
 
 from .index_bbox import (
