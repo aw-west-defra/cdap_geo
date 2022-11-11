@@ -23,7 +23,12 @@ from .index_bng import (
 )
 
 from .index_bbox import (
+  bbox_index as bbox,
   bbox_intersects as join,
+)
+
+from .index_geohash import (
+  gdf_geohash as geohash,
 )
 
 from .read import (
