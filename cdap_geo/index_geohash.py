@@ -1,14 +1,14 @@
 from geohash2 import encode
 
 
-def overlap_gen(str0, str1, /,*):
+def overlap_gen(str0, str1, /):
   for chr0, chr1 in zip(str0, str1):
     if chr0 != chr1:
       break
     yield chr0
     
 
-def overlap(str0, str1, /,*):
+def overlap(str0, str1, /):
   return ''.join(overlap_gen(str0, str1))
 
 
