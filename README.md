@@ -25,9 +25,14 @@ from cdap_geo import (
   bounds,            # calculate Bound -> T.ArrayType([T.FloatType()]*4)
   intersects,        # calculate Intersects -> T.BooleanType()
   intersection,      # calculate Intersection -> wkb = T.BinaryType()
-  # Spatial Join
-  join,              # spatially Join two SparkDataFrames -> SparkDataFrame
+  # Join
+  join,              # spatially Join (using bbox) two SparkDataFrames -> SparkDataFrame
+  bng_join,          # use BNG indexing to join two SparkDataFrames -> SparkDataFrame
+  st_join,           # use optional dependency Sedona's ST_Intersects to join two SparkDataFrames -> SparkDataFrame
+  # Index
+  bbox,              # calculate geometries bounding boxes -> T.ArrayType(T.FloatType())
   bng,               # calculate spatial British National Grid index -> T.ArrayType(T.StringType())
+  geohash,           # calculate geometry's bounding box dynamic resolution geohash -> GeoDataFrame
   # Read
   read_gpkg          # quickly read GeoPackage -> SparkDataFrame
   ingest             # read dataset folder -> GeoParquet dataset folder with BNG and CRS
