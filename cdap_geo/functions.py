@@ -34,6 +34,10 @@ def crs(column, crs_from, crs_to=27700):
     return transform(project, wkb(data)).wkb
   return _crs(column)
 
+@F.udf(returnType=T.FloatType())
+def intersection_area(left, right):
+  return wkb(left).intersection(wkb(right)).area
+
 
 # GeoDataFrame Intersecting, returns GeoDataFrame not GeoSeries
 def gdf_intersects(gdf: GeoDataFrame, other: BaseGeometry):
