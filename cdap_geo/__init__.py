@@ -13,6 +13,7 @@ from .functions import (
   bounds,
   intersects_udf as intersects,
   intersection_udf as intersection,
+  intersection_area,
   udf_pointify as pointify,
   st_intersects as st_join,
 )
