@@ -25,6 +25,7 @@ from cdap_geo import (
   bounds,            # calculate Bound -> T.ArrayType([T.FloatType()]*4)
   intersects,        # calculate Intersects -> T.BooleanType()
   intersection,      # calculate Intersection -> wkb = T.BinaryType()
+  intersection_area  # calculate Intersection and Area in one step -> T.FloatType()
   # Join
   join,              # spatially Join (using bbox) two SparkDataFrames -> SparkDataFrame
   bng_join,          # use BNG indexing to join two SparkDataFrames -> SparkDataFrame
