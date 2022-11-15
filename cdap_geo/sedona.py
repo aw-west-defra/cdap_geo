@@ -2,8 +2,8 @@ from geopandas._compat import import_optional_dependency
 
 
 def register():
-  sedona = import_optional_dependency('sedona')
-  sedona.SedonaRegistrator.registerAll(spark)
+  SedonaRegistrator = import_optional_dependency('sedona').register.SedonaRegistrator
+  SedonaRegistrator.registerAll(spark)
 
 
 def intersects(df0, df1):
