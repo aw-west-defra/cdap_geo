@@ -15,7 +15,11 @@ from .functions import (
   intersection_udf as intersection,
   intersection_area,
   udf_pointify as pointify,
-  st_intersects as st_join,
+)
+
+from .sedona import (
+  register as sedona_register,
+  st_join,
 )
 
 from .index_bng import (
@@ -25,7 +29,7 @@ from .index_bng import (
 
 from .index_bbox import (
   bbox_index as bbox,
-  bbox_intersects as join,
+  bbox_join as join,
 )
 
 from .index_geohash import (
