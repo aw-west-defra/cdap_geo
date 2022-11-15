@@ -1,4 +1,4 @@
-from geohash2 import encode
+from geopandas._compat import import_optional_dependency
 
 
 def overlap_gen(str0, str1, /):
@@ -13,6 +13,7 @@ def overlap(str0, str1, /):
 
 
 def encode_box(xmin, ymin, xmax, ymax, /,*, invert=True):
+  encode = import_optional_dependency('geohash2').encode
   if invert:  # For shapely bounds
     xmin, ymin, xmax, ymax = ymin, xmin, ymax, xmax    
   return overlap(
