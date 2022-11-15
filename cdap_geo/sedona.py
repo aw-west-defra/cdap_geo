@@ -1,5 +1,6 @@
 from geopandas._compat import import_optional_dependency
 
+
 def register():
   sedona = import_optional_dependency('sedona')
   sedona.SedonaRegistrator.registerAll(spark)
