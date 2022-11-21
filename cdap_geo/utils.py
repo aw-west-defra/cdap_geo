@@ -12,7 +12,7 @@ spark = SparkSession.getActiveSession()
 
 
 # Get the Variable Name
-def get_var_name(var, f_back: int = 1):
+def get_var_name(var, f_back: int = 1) -> str:
   _vars = currentframe()
   for _ in range(f_back):
     _vars = _vars.f_back
@@ -22,10 +22,10 @@ def get_var_name(var, f_back: int = 1):
 
 
 # SparkDataFrame column udf to wkb
-def wkb(data):
+def wkb(data) -> BaseGeometry:
   return wkb_io.loads(bytes(data))
 
-def wkbs(data):
+def wkbs(data) -> GeoSeries:
   return GeoSeries.from_wkb(data)
 
 
@@ -52,9 +52,12 @@ def get_size(path: str) -> int:
 
 
 # Force Execute
-def sdf_force_execute(df: SparkDataFrame):
+def sdf_force_execute(df: SparkDataFrame) -> SparkDataFrame:
   df.write.format('noop').mode('overwrite').save()
   return df
+
+def sdf_unique(sdf: SparkDataFrane, col: str) -> list:
+  return sdf.select(col).distinct().collect()
 
 
 # SparkDataFrame Statistics
@@ -74,7 +77,7 @@ def sdf_print_stats(sdf: SparkDataFrame, name: str = None, f_back: int = 2) -> S
 
 
 # Maximum of Group
-def sdf_groupmax(df, group, maximise):
+def sdf_groupmax(df: SparkDataFrame, group: str, maximise: str) -> SparkDataFrame:
   return df \
     .withColumn(
       'max',
