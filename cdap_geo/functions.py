@@ -14,8 +14,8 @@ def area(geom):
   return wkb(geom).area
 
 @F.udf(returnType=T.BinaryType())
-def unary_union(data):
-  return sum(wkb(data) for geom in geoms).wkb
+def unary_union(geoms):
+  return sum(wkb(geom) for geom in geoms).wkb
 
 def buffer(column, resolution):
   @F.udf(returnType=T.BinaryType())
