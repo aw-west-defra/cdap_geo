@@ -57,10 +57,11 @@ Import libraries, and load data.
 import geopandas as gpd
 import cdap_geo
 
-other = gpd.read_file('other.geojson')
-other = other.to_crs(epsg=27700)  # be careful
-other = cdap_geo.to_sdf(other) \
+other = (gpd.read_file('other.geojson')
+  .to_crs(epsg=27700)
+  .pipe(cdap_geo.to_sdf)
   .select('geometry')  # It's good practice to drop unused columns.
+)
 
 df_input = spark.read.parquet('input.parquet') \
   .select('geometry')  # This will speed up tasks and require less RAM.
