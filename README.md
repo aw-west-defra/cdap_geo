@@ -1,7 +1,6 @@
 # Geospatial Functions for CDAP
 Spark and GeoPandas in a small package.  
 Convert, save geoparquet, join, and some UDFs.  
-*There's more functions for using [Sedona](https://sedona.apache.org/api/sql/Overview/) or just Shapely geometries, but you'll have to read code for them.*
 
 
 ## Install
@@ -49,6 +48,8 @@ from cdap_geo import (
 [Shapely](https://shapely.readthedocs.io/en/latest/manual.html)  
 Optional:  [PySpark Vector Files](https://github.com/Defra-Data-Science-Centre-of-Excellence/pyspark-vector-files) for loading large files.  
 Included:  [BNG Indexer](https://github.com/Defra-Data-Science-Centre-of-Excellence/bng-indexer) for a standard indexing method.  Required for `bng` function.  
+Optional:  [Sedona]()
+Optional:  [geohash2]() for geohash alternative to bbox or BNG.
 
 
 ## Example
