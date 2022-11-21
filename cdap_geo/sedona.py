@@ -1,3 +1,4 @@
+from .utils import spark
 from geopandas._compat import import_optional_dependency
 
 
