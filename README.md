@@ -48,8 +48,8 @@ from cdap_geo import (
 [Shapely](https://shapely.readthedocs.io/en/latest/manual.html)  
 Optional:  [PySpark Vector Files](https://github.com/Defra-Data-Science-Centre-of-Excellence/pyspark-vector-files) for loading large files.  
 Included:  [BNG Indexer](https://github.com/Defra-Data-Science-Centre-of-Excellence/bng-indexer) for a standard indexing method.  Required for `bng` function.  
-Optional:  [Sedona]()
-Optional:  [geohash2]() for geohash alternative to bbox or BNG.
+Optional:  [Sedona]()  
+Optional:  [geohash2]() for geohash alternative to bbox or BNG.  
 
 
 ## Example
