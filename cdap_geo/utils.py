@@ -56,7 +56,7 @@ def sdf_force_execute(df: SparkDataFrame) -> SparkDataFrame:
   df.write.format('noop').mode('overwrite').save()
   return df
 
-def sdf_unique(sdf: SparkDataFrane, col: str) -> list:
+def sdf_unique(sdf: SparkDataFrame, col: str) -> list:
   return sdf.select(col).distinct().collect()
 
 
