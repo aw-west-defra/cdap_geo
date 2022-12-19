@@ -3,18 +3,18 @@ from geopandas._compat import import_optional_dependency
 # https://sedona.apache.org/api/sql/Overview/
 
 
-def register():
+def st_register():
   SedonaRegistrator = import_optional_dependency('sedona').register.SedonaRegistrator
   SedonaRegistrator.registerAll(spark)
 
 
-def intersects(df0, df1):
+def st_intersects(df0, df1):
   df0.createOrReplaceTempView('df0')
   df1.createOrReplaceTempView('df1')
   return spark.sql('SELECT df0.* FROM df0, df1 WHERE ST_Intersects(df0.geometry, df1.geometry)')
 
 
-def intersection(df0, df1):
+def st_intersection(df0, df1):
   df0.createOrReplaceTempView('df0')
   df1.createOrReplaceTempView('df1')
   df2 = spark.sql('SELECT df0.*, ST_Intersection(df0.geometry, df1.geometry) as geometry_2 FROM df0, df1')
