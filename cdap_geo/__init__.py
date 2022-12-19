@@ -19,7 +19,7 @@ from .functions import (
 )
 
 from .sedona import (
-  register as sedona_register,
+  register as st_register,
   st_join,
 )
 
