@@ -15,6 +15,7 @@ from .functions import (
   intersection_udf as intersection,
   intersection_area,
   udf_pointify as pointify,
+  unary_union,
 )
 
 from .sedona import (
