@@ -17,10 +17,10 @@ def area(geom):
 def unary_union(geoms):
   return sum(wkb(geom) for geom in geoms).wkb
 
-def buffer(column, resolution):
+def buffer(column, resolution, **kwargs):
   @F.udf(returnType=T.BinaryType())
   def _buffer(data):
-    return wkb(data).buffer(resolution).wkb
+    return wkb(data).buffer(resolution, **kwargs).wkb
   return _buffer(column)
 
 @F.udf(returnType=T.ArrayType(T.FloatType()))
