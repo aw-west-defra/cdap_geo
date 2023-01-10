@@ -44,3 +44,20 @@ def st_join(df_left, df_right, lsuffix='_left', rsuffix='_right', from_wkb=False
   spark.sql('DROP TABLE left')
   spark.sql('DROP TABLE right')
   return df
+
+
+def ST_AsGeom(geom):
+  return F.expr(f'''
+    CASE WHEN ({geom} IS NULL)
+      THEN ST_GeomFromText("Point EMPTY")
+      ELSE ST_MakeValid(ST_GeomFromWKB(HEX({geom})))
+    END
+  ''')
+
+def ST_BufArea(resolution, left='geometry_hedge', right='geometry_parcel'):
+  return F.expr(f'''
+    ST_Area(ST_Intersection(
+      ST_Buffer({left}, {resolution}),
+      {right}
+    ))
+  ''')
