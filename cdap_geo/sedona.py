@@ -1,3 +1,4 @@
+from pyspark.sql import functions as F
 from .utils import spark
 from geopandas._compat import import_optional_dependency
 # https://sedona.apache.org/api/sql/Overview/
