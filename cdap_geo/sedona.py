@@ -12,7 +12,7 @@ def st_register():
 def st_load(col:str='geometry', force2d:bool=True, simplify:bool=True, precision:int=None) -> SparkSeries:
   '''Read and clean WKB (binary type) into Sedona (udt type)
   '''
-  geom = f'ST_GeomFromWKB(HEX({col}))'
+  geom = f'ST_MakeValid(ST_GeomFromWKB(HEX({col})))'
   if force2d:
     geom = f'ST_Force_2D({geom})'
   if simplify:
@@ -22,7 +22,7 @@ def st_load(col:str='geometry', force2d:bool=True, simplify:bool=True, precision
   return F.expr(f'''
     CASE WHEN ({col} IS NULL)
       THEN ST_GeomFromText("Point EMPTY")
-      ELSE {geom}
+      ELSE ST_MakeValid({geom})
     END
   ''')
 
