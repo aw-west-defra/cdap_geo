@@ -25,20 +25,28 @@ def st_load(col:str='geometry', force2d:bool=True, simplify:bool=True) -> SparkS
   ''')
 
 
-def st_explode(df:SparkDataFrame, col:str='geometry', maxVerticies:int=256) -> SparkDataFrame:
-  '''Explode geometries to optimise
-  http://blog.cleverelephant.ca/2019/11/subdivide.html
-  '''
-  return (df
-    .withColumn(col, F.explode(F.expr(f'ST_Dump({col})')))
-    .withColumn(col, F.expr(f'ST_SubDivideExplode({col}, {maxVerticies})'))
-  )
-
-
 def st_dump(col:str='geometry') -> SparkSeries:
   '''Reverse to st_load, convert from sedona to wkb
   '''
   return F.expr(f'ST_AsBinary({col})')
+
+
+def st_explode(col:str='geometry', maxVerticies:int=256) -> SparkSeries:
+  '''Explode geometries to optimise
+  http://blog.cleverelephant.ca/2019/11/subdivide.html
+  '''
+  return F.expr(f'ST_SubDivideExplode({col}, {maxVerticies})')
+
+
+def st_group(df:SparkDataFrame, key:str, col:str='geometry') -> SparkDataFrame:
+  '''Reverse explode with a groupby key and simplify
+  '''
+  return (df
+    .groupBy(key)
+    .agg(
+      F.expr(f'ST_SimplifyPreserveTopology(ST_Union_Aggr({col}), 0)').alias(col)
+    )
+  )
 
 
 def st_intersects(df0:SparkDataFrame, df1:SparkDataFrame) -> SparkDataFrame:
