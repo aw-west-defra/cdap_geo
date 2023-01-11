@@ -25,6 +25,12 @@ def st_load(col, force2d=True, simplify=True):
   ''')
 
 
+def st_dump(col):
+  '''Reverse to st_load, convert from sedona to wkb
+  '''
+  return F.expr(f'ST_AsBinary({col})')
+
+
 def st_intersects(df0, df1):
   df0.createOrReplaceTempView('df0')
   df1.createOrReplaceTempView('df1')
