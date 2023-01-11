@@ -9,7 +9,7 @@ def st_register():
   SedonaRegistrator.registerAll(spark)
 
 
-def st_load(col:str='geometry', force2d:bool=True, simplify:bool=True) -> SparkSeries:
+def st_load(col:str='geometry', force2d:bool=True, simplify:bool=True, precision:int=None) -> SparkSeries:
   '''Read and clean WKB (binary type) into Sedona (udt type)
   '''
   geom = f'ST_GeomFromWKB(HEX({col}))'
@@ -17,6 +17,8 @@ def st_load(col:str='geometry', force2d:bool=True, simplify:bool=True) -> SparkS
     geom = f'ST_Force_2D({geom})'
   if simplify:
     geom = f'ST_SimplifyPreserveTopology({geom}, 0)'
+  if precision is not None:
+    geom = f'ST_PrecisionReduce({geom}, {precision})'
   return F.expr(f'''
     CASE WHEN ({col} IS NULL)
       THEN ST_GeomFromText("Point EMPTY")
