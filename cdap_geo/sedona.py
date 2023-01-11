@@ -9,6 +9,22 @@ def st_register():
   SedonaRegistrator.registerAll(spark)
 
 
+def st_load(col, force2d=True, simplify=True):
+  '''Read and clean WKB (binary type) into Sedona (udt type)
+  '''
+  geom = f'ST_GeomFromWKB(HEX({col}))'
+  if force2d:
+    geom = f'ST_Force_2D({geom})'
+  if simplify:
+    geom = f'ST_SimplifyPreserveTopology({geom}, 0)'
+  return F.expr(f'''
+    CASE WHEN ({col} IS NULL)
+      THEN ST_GeomFromText("Point EMPTY")
+      ELSE {geom}
+    END
+  ''')
+
+
 def st_intersects(df0, df1):
   df0.createOrReplaceTempView('df0')
   df1.createOrReplaceTempView('df1')
@@ -45,20 +61,3 @@ def st_join(df_left, df_right, lsuffix='_left', rsuffix='_right', from_wkb=False
   spark.sql('DROP TABLE left')
   spark.sql('DROP TABLE right')
   return df
-
-
-def ST_AsGeom(geom):
-  return F.expr(f'''
-    CASE WHEN ({geom} IS NULL)
-      THEN ST_GeomFromText("Point EMPTY")
-      ELSE ST_MakeValid(ST_GeomFromWKB(HEX({geom})))
-    END
-  ''')
-
-def ST_BufArea(resolution, left='geometry_hedge', right='geometry_parcel'):
-  return F.expr(f'''
-    ST_Area(ST_Intersection(
-      ST_Buffer({left}, {resolution}),
-      {right}
-    ))
-  ''')
