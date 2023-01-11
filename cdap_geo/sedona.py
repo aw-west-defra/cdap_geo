@@ -25,6 +25,13 @@ def st_load(col, force2d=True, simplify=True):
   ''')
 
 
+def st_explode(df, col, maxVerticies:int=256):
+  return (df
+    .withColumn(col, F.explode(F.expr(f'ST_Dump({col})')))
+    .withColumn(col, F.expr(f'ST_SubDivideExplode({col}, {maxVerticies})'))
+  )
+
+
 def st_dump(col):
   '''Reverse to st_load, convert from sedona to wkb
   '''
