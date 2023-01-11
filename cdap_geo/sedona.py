@@ -1,7 +1,6 @@
 from pyspark.sql import functions as F, types as T
 from .utils import spark
 from .typing import *
-from pyspark.sql.column import Column as SparkSeries
 # https://sedona.apache.org/api/sql/Overview/
 
 
