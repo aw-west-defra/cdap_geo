@@ -1,15 +1,16 @@
-from pyspark.sql import functions as F
+from pyspark.sql import functions as F, types as T
 from .utils import spark
-from geopandas._compat import import_optional_dependency
+from .typing import *
+from pyspark.sql.column import Column as SparkSeries
 # https://sedona.apache.org/api/sql/Overview/
 
 
 def st_register():
-  SedonaRegistrator = import_optional_dependency('sedona').register.SedonaRegistrator
+  from sedona.register import SedonaRegistrator
   SedonaRegistrator.registerAll(spark)
 
 
-def st_load(col, force2d=True, simplify=True):
+def st_load(col:str='geometry', force2d:bool=True, simplify:bool=True) -> SparkSeries:
   '''Read and clean WKB (binary type) into Sedona (udt type)
   '''
   geom = f'ST_GeomFromWKB(HEX({col}))'
@@ -25,26 +26,29 @@ def st_load(col, force2d=True, simplify=True):
   ''')
 
 
-def st_explode(df, col, maxVerticies:int=256):
+def st_explode(df:SparkDataFrame, col:str='geometry', maxVerticies:int=256) -> SparkDataFrame:
+  '''Explode geometries to optimise
+  http://blog.cleverelephant.ca/2019/11/subdivide.html
+  '''
   return (df
     .withColumn(col, F.explode(F.expr(f'ST_Dump({col})')))
     .withColumn(col, F.expr(f'ST_SubDivideExplode({col}, {maxVerticies})'))
   )
 
 
-def st_dump(col):
+def st_dump(col:str='geometry') -> SparkSeries:
   '''Reverse to st_load, convert from sedona to wkb
   '''
   return F.expr(f'ST_AsBinary({col})')
 
 
-def st_intersects(df0, df1):
+def st_intersects(df0:SparkDataFrame, df1:SparkDataFrame) -> SparkDataFrame:
   df0.createOrReplaceTempView('df0')
   df1.createOrReplaceTempView('df1')
   return spark.sql('SELECT df0.* FROM df0, df1 WHERE ST_Intersects(df0.geometry, df1.geometry)')
 
 
-def st_intersection(df0, df1):
+def st_intersection(df0:SparkDataFrame, df1:SparkDataFrame) -> SparkDataFrame:
   df0.createOrReplaceTempView('df0')
   df1.createOrReplaceTempView('df1')
   df2 = spark.sql('SELECT df0.*, ST_Intersection(df0.geometry, df1.geometry) as geometry_2 FROM df0, df1')
@@ -52,7 +56,7 @@ def st_intersection(df0, df1):
   return df2.drop('geometry').withColumnRenamed('geometry_2', 'geometry')
 
 
-def st_join(df_left, df_right, lsuffix='_left', rsuffix='_right', from_wkb=False):
+def st_join(df_left:SparkDataFrame, df_right:SparkDataFrame, lsuffix='_left', rsuffix='_right', from_wkb=False) -> SparkDataFrame:
   df_left = df_left.withColumnRenamed('geometry', 'geometry'+lsuffix)
   df_right = df_right.withColumnRenamed('geometry', 'geometry'+rsuffix)
 
