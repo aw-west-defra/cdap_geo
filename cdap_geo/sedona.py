@@ -34,6 +34,7 @@ def st_dump(col:str='geometry') -> SparkSeries:
 def st_explode(col:str='geometry', maxVerticies:int=256) -> SparkSeries:
   '''Explode geometries to optimise
   http://blog.cleverelephant.ca/2019/11/subdivide.html
+  Do not ST_Dump first: https://en.wikipedia.org/wiki/Even%E2%80%93odd_rule
   '''
   return F.expr(f'ST_SubDivideExplode({col}, {maxVerticies})')
 
