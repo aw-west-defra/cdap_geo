@@ -3,10 +3,10 @@ from .utils import spark
 from pyspark.sql import functions as F, types as T
 
 
-def SparkDataFrame_to_SedonaDataFrame(df: SparkDataFrame):
+def SparkDataFrame_to_SedonaDataFrame(df: SparkDataFrame) -> SparkDataFrame:
   return df.withColumn('geometry', F.expr('ST_GeomFromWKB(hex(geometry))'))
 
-def SedonaDataFrame_to_SparkDataFrame(df: SparkDataFrame):
+def SedonaDataFrame_to_SparkDataFrame(df: SparkDataFrame) -> SparkDataFrame:
   try:
     sdf = df.withColumn('geometry', F.expr('ST_AsBinary(geometry)'))
   except e:  # TODO: limit to correct error
@@ -18,19 +18,25 @@ def SedonaDataFrame_to_SparkDataFrame(df: SparkDataFrame):
     sdf = sdf.withColumn('geometry', wkt2wkb_pudf('geometry'))
   return sdf
 
-def SparkDataFrame_to_GeoDataFrame(df: SparkDataFrame, crs: int = 27700):
-  pdf = df.toPandas()
-  return GeoDataFrame(pdf, geometry=GeoSeries.from_wkb(pdf['geometry'], crs=crs), crs=crs)
+def SparkDataFrame_to_GeoDataFrame(df: SparkDataFrame, crs: int = 27700) -> GeoDataFrame:
+  if str(x.schema[column].dataType) == 'GeometryType':
+    df = SedonaDataFrame_to_SparkDataFrame(df)
+  return df \
+    .toPandas() \
+    .pipe(PandasDataFrame_to_GeoDataFrame)
 
-def GeoDataFrame_to_PandasDataFrame(gdf: GeoDataFrame):
+def GeoDataFrame_to_PandasDataFrame(gdf: GeoDataFrame) -> PandasDataFrame:
   return gdf.to_wkb()
 
-def GeoDataFrame_to_SparkDataFrame(gdf: GeoDataFrame):
+def PandasDataFrame_to_GeoDataFrame(pdf: PandasDataFrame) -> GeoDataFrame:
+  return GeoDataFrame(pdf, geometry=GeoSeries.from_wkb(pdf['geometry'], crs=crs), crs=crs)
+
+def GeoDataFrame_to_SparkDataFrame(gdf: GeoDataFrame) -> SparkDataFrame:
   return gdf \
     .pipe(GeoDataFrame_to_PandasDataFrame) \
     .pipe(spark.createDataFrame)
 
-def GeoSeries_to_GeoDataFrame(ds: GeoSeries, crs: Union[int, str] = None):
+def GeoSeries_to_GeoDataFrame(ds: GeoSeries, crs: Union[int, str] = None) -> GeoDataFrame:
   if hasattr(ds, 'crs'):
     if crs is None:
       crs = ds.crs
@@ -38,29 +44,27 @@ def GeoSeries_to_GeoDataFrame(ds: GeoSeries, crs: Union[int, str] = None):
       print(f'\tChanging CRS, provided: {crs} != {ds.crs} :GeoSeries')
   return GeoDataFrame({'geometry':ds}, crs=crs)
 
-def BaseGeometry_to_GeoDataFrame(g, crs):
+def BaseGeometry_to_GeoDataFrame(g, crs) -> GeoDataFrame:
   return GeoSeries(g).to_GeoDataFrame(crs=crs)
 
 
 
-def to_gdf(x:Union[SparkDataFrame, Geometry], crs:Union[int,str]=None) -> GeoDataFrame:
+def to_gdf(x: Union[SparkDataFrame, Geometry], crs: Union[int,str] = None) -> GeoDataFrame:
   if isinstance(x, GeoDataFrame):
     gdf = x
   elif isinstance(x, SparkDataFrame):
     gdf = SparkDataFrame_to_GeoDataFrame(x, crs=crs)
   elif isinstance(x, GeoSeries):
     gdf = GeoSeries_to_GeoDataFrame(x, crs=crs)
-  elif isinstance(x, GeoSeries):
+  elif isinstance(x, BaseGeometry):
     gdf = BaseGeometry_to_GeoDataFrame(x, crs=crs)
   else:
     raise TypeError('Unknown type: ', type(x))
   return gdf
 
-def to_sdf(x:Union[SparkDataFrame, Geometry], crs:Union[int,str]=None) -> SparkDataFrame:
+def to_sdf(x: Union[SparkDataFrame, Geometry], crs: Union[int,str]=None) -> SparkDataFrame:
   if isinstance(x, SparkDataFrame):
     sdf = x
-  elif isinstance(x, GeoDataFrame):
-    sdf = GeoDataFrame_to_SparkDataFrame(x)
   else:
-    sdf = to_sdf(to_gdf(x, sdf))
+    sdf = GeoDataFrame_to_SparkDataFrame(to_gdf(x, sdf))
   return sdf
