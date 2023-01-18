@@ -8,6 +8,25 @@ def st_register():
   from sedona.register import SedonaRegistrator
   SedonaRegistrator.registerAll(spark)
 
+  
+def st(fn:str, off:bool=False):
+  '''Fix Sedona Functions
+  Sedona ST_xxx does not function for null and invalid geoms
+  It can also return invalid geometries
+  '''
+  args = [x.strip() for x in re.search(r'\((.*)\)', fn).group(1).split(',')]
+  arg0, arg1 = args[0], args[1] if 1<len(args) and not args[1].isnumeric() else 'not null'
+  off = arg1!='not null' if off else off  # Check arg1 is geometry
+  ans0, ans1 = arg1 if off else 'ST_GeomFromText("Point EMPTY")', arg0
+  return F.expr(f'''CASE
+    WHEN ({arg0} IS NULL) THEN
+      {ans0}
+    WHEN ({arg1} IS NULL) THEN
+      {ans1}
+    ELSE
+      ST_MakeValid({fn})
+  END''')
+
 
 def st_load(col:str='geometry', force2d:bool=True, simplify:bool=True, precision:int=None) -> SparkSeries:
   '''Read and clean WKB (binary type) into Sedona (udt type)
@@ -19,12 +38,12 @@ def st_load(col:str='geometry', force2d:bool=True, simplify:bool=True, precision
     geom = f'ST_SimplifyPreserveTopology({geom}, 0)'
   if precision is not None:
     geom = f'ST_PrecisionReduce({geom}, {precision})'
-  return F.expr(f'''
-    CASE WHEN ({col} IS NULL)
-      THEN ST_GeomFromText("Point EMPTY")
-      ELSE ST_MakeValid({geom})
-    END
-  ''')
+  return F.expr(f'''CASE
+    WHEN ({col} IS NULL) THEN
+      ST_GeomFromText("Point EMPTY")
+    ELSE
+      ST_MakeValid({geom})
+  END''')
 
 
 def st_dump(col:str='geometry') -> SparkSeries:
