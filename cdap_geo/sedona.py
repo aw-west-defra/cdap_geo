@@ -1,6 +1,7 @@
 from pyspark.sql import functions as F, types as T
 from .utils import spark
 from .typing import *
+from re import search
 # https://sedona.apache.org/api/sql/Overview/
 
 
@@ -14,7 +15,7 @@ def st(fn:str, off:bool=False):
   Sedona ST_xxx does not function for null and invalid geoms
   It can also return invalid geometries
   '''
-  args = [x.strip() for x in re.search(r'\((.*)\)', fn).group(1).split(',')]
+  args = [x.strip() for x in search(r'\((.*)\)', fn).group(1).split(',')]
   arg0, arg1 = args[0], args[1] if 1<len(args) and not args[1].isnumeric() else 'not null'
   off = arg1!='not null' if off else off  # Check arg1 is geometry
   ans0, ans1 = arg1 if off else 'ST_GeomFromText("Point EMPTY")', arg0
