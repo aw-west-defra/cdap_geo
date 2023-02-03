@@ -87,8 +87,11 @@ def st_intersection(df0:SparkDataFrame, df1:SparkDataFrame) -> SparkDataFrame:
 
 
 def st_join(df_left:SparkDataFrame, df_right:SparkDataFrame, lsuffix='_left', rsuffix='_right', from_wkb=False) -> SparkDataFrame:
-  df_left = df_left.withColumnRenamed('geometry', 'geometry'+lsuffix)
-  df_right = df_right.withColumnRenamed('geometry', 'geometry'+rsuffix)
+  
+  for col in df_left.columns:
+    if col in df_right.columns:
+      df_left = df_left.withColumnRenamed(col, col+lsuffix)
+      df_right = df_right.withColumnRenamed(col, col+rsuffix)
 
   df_left.createOrReplaceTempView('left')
   df_right.createOrReplaceTempView('right')
