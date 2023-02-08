@@ -19,7 +19,7 @@ def SedonaDataFrame_to_SparkDataFrame(df: SparkDataFrame) -> SparkDataFrame:
   return sdf
 
 def SparkDataFrame_to_GeoDataFrame(df: SparkDataFrame, crs: int = 27700) -> GeoDataFrame:
-  if str(x.schema[column].dataType) == 'GeometryType':
+  if str(df.schema[column].dataType) == 'GeometryType':
     df = SedonaDataFrame_to_SparkDataFrame(df)
   return df \
     .toPandas() \
