@@ -18,7 +18,7 @@ def SedonaDataFrame_to_SparkDataFrame(df: SparkDataFrame) -> SparkDataFrame:
     sdf = sdf.withColumn('geometry', wkt2wkb_pudf('geometry'))
   return sdf
 
-def SparkDataFrame_to_GeoDataFrame(df: SparkDataFrame, crs: int = 27700) -> GeoDataFrame:
+def SparkDataFrame_to_GeoDataFrame(df: SparkDataFrame, column: str = 'geometry', crs: int = 27700) -> GeoDataFrame:
   if str(df.schema[column].dataType) == 'GeometryType':
     df = SedonaDataFrame_to_SparkDataFrame(df)
   return df \
@@ -49,11 +49,11 @@ def BaseGeometry_to_GeoDataFrame(g, crs) -> GeoDataFrame:
 
 
 
-def to_gdf(x: Union[SparkDataFrame, Geometry], crs: Union[int,str] = None) -> GeoDataFrame:
+def to_gdf(x: Union[SparkDataFrame, Geometry], column: str = 'geometry', crs: Union[int,str] = None) -> GeoDataFrame:
   if isinstance(x, GeoDataFrame):
     gdf = x
   elif isinstance(x, SparkDataFrame):
-    gdf = SparkDataFrame_to_GeoDataFrame(x, crs=crs)
+    gdf = SparkDataFrame_to_GeoDataFrame(x, column=column, crs=crs)
   elif isinstance(x, GeoSeries):
     gdf = GeoSeries_to_GeoDataFrame(x, crs=crs)
   elif isinstance(x, BaseGeometry):
