@@ -29,22 +29,26 @@ def st(fn:str, off:bool=False):
   END''')
 
 
-def st_load(col:str='geometry', force2d:bool=True, simplify:bool=True, precision:int=None) -> SparkSeries:
+def st_valid(col:str):
+  null = 'ST_GeomFromText("Point EMPTY")'
+  return F.expr(f'CASE WHEN ({col} IS NULL) THEN {null} ELSE ST_MakeValid({col}) END')
+
+
+def st_load(col:str='geometry', force2d:bool=True, simplify:float=0, precision:float=None) -> SparkSeries:
   '''Read and clean WKB (binary type) into Sedona (udt type)
   '''
   geom = f'ST_MakeValid(ST_GeomFromWKB(HEX({col})))'
   if force2d:
     geom = f'ST_Force_2D({geom})'
-  if simplify:
-    geom = f'ST_SimplifyPreserveTopology({geom}, 0)'
+  if simplify is not None:
+    geom = f'ST_SimplifyPreserveTopology({geom}, {simplify})'
   if precision is not None:
     geom = f'ST_PrecisionReduce({geom}, {precision})'
-  return F.expr(f'''CASE
-    WHEN ({col} IS NULL) THEN
-      ST_GeomFromText("Point EMPTY")
-    ELSE
-      ST_MakeValid({geom})
-  END''')
+  return st_valid(geom)
+
+
+def st_buffer(col:str, buf:float, tol:float=1e-6):
+  return F.expr(f'ST_MakeValid(ST_Buffer(ST_MakeValid(ST_Buffer({col}, {tol})), {buf}-{tol}))')
 
 
 def st_dump(col:str='geometry') -> SparkSeries:
@@ -61,13 +65,19 @@ def st_explode(col:str='geometry', maxVerticies:int=256) -> SparkSeries:
   return F.expr(f'ST_SubDivideExplode({col}, {maxVerticies})')
 
 
-def st_group(df:SparkDataFrame, key:str, col:str='geometry') -> SparkDataFrame:
+def st_explode2(col:str='geometry') -> SparkSeries:
+  '''Explode geometry collections
+  '''
+  return F.explode(F.expr(f'ST_Dump({col})'))
+
+
+def st_group(df:SparkDataFrame, key:str, col:str='geometry', simplify:float=0) -> SparkDataFrame:
   '''Reverse explode with a groupby key and simplify
   '''
   return (df
     .groupBy(key)
     .agg(
-      F.expr(f'ST_SimplifyPreserveTopology(ST_Union_Aggr({col}), 0)').alias(col)
+      F.expr(f'ST_SimplifyPreserveTopology(ST_Union_Aggr({col}), {simplify})').alias(col)
     )
   )
 
