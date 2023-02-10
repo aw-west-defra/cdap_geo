@@ -96,8 +96,9 @@ def st_intersection(df0:SparkDataFrame, df1:SparkDataFrame) -> SparkDataFrame:
   return df2.drop('geometry').withColumnRenamed('geometry_2', 'geometry')
 
 
-def st_join(df_left:SparkDataFrame, df_right:SparkDataFrame, lsuffix='_left', rsuffix='_right', from_wkb=False) -> SparkDataFrame:
-  
+def st_join(df_left:SparkDataFrame, df_right:SparkDataFrame, lsuffix='_left', rsuffix='_right', from_wkb=False, distance:float=None) -> SparkDataFrame:
+  '''Geometry join, uses an intersects join or distance join
+  '''
   for col in df_left.columns:
     if col in df_right.columns:
       df_left = df_left.withColumnRenamed(col, col+lsuffix)
@@ -112,11 +113,18 @@ def st_join(df_left:SparkDataFrame, df_right:SparkDataFrame, lsuffix='_left', rs
     geometry_left = f'ST_GeomFromWKB(hex( {geometry_left} ))'
     geometry_right = f'ST_GeomFromWKB(hex( {geometry_right} ))'
 
-  df = spark.sql(f'''
-    SELECT left.*, right.*
-    FROM left, right
-    WHERE ST_Intersects({geometry_left}, {geometry_right})
-  ''')
+  if distance is not None:
+    df = spark.sql(f'''
+      SELECT left.*, right.*
+      FROM left, right
+      WHERE ST_Distance({geometry_left}, {geometry_right}) <= {distance}
+    ''')
+  else:
+    df = spark.sql(f'''
+      SELECT left.*, right.*
+      FROM left, right
+      WHERE ST_Intersects({geometry_left}, {geometry_right})
+    ''')
   
   spark.sql('DROP TABLE left')
   spark.sql('DROP TABLE right')
