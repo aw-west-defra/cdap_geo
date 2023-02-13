@@ -9,7 +9,7 @@ def st_register():
   from sedona.register import SedonaRegistrator
   SedonaRegistrator.registerAll(spark)
 
-  
+
 def st(fn:str, off:bool=False):
   '''Fix Sedona Functions
   Sedona ST_xxx does not function for null and invalid geoms
@@ -34,7 +34,7 @@ def st_valid(col:str):
   return F.expr(f'CASE WHEN ({col} IS NULL) THEN {null} ELSE ST_MakeValid({col}) END')
 
 
-def st_load(col:str='geometry', force2d:bool=True, simplify:float=0, precision:float=None) -> SparkSeries:
+def st_load(col:str='geometry', force2d:bool=True, simplify:float=0, precision:float=3) -> SparkSeries:
   '''Read and clean WKB (binary type) into Sedona (udt type)
   '''
   geom = f'ST_MakeValid(ST_GeomFromWKB(HEX({col})))'
