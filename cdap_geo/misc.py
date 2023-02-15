@@ -3,7 +3,7 @@ from shapely.geometry import box
 from .typing import GeoDataFrame
 
 
-def split_grid(bbox:tuple[float, float, float, float], splits:int) -> GeoDataFrame:
+def split_grid(bbox:tuple, splits:int) -> GeoDataFrame:
   '''Split a box into a dataframe of equally divided boxes.
   Will created splits^2 rows.
   '''
