@@ -34,7 +34,7 @@ def st_valid(col:str):
   return F.expr(f'CASE WHEN ({col} IS NULL) THEN {null} ELSE ST_MakeValid({col}) END')
 
 
-def st_load(col:str='geometry', force2d:bool=True, simplify:float=0, precision:float=3) -> SparkSeries:
+def st_load(col:str='geometry', force2d:bool=True, simplify:float=0, precision:float=3, crs:int=27700) -> SparkSeries:
   '''Read and clean WKB (binary type) into Sedona (udt type)
   '''
   geom = f'ST_MakeValid(ST_GeomFromWKB(HEX({col})))'
@@ -44,6 +44,8 @@ def st_load(col:str='geometry', force2d:bool=True, simplify:float=0, precision:f
     geom = f'ST_SimplifyPreserveTopology({geom}, {simplify})'
   if precision is not None:
     geom = f'ST_PrecisionReduce({geom}, {precision})'
+  if crs is not None:
+    geom = f'ST_SetSRID({geom}, {crs})'
   return st_valid(geom)
 
 
