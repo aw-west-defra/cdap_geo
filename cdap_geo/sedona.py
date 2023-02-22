@@ -47,7 +47,7 @@ def st_load(col:str='geometry', force2d:bool=True, simplify:float=0, precision:f
   if from_crs is not None:
     geom = f'ST_SetSRID({geom}, {from_crs})'
   if to_crs is not None:
-    geom = f'ST_Transform({geom}, {to_crs})'
+    geom = f'ST_Transform({geom}, "EPSG:{to_crs}")'
   return st_valid(geom)
 
 
