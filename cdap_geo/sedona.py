@@ -51,6 +51,20 @@ def st_load(col:str='geometry', force2d:bool=True, simplify:float=0, precision:f
   return st_valid(geom)
 
 
+def st_fromwkb(col:str, from_crs:int):
+  '''Convert from WKB to Sedona Geometry
+  Check for NULL values and replace with an empty point
+  Force 2D
+  CRS = EPSG:27700 = British National Grid, which uses 1m coordinates
+  3 = 0.001m = 1mm precision
+  0 simplify to precision
+  '''
+  null = 'ST_GeomFromText("Point EMPTY")'
+  to_crs = 27700
+  precision = 3
+  return F.expr(f'ST_SimplifyPreserveTopology(ST_PrecisionReduce(ST_Transform(ST_Force_2D(CASE WHEN ({col} IS NULL) THEN {null} ELSE ST_MakeValid(ST_GeomFromWKB({col})) END), "EPSG:{from_crs}", "EPSG:{to_crs}"), {precision}), 0)')
+
+
 def st_buffer(col:str, buf:float, tol:float=1e-6):
   return F.expr(f'ST_MakeValid(ST_Buffer(ST_MakeValid(ST_Buffer({col}, {tol})), {buf}-{tol}))')
 
