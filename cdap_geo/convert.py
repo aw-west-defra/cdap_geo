@@ -18,17 +18,17 @@ def SedonaDataFrame_to_SparkDataFrame(df: SparkDataFrame) -> SparkDataFrame:
     sdf = sdf.withColumn('geometry', wkt2wkb_pudf('geometry'))
   return sdf
 
-def SparkDataFrame_to_GeoDataFrame(df: SparkDataFrame, column: str = 'geometry', crs: int = 27700) -> GeoDataFrame:
+def SparkDataFrame_to_GeoDataFrame(df: SparkDataFrame, column: str = 'geometry', crs: Union[int, str] = None) -> GeoDataFrame:
   if str(df.schema[column].dataType) == 'GeometryType':
     df = SedonaDataFrame_to_SparkDataFrame(df)
   return df \
     .toPandas() \
-    .pipe(PandasDataFrame_to_GeoDataFrame)
+    .pipe(PandasDataFrame_to_GeoDataFrame, crs=crs)
 
 def GeoDataFrame_to_PandasDataFrame(gdf: GeoDataFrame) -> PandasDataFrame:
   return gdf.to_wkb()
 
-def PandasDataFrame_to_GeoDataFrame(pdf: PandasDataFrame) -> GeoDataFrame:
+def PandasDataFrame_to_GeoDataFrame(pdf: PandasDataFrame, crs: Union[int, str] = None) -> GeoDataFrame:
   return GeoDataFrame(pdf, geometry=GeoSeries.from_wkb(pdf['geometry'], crs=crs), crs=crs)
 
 def GeoDataFrame_to_SparkDataFrame(gdf: GeoDataFrame) -> SparkDataFrame:
