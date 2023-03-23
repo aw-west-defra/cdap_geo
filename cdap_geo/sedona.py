@@ -1,7 +1,9 @@
 from pyspark.sql import functions as F, types as T
+from sedona.sql.types import GeometryType
 from .utils import spark
 from .typing import *
 from re import search
+import shapely
 # https://sedona.apache.org/api/sql/Overview/
 
 
@@ -147,3 +149,12 @@ def st_join(df_left:SparkDataFrame, df_right:SparkDataFrame, lsuffix='_left', rs
   spark.sql('DROP TABLE left')
   spark.sql('DROP TABLE right')
   return df
+
+
+# Sedona UDFs
+@F.udf(returnType=GeometryType())
+def st_buffer_udf(g:BaseGeometry, resolution:int, **kwargs):
+  '''Sedona and Shapely UDF
+  Useful for: cap_style, join_style
+  '''
+  return shapely.buffer(g, resolution, **kwargs)
