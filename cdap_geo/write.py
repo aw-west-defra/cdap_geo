@@ -2,10 +2,12 @@ from . import __version__
 from .typing import *
 from .utils import spark, wkb, sdf_memsize
 from .functions import bounds
-from geopandas.io.arrow import _encode_metadata
+from geopandas import read_file
+from geopandas.io.arrow import _encode_metadata, _geopandas_to_arrow
 from pyspark.sql import functions as F, types as T
 from pyarrow import parquet
-from os import listdir
+from os import listdir, path
+from glob import glob
 
 
 # GeoParquet-ify
@@ -120,3 +122,37 @@ def sdf_write_geoparquet(
     sdf_autopartition(sdf, partitionBy, inplace, count_ratio, mem_ratio, thead_ratio)
   sdf.write.parquet(path, mode, partitionBy, compression)
   geoparquetify(path, geometry_column, crs, encoding)
+
+  
+# Distributed Convert to Parquet
+def writer_gpd(f, name):
+  df = read_file(f)
+  table = _geopandas_to_arrow(df)
+  table = table.rename_columns(f'{col}-{table[col].type}' for col in table.column_names)
+  parquet.write_to_dataset(table, path_out, basename_template=name)
+  return path.join(path_out, name+'-1')
+
+@F.udf(T.StringType())
+def get_name(f):
+  return path.splitext(path.basename(f))[0]+'-{i}'
+
+def distributed_to_parquet(path:str, path_out:str, writer) -> SparkDataFrame:
+  '''Read a collection of files using spark and save them as parquet.
+  Requires a writer.
+  '''
+  _writer = F.udf(writer, T.StringType())
+  files = glob(path)
+  df = (PandasDataFrame({'filepath': files})
+    .pipe(spark.createDataFrame)
+    .repartition(len(files), 'filepath')
+    .withColumn('name', get_name('filepath'))
+    .withColumn('filepath_out', _writer('filepath', 'name'))
+  )
+  return spark.read.option('spark.sql.parquet.mergeSchema', True).parquet(path_out.replace('/dbfs/', 'dbfs:/'))
+
+def distributed_to_geoparquet(*args) -> SparkDataFrame:
+  '''Read many vector files and save as geoparquet.
+  Using the writer derived from gpd.read_file.
+  Columns are renamed to fit their type so schemas can be merged.
+  '''
+  return distributed_to_geoparquet(*args, writer=writer_gpd)
