@@ -1,5 +1,7 @@
 from .typing import *
 import os
+from warnings import simplefilter
+from time impot time
 from inspect import currentframe
 from shapely import wkb as wkb_io
 from pyspark.serializers import AutoBatchedSerializer, PickleSerializer
@@ -85,3 +87,25 @@ def sdf_groupmax(df: SparkDataFrame, group: str, maximise: str) -> SparkDataFram
     ) \
     .filter(F.col(maximise) == F.col('max')) \
     .drop('max')
+
+
+# Wrappers
+def nowarn(fn):
+  def wrap(*args, **kwargs):
+    simplefilter(action='ignore')
+    result = fn(*args, **kwargs)
+    simplefilter(action='default')
+    return result
+  wrap.__name__ = fn.__name__
+  return wrap
+
+
+def tictoc(fn):
+  def wrap(*args, **kwargs):
+    start = time()
+    result = fn(*args, **kwargs)
+    end = time()
+    print(f'{fn.__name__}:  {end-start:f}s')
+    return result
+  wrap.__name__ = fn.__name__
+  return wrap
