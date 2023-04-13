@@ -157,7 +157,7 @@ def distributed_to_geoparquet(*args) -> SparkDataFrame:
   '''
   return distributed_to_geoparquet(*args, writer=writer_gpd)
 
-def merge_columns(columns, splitter='-'):
+def merged_column_names(columns:list, splitter:str='-') -> list:
   '''Merge columns where they have been renamed col-type
   Currently supports:
   - lonecol, which just renames
@@ -195,3 +195,8 @@ def merge_columns(columns, splitter='-'):
       expr_columns.extend(['-'.join([col, typ]) for typ in typs])
   expr_columns
   return expr_columns
+
+def merge_columns(df:SparkDataFrame):
+  '''Apply merged_column_names
+  '''
+  return df.select(F.expr(col) for col in merged_column_names(df.columns))
