@@ -1,6 +1,6 @@
 from numpy import arange
 from shapely.geometry import box
-from .typing import GeoDataFrame
+from .typing import *
 
 
 def split_grid(bbox:tuple, splits:int) -> GeoDataFrame:
@@ -15,6 +15,21 @@ def split_grid(bbox:tuple, splits:int) -> GeoDataFrame:
     for (xmin, xmax) in zip(X[:-1], X[1:])
     for (ymin, ymax) in zip(Y[:-1], Y[1:])
   ]})
+
+
+def geometry_flatten(geom:BaseGeometry):
+  if hasattr(geom, 'geoms'):  # Multi<Type> / GeometryCollection
+    for g in geom.geoms:
+      yield from geometry_flatten(g)
+  elif hasattr(geom, 'interiors'):  # Polygon
+    yield geom.exterior
+    yield from geom.interiors
+  else:  # LineString / Point
+    yield geom
+
+def geometry_length(geom:BaseGeometry) -> int:
+  # https://gis.stackexchange.com/a/457595/202251
+  return sum(len(g.coords) for g in geometry_flatten(geom))
 
 
 if __name__ is '__main__':
