@@ -130,7 +130,7 @@ def writer_gpd(f, name):
   table = _geopandas_to_arrow(df)
   table = table.rename_columns(f'{col}-{table[col].type}' for col in table.column_names)
   parquet.write_to_dataset(table, path_out, basename_template=name)
-  return path.join(path_out, name+'-1')
+  return path.join(path_out, name.format(i=1))
 
 @F.udf(T.StringType())
 def get_name(f):
@@ -156,3 +156,42 @@ def distributed_to_geoparquet(*args) -> SparkDataFrame:
   Columns are renamed to fit their type so schemas can be merged.
   '''
   return distributed_to_geoparquet(*args, writer=writer_gpd)
+
+def merge_columns(columns, splitter='-'):
+  '''Merge columns where they have been renamed col-type
+  Currently supports:
+  - lonecol, which just renames
+  - listcol, merges list<item: type> and type, both into the former
+  - floatcol, merges double and int64, both into the former
+  - else, multiple columns with different types keep their type
+  
+  WIP: methodology can definitely be improved, suggestions welcome.
+  '''
+  lonecol = '{0}-{1} AS {0}'.format
+  listcol = 'CASE WHEN (`{0}-list<item: {1}>` IS NOT NULL) THEN `{0}-list<item: {1}>` ELSE ARRAY(`{0}-{1}`) END AS `{0}`'.format
+  floatcol = 'CASE WHEN (`{0}-double` IS NOT NULL) THEN `{0}-double` ELSE CAST(`{0}-int64` AS FLOAT) END AS `{0}`'.format
+
+  dict_columns = {}
+  for s in columns:
+    col, typ = s.split(splitter)
+    if col not in dict_columns:
+      dict_columns[col] = []
+    dict_columns[col].append(typ)
+  dict_columns
+
+  expr_columns = []
+  for col, typs in cols_dict.items():
+    if len(typs) == 1:
+      expr_columns.append(lonecol(col, typs[0]))
+    elif len(typs) == 2:
+      if 'int64' in typs and 'double' in typs:
+        expr_columns.append(floatcol(col))
+      elif f'list<item: {typ[0]}>'==typ[1] or f'list<item: {typ[1]}>'==typ[0]:
+        typ = sorted(typs, key=len)[0]
+        expr_columns.append(listcol(col, typ))
+      else:
+        expr_columns.extend(['-'.join([col, typ]) for typ in typs])
+    else:
+      expr_columns.extend(['-'.join([col, typ]) for typ in typs])
+  expr_columns
+  return expr_columns
