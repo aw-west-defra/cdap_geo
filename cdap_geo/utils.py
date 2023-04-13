@@ -1,7 +1,7 @@
 from .typing import *
 import os
 from warnings import simplefilter
-from time impot time
+from time import time
 from inspect import currentframe
 from shapely import wkb as wkb_io
 from pyspark.serializers import AutoBatchedSerializer, PickleSerializer
