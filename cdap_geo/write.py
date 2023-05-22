@@ -155,7 +155,7 @@ def distributed_to_geoparquet(*args) -> SparkDataFrame:
   Using the writer derived from gpd.read_file.
   Columns are renamed to fit their type so schemas can be merged.
   '''
-  return distributed_to_geoparquet(*args, writer=writer_gpd)
+  return distributed_to_parquet(*args, writer=writer_gpd)
 
 def merged_column_names(columns:list, splitter:str='-') -> list:
   '''Merge columns where they have been renamed col-type
