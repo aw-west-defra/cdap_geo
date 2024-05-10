@@ -1,0 +1,25 @@
+name: Bug Report
+description: Report a bug to be resolved
+title: "[Bug]: "
+lables: "bug"
+body:
+- type: markdown
+  attributes:
+    value: Thanks for taking the time to fill out this bug report!
+- type: textarea
+  attributes:
+    label: What happened?
+    description: Also tell us, what did you expect to happen?
+    placeholder: Tell us what you see!
+  validations:
+    required: true
+- type: dropdown
+  attributes:
+    label: Where did you see this issue?
+    options:
+      - Web
+      - API
+      - mobile
+  validations:
+    required: true
+  
